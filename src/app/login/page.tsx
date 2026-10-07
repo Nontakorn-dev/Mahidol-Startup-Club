@@ -1,0 +1,89 @@
+import Link from 'next/link'
+import Image from 'next/image'
+import { redirect } from 'next/navigation'
+import type { Metadata } from 'next'
+import Crumbs from '@/components/Crumbs'
+import LoginForm from '@/components/LoginForm'
+import { IconCheck, IconLine } from '@/components/icons'
+import { getViewer } from '@/lib/auth'
+import { lineLoginEnabled } from '@/lib/env'
+
+export const metadata: Metadata = { title: 'เข้าสู่ระบบ' }
+
+export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
+  const sp = await searchParams
+  const raw = typeof sp.next === 'string' ? sp.next : '/'
+  const next = raw.startsWith('/') && !raw.startsWith('//') ? raw : '/'
+  if (await getViewer()) redirect(next)
+  const error = typeof sp.error === 'string' ? sp.error : null
+  const lineReady = lineLoginEnabled()
+
+  return (
+    <div className="login-wrap">
+      <section className="login-brand">
+        <Link href="/" style={{ alignSelf: 'flex-start', display: 'inline-flex', padding: '8px 16px', borderRadius: 14, background: '#fff' }}>
+          <Image src="/assets/logo.png" alt="Mahidol Startup Club" width={146} height={44} />
+        </Link>
+        <div className="stack" style={{ gap: 28, maxWidth: 520 }}>
+          <Image
+            src="/assets/hero-connect.png"
+            alt="MSC Connect: คุณเชื่อมกับเพื่อนร่วมทีม Mentor Startup Partner และนักลงทุน"
+            width={380}
+            height={380}
+            style={{ width: '100%', maxWidth: 380, height: 'auto', alignSelf: 'center', filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.25))' }}
+          />
+          <h1>
+            Find your people.
+            <br />
+            <span>Start building.</span>
+          </h1>
+          <div className="bullets">
+            {['หางานแข่ง ทุน และโครงการบ่มเพาะในที่เดียว', 'เจอทีมและ co-founder ที่สกิลเสริมกัน', 'แจ้งเตือนผ่าน LINE ทันทีเมื่อมีคนชวนเข้าทีม'].map((t) => (
+              <span key={t}>
+                <i>
+                  <IconCheck size={16} />
+                </i>
+                {t}
+              </span>
+            ))}
+          </div>
+        </div>
+        <span style={{ fontSize: 13, color: '#A9BCE8' }}>สนับสนุนโดย iNT มหาวิทยาลัยมหิดล</span>
+      </section>
+
+      <section className="login-side">
+        <div style={{ width: '100%', maxWidth: 420 }}>
+          <Crumbs back="/" trail={[{ label: 'หน้าแรก', href: '/' }, { label: 'เข้าสู่ระบบ' }]} />
+        </div>
+        <div className="login-card">
+          <div>
+            <h2 style={{ margin: 0, fontWeight: 600, fontSize: 30, lineHeight: 1.2 }}>ยินดีต้อนรับ</h2>
+            <p className="muted" style={{ margin: '6px 0 0', fontSize: 15 }}>
+              เข้าสู่ระบบหรือสมัครสมาชิกในขั้นตอนเดียว
+            </p>
+          </div>
+          {error && <div className="alert alert-error">{error}</div>}
+          {lineReady ? (
+            <a href={`/api/auth/line/start?next=${encodeURIComponent(next)}`} className="btn btn-line btn-lg btn-block" style={{ fontSize: 16 }}>
+              <IconLine size={22} />
+              ดำเนินการต่อด้วย LINE
+            </a>
+          ) : (
+            <span className="btn btn-lg btn-block" aria-disabled="true" style={{ background: '#E2E8F0', color: 'var(--muted)' }} title="ผู้ดูแลยังไม่ได้ตั้งค่า LINE Login">
+              <IconLine size={22} />
+              LINE Login (ยังไม่เปิดใช้งาน)
+            </span>
+          )}
+          <span className="row muted" style={{ marginTop: -10, fontSize: 13, alignItems: 'flex-start' }}>
+            เข้าด้วย LINE แล้วรับแจ้งเตือนทาง LINE OA ได้ทันที · สมัครด้วยอีเมลแล้วเชื่อม LINE ภายหลังได้
+          </span>
+          <div className="divider">หรือ</div>
+          <LoginForm next={next} />
+          <p className="muted" style={{ margin: 0, fontSize: 12, textAlign: 'center' }}>
+            การเข้าสู่ระบบถือว่าคุณยอมรับ <Link href="/terms">ข้อตกลงการใช้งาน</Link> และ <Link href="/privacy">นโยบายความเป็นส่วนตัว (PDPA)</Link>
+          </p>
+        </div>
+      </section>
+    </div>
+  )
+}

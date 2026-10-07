@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DeepSeek intent pipeline</title>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600&amp;family=IBM+Plex+Sans+Thai:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#0035AD}a:hover{color:#0A2558}
+</style>
+
+
+</head>
+<body>
+
+<div style="position: relative; width: 1440px; height: 820px; background: #F4F7FC; font-family: 'IBM Plex Sans Thai', sans-serif; color: #10233F; line-height: 1.5; overflow: hidden">
+
+<!-- arrows: row -->
+<svg width="57" height="8" viewBox="0 0 57 8" preserveAspectRatio="none" style="position: absolute; left: 280px; top: 240px; width: 57px; height: 8px; overflow: visible; fill: none; stroke: #64748B; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-1" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#64748B" stroke="none" style="stroke: none; fill: #64748B; fill: context-stroke"></path></marker></defs><path d="M 0 4 L 53 4" marker-end="url(#dc-arrow-head-filled-1)"></path></svg>
+<svg width="57" height="8" viewBox="0 0 57 8" preserveAspectRatio="none" style="position: absolute; left: 554px; top: 240px; width: 57px; height: 8px; overflow: visible; fill: none; stroke: #64748B; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-2" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#64748B" stroke="none" style="stroke: none; fill: #64748B; fill: context-stroke"></path></marker></defs><path d="M 0 4 L 53 4" marker-end="url(#dc-arrow-head-filled-2)"></path></svg>
+<svg width="57" height="8" viewBox="0 0 57 8" preserveAspectRatio="none" style="position: absolute; left: 828px; top: 240px; width: 57px; height: 8px; overflow: visible; fill: none; stroke: #64748B; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-3" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#64748B" stroke="none" style="stroke: none; fill: #64748B; fill: context-stroke"></path></marker></defs><path d="M 0 4 L 53 4" marker-end="url(#dc-arrow-head-filled-3)"></path></svg>
+<svg width="57" height="8" viewBox="0 0 57 8" preserveAspectRatio="none" style="position: absolute; left: 1102px; top: 240px; width: 57px; height: 8px; overflow: visible; fill: none; stroke: #64748B; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-4" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#64748B" stroke="none" style="stroke: none; fill: #64748B; fill: context-stroke"></path></marker></defs><path d="M 0 4 L 53 4" marker-end="url(#dc-arrow-head-filled-4)"></path></svg>
+<!-- arrow: DeepSeek down to JSON -->
+<svg width="8" height="71" viewBox="0 0 8 71" preserveAspectRatio="none" style="position: absolute; left: 442px; top: 312px; width: 8px; height: 71px; overflow: visible; fill: none; stroke: #0035AD; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round"><defs><marker id="dc-arrow-head-filled-5" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#0035AD" stroke="none" style="stroke: none; fill: #0035AD; fill: context-stroke"></path></marker></defs><path d="M 4 0 L 4 67" marker-end="url(#dc-arrow-head-filled-5)"></path></svg>
+<!-- loop: UI chip edit back to query builder -->
+<svg width="8" height="36" viewBox="0 0 8 36" preserveAspectRatio="none" style="position: absolute; left: 1264px; top: 312px; width: 8px; height: 36px; overflow: visible; fill: none; stroke: #C2410C; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 6 6"><path d="M 4 0 L 4 36"></path></svg>
+<svg width="548" height="8" viewBox="0 0 548 8" preserveAspectRatio="none" style="position: absolute; left: 720px; top: 344px; width: 548px; height: 8px; overflow: visible; fill: none; stroke: #C2410C; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 6 6"><path d="M 0 4 L 548 4"></path></svg>
+<svg width="8" height="35" viewBox="0 0 8 35" preserveAspectRatio="none" style="position: absolute; left: 716px; top: 313px; width: 8px; height: 35px; overflow: visible; fill: none; stroke: #C2410C; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 6 6"><defs><marker id="dc-arrow-head-filled-6" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#C2410C" stroke="none" style="stroke: none; fill: #C2410C; fill: context-stroke"></path></marker></defs><path d="M 4 35 L 4 4" marker-end="url(#dc-arrow-head-filled-6)"></path></svg>
+
+<!-- title -->
+<div style="position: absolute; left: 64px; top: 56px; font-family: 'Kanit', sans-serif; font-weight: 700; font-size: 36px; color: #10233F">Intent box → DeepSeek → Matches</div>
+<div style="position: absolute; left: 64px; top: 104px; width: 900px; font-size: 16px; color: #475569">LLM ทำหน้าที่ “แปลประโยคเป็นตัวกรอง” และ “อธิบายเหตุผล” เท่านั้น — การค้นจริงเกิดใน Supabase เพื่อให้เร็ว ถูก และตรวจสอบได้</div>
+
+<!-- cards -->
+<div style="position: absolute; left: 64px; top: 176px; width: 216px; height: 136px; box-sizing: border-box; padding: 16px; display: flex; align-items: center; text-align: left; background: #FFFFFF; border: 1px solid #D7E0EE; border-radius: 16px; font-size: 14px; color: #475569"><span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #0035AD">01</span><br><b style="font-family: 'Kanit', sans-serif; font-weight: 600; font-size: 17px; color: #0A2558">ผู้ใช้พิมพ์</b><br>ภาษาไทย/อังกฤษ ปนกันได้ หรือพูดผ่านไมค์บนมือถือ</span></div>
+<div style="position: absolute; left: 338px; top: 176px; width: 216px; height: 136px; box-sizing: border-box; padding: 16px; display: flex; align-items: center; text-align: left; background: #0A2558; border: 1px solid #0A2558; border-radius: 16px; font-size: 14px; color: #D6E2F5"><span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #FFC726">02 · Edge Function</span><br><b style="font-family: 'Kanit', sans-serif; font-weight: 600; font-size: 17px; color: #FFFFFF">DeepSeek แปลงเจตนา</b><br>บังคับตอบเป็น JSON ตาม schema (ดูตัวอย่างด้านล่าง)</span></div>
+<div style="position: absolute; left: 612px; top: 176px; width: 216px; height: 136px; box-sizing: border-box; padding: 16px; display: flex; align-items: center; text-align: left; background: #FFFFFF; border: 1px solid #D7E0EE; border-radius: 16px; font-size: 14px; color: #475569"><span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #0035AD">03</span><br><b style="font-family: 'Kanit', sans-serif; font-weight: 600; font-size: 17px; color: #0A2558">Query builder</b><br>JSON → Supabase: tag, ประเภท, วันปิดรับ, บทบาทที่ขาด</span></div>
+<div style="position: absolute; left: 886px; top: 176px; width: 216px; height: 136px; box-sizing: border-box; padding: 16px; display: flex; align-items: center; text-align: left; background: #FFFFFF; border: 1px solid #D7E0EE; border-radius: 16px; font-size: 14px; color: #475569"><span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #0035AD">04</span><br><b style="font-family: 'Kanit', sans-serif; font-weight: 600; font-size: 17px; color: #0A2558">จัดอันดับ + เหตุผล</b><br>คะแนน match จากกฎ แล้วให้ DeepSeek เขียน “แนะนำเพราะ”</span></div>
+<div style="position: absolute; left: 1160px; top: 176px; width: 216px; height: 136px; box-sizing: border-box; padding: 16px; display: flex; align-items: center; text-align: left; background: #FFFFFF; border: 1px solid #D7E0EE; border-radius: 16px; font-size: 14px; color: #475569"><span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #0035AD">05</span><br><b style="font-family: 'Kanit', sans-serif; font-weight: 600; font-size: 17px; color: #0A2558">แสดงผล</b><br>ชิปตัวกรองที่แก้ได้ + 3 แท็บ: งานแข่ง / ทีม / คน</span></div>
+
+<!-- loop label -->
+<div style="position: absolute; left: 864px; top: 320px; width: 260px; text-align: center; font-size: 13px; line-height: 16px; color: #8A3A00">แก้ชิป = query ใหม่ ไม่ต้องเรียก LLM ซ้ำ</div>
+
+<!-- JSON example -->
+<div style="position: absolute; left: 64px; top: 384px; width: 490px; height: 372px; box-sizing: border-box; padding: 20px 22px; background: #10233F; border-radius: 16px; font-family: 'IBM Plex Mono', monospace; font-size: 14px; line-height: 22px; color: #EAF2FB; border: 1px solid #D7E0EE"><span style="white-space: pre"><span style="color: #FFC726">// "หาทีมลง TED Youth Startup</span>
+<span style="color: #FFC726">//  ฉันทำ UX ได้ ขาด dev 2 คน"</span>
+{
+  "looking_for": ["team", "funding"],
+  "program": "ted-youth-startup-2026",
+  "comp_types": [],
+  "my_skills": ["ux_ui"],
+  "roles_needed": [{ "role": "developer", "count": 2 }],
+  "status": "open",
+  "format": null,
+  "confidence": 0.92
+}</span></div>
+
+<!-- design notes -->
+<div style="position: absolute; left: 612px; top: 384px; width: 764px; height: 372px; box-sizing: border-box; padding: 22px 26px; background: #FFFFFF; border: 1px solid #D7E0EE; border-radius: 16px; font-size: 15px; line-height: 1.6; color: #475569"><span><b style="font-family: 'Kanit', sans-serif; font-weight: 600; font-size: 18px; color: #0A2558">ข้อตัดสินใจหลักสำหรับทีม dev</b><br><br><b style="color: #10233F">• เรียก DeepSeek จาก Supabase Edge Function</b> — เก็บ API key ฝั่ง server, ใช้ endpoint แบบ OpenAI-compatible + โหมด JSON<br><b style="color: #10233F">• ค่าใน JSON ต้องมาจากรายการที่มีอยู่</b> — ส่ง tag_options (ตาราง msc-tags เดิม) ไปใน prompt ให้เลือกเท่านั้น ห้ามคิด tag ใหม่<br><b style="color: #10233F">• คำเวลาแบบไทย</b> (“ปิดเทอม”, “เทอมหน้า”) แปลงเป็นช่วงวันจากปฏิทินมหาวิทยาลัยฝั่ง server<br><b style="color: #10233F">• แคชผล parse</b> ตามข้อความที่ normalize แล้ว และ fallback เป็น full-text search เมื่อ confidence ต่ำ<br><b style="color: #10233F">• Semantic search (ถ้าต้องการ)</b> — ใช้ embedding model แยก + pgvector; ตรวจก่อนว่า DeepSeek มี embedding API ให้ใช้หรือยัง</span></div>
+
+</div>
+
+</body>
+</html>
