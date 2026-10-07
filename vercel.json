@@ -10,7 +10,7 @@
     },
     {
       "path": "/api/cron/hackza",
-      "schedule": "0 */6 * * *"
+      "schedule": "37 13 * * *"
     }
   ]
 }

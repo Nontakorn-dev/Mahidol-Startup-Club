@@ -35,12 +35,13 @@ LINE ไม่ใช่ช่องทางล็อกอิน — ใช้�
 ## ดึงงานจาก Hackza (อัตโนมัติ + แอดมินตรวจ)
 
 ```
-ทุก 6 ชั่วโมง → /api/cron/hackza → ดึง hackza.org/hackathons → คัดเฉพาะสาย startup · นวัตกรรม · workshop · ธุรกิจ
+ทุก 6 ชั่วโมง (Supabase pg_cron) → /api/cron/hackza → ดึง hackza.org/hackathons → คัดเฉพาะสาย startup · นวัตกรรม · workshop · ธุรกิจ
 → event_imports (pending) → /admin/imports → อนุมัติ & เผยแพร่ / แก้ไขก่อนเผยแพร่ / ไม่เอา → นักศึกษาเห็น (+ แจ้งเตือนคนที่สนใจ)
 ```
 
 - ตรวจสอบแล้ว: Hackza **ไม่มี Public API** และ robots.txt `Disallow: /api/` จึงไม่เรียก API ภายในของเขา ใช้เฉพาะหน้า `/hackathons` (อนุญาต) ซึ่งฝังข้อมูลทุกรายการไว้ในหน้าเดียว
 - ไม่มี Cloudflare/CAPTCHA และเราไม่ bypass ระบบป้องกันใดๆ · ตรวจ robots.txt ทุกครั้งก่อนดึง · 1 request ต่อรอบ · User-Agent ระบุตัวตน · ถ้าโดน 403/429 จะหยุดรอรอบถัดไป · ปุ่ม “ซิงก์ตอนนี้” กดได้ไม่เกิน 1 ครั้ง/10 นาที
+- ตัวตั้งเวลา: Vercel แพ็กเกจ Hobby รัน cron ได้วันละครั้ง จึงใช้ **Supabase pg_cron + pg_net** เรียก endpoint ทุก 6 ชม. (job `hackza-sync`, token เก็บใน Supabase Vault ชื่อ `hackza_cron_token`) และมี Vercel cron วันละครั้งเป็นสำรอง — endpoint ข้ามการดึงถ้าเพิ่งซิงก์สำเร็จภายใน 5 ชม. · ถ้าเปลี่ยนโดเมน ให้แก้ URL ใน job (`supabase/migrations/0007_hackza_pg_cron.sql`) · ถ้าอัปเกรด Vercel Pro เปลี่ยน schedule ใน `vercel.json` เป็น `0 */6 * * *` แทนได้
 - คะแนนความเกี่ยวข้อง (`src/lib/importers/hackza.ts`): คำสำคัญ startup/ผู้ประกอบการ/ธุรกิจ/นวัตกรรม/pitch/บ่มเพาะ (ชื่อหนัก × 2) + workshop/hackathon/AI/สุขภาพ/ความยั่งยืน + ประเภทงาน, ตัดงานที่ปิดรับแล้ว, งานเฉพาะ ม.ปลาย, ประกวดภาพยนตร์/ออกแบบ/exchange — ปรับ threshold ได้ที่ `RELEVANCE_THRESHOLD`
 - งานที่อนุมัติแสดงเครดิต “ข้อมูลจาก Hackza” และใช้ลิงก์สมัครของผู้จัด · การตัดสินใจอนุมัติ/ไม่เอาจะไม่ถูกเขียนทับในรอบซิงก์ถัดไป
 
