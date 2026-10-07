@@ -19,6 +19,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     ),
   )
   const newPosts = counts.reduce((a, b) => a + b, 0)
+  const pendingImports = await db
+    .from('event_imports')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'pending')
+    .then((r) => r.count || 0)
   const name = shortName(admin.profile.first_name, admin.profile.last_name)
   return (
     <div className="admin-shell">
@@ -27,7 +32,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Image src="/assets/logo.png" alt="Mahidol Startup Club" width={112} height={34} />
         </Link>
         <span className="kicker">ADMIN</span>
-        <AdminNav newPosts={newPosts} />
+        <AdminNav newPosts={newPosts} pendingImports={pendingImports} />
         <Link href="/me" className="admin-me">
           <span className="avatar" style={{ width: 36, height: 36, background: 'var(--yellow)', color: 'var(--navy)', fontWeight: 600 }}>
             {initialOf(admin.profile.first_name)}
@@ -51,7 +56,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             {initialOf(admin.profile.first_name)}
           </span>
         </div>
-        <AdminNav newPosts={newPosts} mobile />
+        <AdminNav newPosts={newPosts} pendingImports={pendingImports} mobile />
       </div>
       <main className="admin-main">{children}</main>
     </div>

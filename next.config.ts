@@ -11,6 +11,8 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: supabaseHost, pathname: '/storage/v1/object/public/**' },
+      // Posters of imported opportunities (Hackza stores them on its own Supabase project)
+      { protocol: 'https', hostname: '*.supabase.co', pathname: '/storage/v1/object/public/**' },
       { protocol: 'https', hostname: 'profile.line-scdn.net' },
       { protocol: 'https', hostname: 'obs.line-scdn.net' },
     ],

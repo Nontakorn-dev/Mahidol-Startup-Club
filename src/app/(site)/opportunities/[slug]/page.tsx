@@ -112,6 +112,15 @@ export default async function EventDetailPage({ params }: PageProps<'/opportunit
                 <Fact icon={<IconBuilding size={20} />} k="ผู้จัด" v={e.organizer || '—'} strong={false} />
                 <Fact icon={<IconUser size={20} />} k="ใครสมัครได้" v={e.eligibility || '—'} strong={false} />
               </div>
+              {e.source === 'hackza' && e.source_url && (
+                <p className="muted" style={{ margin: 0, fontSize: 13 }}>
+                  ข้อมูลจาก{' '}
+                  <a href={e.source_url} target="_blank" rel="noopener">
+                    Hackza
+                  </a>{' '}
+                  · รายละเอียดและการรับสมัครเป็นไปตามประกาศของผู้จัด กรุณาตรวจสอบกับผู้จัดก่อนสมัคร
+                </p>
+              )}
               {paragraphs.length > 0 && (
                 <section className="prose-card">
                   <h2>รายละเอียด</h2>

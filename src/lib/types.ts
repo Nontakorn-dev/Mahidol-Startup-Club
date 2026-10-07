@@ -62,6 +62,8 @@ export type EventRow = {
   published_at: string | null
   updated_at: string
   updated_by: string | null
+  source: string | null
+  source_url: string | null
 }
 
 /** Public, sanitised author info. `id` is only present when the author is not anonymous. */

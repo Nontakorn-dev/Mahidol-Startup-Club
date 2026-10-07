@@ -30,6 +30,7 @@ export default async function AdminDashboard() {
     ...(['team_posts', 'seeker_posts', 'cofounder_posts'] as const).map((t) => count(db.from(t).select('id', { count: 'exact', head: true }).gt('created_at', startOfTodayBkk()))),
     ...(['team_posts', 'seeker_posts', 'cofounder_posts'] as const).map((t) => count(db.from(t).select('id', { count: 'exact', head: true }).gt('created_at', since).neq('status', 'removed'))),
   ])
+  const pendingImports = await count(db.from('event_imports').select('id', { count: 'exact', head: true }).eq('status', 'pending'))
   const postsToday = newToday.slice(0, 3).reduce((a, b) => a + b, 0)
   const sinceLast = newToday.slice(3).reduce((a, b) => a + b, 0)
   const published = events.filter((e) => e.status === 'published')
@@ -103,6 +104,18 @@ export default async function AdminDashboard() {
         <div className="stack" style={{ gap: 20 }}>
           <section className="box" style={{ gap: 6 }}>
             <h2 style={{ marginBottom: 8 }}>ต้องจัดการ</h2>
+            {pendingImports > 0 && (
+              <Link href="/admin/imports" className="todo">
+                <span className="tag tag-ok tag-sm">Hackza</span>
+                <span className="stack" style={{ flex: 1, minWidth: 0, lineHeight: 1.4 }}>
+                  <span style={{ fontWeight: 600, fontSize: 15 }}>{pendingImports} งานจาก Hackza รอตรวจ</span>
+                  <span className="muted" style={{ fontSize: 13 }}>
+                    อนุมัติแล้วจะเผยแพร่และแจ้งเตือนคนที่สนใจทันที
+                  </span>
+                </span>
+                <IconChevronRight size={18} />
+              </Link>
+            )}
             {sinceLast > 0 && (
               <Link href="/admin/community" className="todo">
                 <span className="tag tag-blue tag-sm">ตรวจดู</span>
@@ -139,7 +152,7 @@ export default async function AdminDashboard() {
                 <IconChevronRight size={18} />
               </Link>
             ))}
-            {!sinceLast && !drafts.length && !pinned.length && (
+            {!pendingImports && !sinceLast && !drafts.length && !pinned.length && (
               <p className="muted" style={{ margin: 0, padding: '8px 4px', fontSize: 14 }}>
                 ไม่มีอะไรค้าง 🎉
               </p>
