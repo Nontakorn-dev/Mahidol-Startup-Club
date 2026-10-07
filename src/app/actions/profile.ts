@@ -5,9 +5,6 @@ import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import { actionViewer } from '@/lib/auth'
 import { adminClient } from '@/lib/supabase/admin'
-import { emailEnabled, env } from '@/lib/env'
-import { signPayload } from '@/lib/crypto'
-import { noticeEmailHtml, sendEmails } from '@/lib/email'
 
 type State = { error?: string; ok?: string } | null
 const errMsg = (err: unknown) => (err instanceof z.ZodError ? err.issues[0].message : (err as Error).message)
@@ -122,42 +119,12 @@ export async function setNotificationPref(key: string, value: boolean | string):
 export async function unlinkLine(): Promise<{ error?: string }> {
   try {
     const viewer = await actionViewer()
-    if (viewer.profile.email_is_placeholder) {
-      return { error: 'เพิ่มอีเมลก่อนยกเลิกการเชื่อม LINE ไม่เช่นนั้นจะเข้าสู่ระบบไม่ได้' }
-    }
     await adminClient()
       .from('profiles')
       .update({ line_user_id: null, line_display_name: null, line_picture_url: null, line_is_friend: false, line_linked_at: null })
       .eq('id', viewer.userId)
     revalidatePath('/settings/notifications')
     return {}
-  } catch (err) {
-    return { error: errMsg(err) }
-  }
-}
-
-/** For LINE-only accounts: verify a real email so announcements can also go by email. */
-export async function requestEmailVerification(_prev: State, form: FormData): Promise<State> {
-  try {
-    const viewer = await actionViewer()
-    const email = z.email('อีเมลไม่ถูกต้อง').parse(String(form.get('email') || '').trim().toLowerCase())
-    if (!emailEnabled()) throw new Error('ระบบส่งอีเมลยังไม่ได้ตั้งค่า กรุณาติดต่อผู้ดูแล')
-    const { data: taken } = await adminClient().from('profiles').select('id').eq('email', email).neq('id', viewer.userId).maybeSingle()
-    if (taken) throw new Error('อีเมลนี้ถูกใช้กับบัญชีอื่นแล้ว')
-    const token = signPayload({ uid: viewer.userId, email, k: 'verify-email' }, 60 * 60 * 24)
-    const url = `${env.siteUrl}/api/account/verify-email?t=${encodeURIComponent(token)}`
-    const html = noticeEmailHtml(
-      {
-        altText: 'ยืนยันอีเมลของคุณ',
-        title: 'ยืนยันอีเมลสำหรับ Mahidol Startup Club',
-        subtitle: 'กดปุ่มด้านล่างภายใน 24 ชั่วโมง เพื่อใช้อีเมลนี้เข้าสู่ระบบและรับข่าวสาร',
-        actions: [{ type: 'uri', label: 'ยืนยันอีเมล', url }],
-      },
-      'ถ้าคุณไม่ได้ขอ ไม่ต้องทำอะไร',
-    )
-    const res = await sendEmails([{ to: email, subject: 'ยืนยันอีเมล — Mahidol Startup Club', html, text: url }])
-    if (!res.sent) throw new Error('ส่งอีเมลไม่สำเร็จ')
-    return { ok: `ส่งลิงก์ยืนยันไปที่ ${email} แล้ว` }
   } catch (err) {
     return { error: errMsg(err) }
   }

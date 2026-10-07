@@ -6,7 +6,6 @@ import Crumbs from '@/components/Crumbs'
 import LoginForm from '@/components/LoginForm'
 import { IconCheck, IconLine } from '@/components/icons'
 import { getViewer } from '@/lib/auth'
-import { lineLoginEnabled } from '@/lib/env'
 
 export const metadata: Metadata = { title: 'เข้าสู่ระบบ' }
 
@@ -16,7 +15,7 @@ export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
   const next = raw.startsWith('/') && !raw.startsWith('//') ? raw : '/'
   if (await getViewer()) redirect(next)
   const error = typeof sp.error === 'string' ? sp.error : null
-  const lineReady = lineLoginEnabled()
+  const fromLine = sp.from === 'line'
 
   return (
     <div className="login-wrap">
@@ -62,23 +61,28 @@ export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
               เข้าสู่ระบบหรือสมัครสมาชิกในขั้นตอนเดียว
             </p>
           </div>
+          {fromLine && (
+            <div className="row" style={{ gap: 12, padding: '12px 14px', borderRadius: 14, background: '#E7F8EE', color: '#065F2C', fontSize: 14, alignItems: 'flex-start' }}>
+              <span style={{ display: 'inline-flex', color: '#06C755', marginTop: 2 }}>
+                <IconLine size={22} />
+              </span>
+              <span>
+                <b>เชื่อมบัญชีกับ LINE</b>
+                <br />
+                สมัครหรือเข้าสู่ระบบด้วยอีเมล แล้วระบบจะพาไปยืนยันกับ LINE ทันที — จากนั้นข่าวสารจะส่งเข้า LINE OA ของคุณ
+              </span>
+            </div>
+          )}
           {error && <div className="alert alert-error">{error}</div>}
-          {lineReady ? (
-            <a href={`/api/auth/line/start?next=${encodeURIComponent(next)}`} className="btn btn-line btn-lg btn-block" style={{ fontSize: 16 }}>
-              <IconLine size={22} />
-              ดำเนินการต่อด้วย LINE
-            </a>
-          ) : (
-            <span className="btn btn-lg btn-block" aria-disabled="true" style={{ background: '#E2E8F0', color: 'var(--muted)' }} title="ผู้ดูแลยังไม่ได้ตั้งค่า LINE Login">
-              <IconLine size={22} />
-              LINE Login (ยังไม่เปิดใช้งาน)
+          <LoginForm next={next} />
+          {!fromLine && (
+            <span className="row muted" style={{ fontSize: 13, gap: 8, alignItems: 'flex-start' }}>
+              <span style={{ display: 'inline-flex', color: '#06C755' }}>
+                <IconLine size={18} />
+              </span>
+              เข้าสู่ระบบแล้ว เชื่อม LINE ได้ที่หน้าโปรไฟล์ เพื่อรับข่าวสารผ่าน LINE OA
             </span>
           )}
-          <span className="row muted" style={{ marginTop: -10, fontSize: 13, alignItems: 'flex-start' }}>
-            เข้าด้วย LINE แล้วรับแจ้งเตือนทาง LINE OA ได้ทันที · สมัครด้วยอีเมลแล้วเชื่อม LINE ภายหลังได้
-          </span>
-          <div className="divider">หรือ</div>
-          <LoginForm next={next} />
           <p className="muted" style={{ margin: 0, fontSize: 12, textAlign: 'center' }}>
             การเข้าสู่ระบบถือว่าคุณยอมรับ <Link href="/terms">ข้อตกลงการใช้งาน</Link> และ <Link href="/privacy">นโยบายความเป็นส่วนตัว (PDPA)</Link>
           </p>

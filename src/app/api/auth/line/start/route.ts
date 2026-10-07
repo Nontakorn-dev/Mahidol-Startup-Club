@@ -6,25 +6,18 @@ import { lineAuthorizeUrl } from '@/lib/line/login'
 
 const LINE_COOKIE = 'msc_line_oauth'
 
-// /api/auth/line/start?next=/path            → sign in / sign up with LINE
-// /api/auth/line/start?mode=link&next=/path  → link LINE to the signed-in account
+// "🔗 เชื่อมต่อ LINE" — LINE confirms the account, we store its User ID on the signed-in email account.
+// LINE is never used to sign in.
 export async function GET(request: NextRequest) {
-  const sp = request.nextUrl.searchParams
-  const rawNext = sp.get('next') || '/'
-  const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/'
-  if (!lineLoginEnabled()) {
-    return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent('ยังไม่ได้ตั้งค่า LINE Login')}`, request.url))
-  }
+  const rawNext = request.nextUrl.searchParams.get('next') || '/settings/notifications'
+  const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/settings/notifications'
   const viewer = await getViewer()
-  const mode = sp.get('mode') === 'link' || viewer ? 'link' : 'login'
-  if (mode === 'link' && !viewer) {
-    return NextResponse.redirect(new URL(`/login?next=${encodeURIComponent(next)}`, request.url))
-  }
+  if (!viewer) return NextResponse.redirect(new URL(`/login?next=${encodeURIComponent(next)}`, request.url))
+  if (!lineLoginEnabled()) return NextResponse.redirect(new URL('/settings/notifications#line', request.url))
   const state = randomToken(16)
   const nonce = randomToken(16)
-  const redirectUri = `${env.siteUrl}/api/auth/line/callback`
-  const res = NextResponse.redirect(lineAuthorizeUrl({ state, nonce, redirectUri }))
-  res.cookies.set(LINE_COOKIE, signPayload({ state, nonce, next, mode, uid: viewer?.userId ?? null }, 600), {
+  const res = NextResponse.redirect(lineAuthorizeUrl({ state, nonce, redirectUri: `${env.siteUrl}/api/auth/line/callback` }))
+  res.cookies.set(LINE_COOKIE, signPayload({ state, nonce, next, uid: viewer.userId }, 600), {
     httpOnly: true,
     secure: env.siteUrl.startsWith('https'),
     sameSite: 'lax',

@@ -1,6 +1,6 @@
 'use client'
-import { useActionState, useState, useTransition } from 'react'
-import { requestEmailVerification, setNotificationPref, unlinkLine } from '@/app/actions/profile'
+import { useState, useTransition } from 'react'
+import { setNotificationPref, unlinkLine } from '@/app/actions/profile'
 import { NOTIFY_TOPICS, type NotifyTopicKey } from '@/lib/constants'
 import Switch from './Switch'
 
@@ -113,47 +113,29 @@ export function UnlinkLineButton() {
   )
 }
 
-export function EmailSection({ email, emailNotifications, canSendEmail }: { email: string | null; emailNotifications: boolean; canSendEmail: boolean }) {
+export function EmailSection({ email, emailNotifications }: { email: string | null; emailNotifications: boolean }) {
   const [on, setOn] = useState(emailNotifications)
   const [, start] = useTransition()
-  const [state, action, pending] = useActionState(requestEmailVerification, null)
   return (
     <section className="card stack" style={{ padding: 28, gap: 14 }}>
       <h2 style={{ margin: 0, fontWeight: 500, fontSize: 22 }}>อีเมล</h2>
-      {email ? (
-        <div className="toggle-row">
-          <span className="txt">
-            <b>รับข่าวสารทางอีเมล ({email})</b>
-            <span>ใช้เมื่อยังไม่ได้เชื่อม LINE หรือส่ง LINE ไม่สำเร็จ</span>
-          </span>
-          <Switch
-            checked={on}
-            label="รับข่าวสารทางอีเมล"
-            onChange={(v) => {
-              setOn(v)
-              start(async () => {
-                const res = await setNotificationPref('email_notifications', v)
-                if (res.error) setOn(!v)
-              })
-            }}
-          />
-        </div>
-      ) : (
-        <form action={action} className="stack" style={{ gap: 10 }}>
-          <p className="muted" style={{ margin: 0, fontSize: 14 }}>
-            บัญชีนี้สมัครผ่าน LINE — เพิ่มอีเมลเพื่อใช้เข้าสู่ระบบสำรองและรับข่าวสารทางอีเมล
-          </p>
-          <div className="row" style={{ gap: 8 }}>
-            <input name="email" type="email" required className="input" placeholder="you@student.mahidol.ac.th" style={{ flex: 1 }} />
-            <button type="submit" className="btn btn-primary" disabled={pending || !canSendEmail}>
-              {pending ? 'กำลังส่ง…' : 'ยืนยันอีเมล'}
-            </button>
-          </div>
-          {!canSendEmail && <span className="muted" style={{ fontSize: 13 }}>ระบบส่งอีเมลยังไม่ได้ตั้งค่า</span>}
-          {state?.error && <div className="alert alert-error">{state.error}</div>}
-          {state?.ok && <div className="alert alert-ok">{state.ok}</div>}
-        </form>
-      )}
+      <div className="toggle-row">
+        <span className="txt">
+          <b>รับข่าวสารทางอีเมล{email ? ` (${email})` : ''}</b>
+          <span>ใช้เมื่อยังไม่ได้เชื่อม LINE หรือส่ง LINE ไม่สำเร็จ</span>
+        </span>
+        <Switch
+          checked={on}
+          label="รับข่าวสารทางอีเมล"
+          onChange={(v) => {
+            setOn(v)
+            start(async () => {
+              const res = await setNotificationPref('email_notifications', v)
+              if (res.error) setOn(!v)
+            })
+          }}
+        />
+      </div>
     </section>
   )
 }

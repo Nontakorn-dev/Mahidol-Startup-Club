@@ -1,12 +1,11 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { getViewer } from '@/lib/auth'
+import { resolvePostLogin } from '@/lib/post-login'
 
-// Single post-login hop: new users go through onboarding first.
+// Post-login hop for email links: OA account link first, then onboarding, then `next`.
 export async function GET(request: NextRequest) {
-  const raw = request.nextUrl.searchParams.get('next') || '/'
-  const next = raw.startsWith('/') && !raw.startsWith('//') ? raw : '/'
   const viewer = await getViewer()
   if (!viewer) return NextResponse.redirect(new URL('/login', request.url))
-  if (!viewer.profile.onboarded) return NextResponse.redirect(new URL(`/onboarding?next=${encodeURIComponent(next)}`, request.url))
-  return NextResponse.redirect(new URL(next, request.url))
+  const dest = await resolvePostLogin(viewer.userId, request.nextUrl.searchParams.get('next'))
+  return NextResponse.redirect(dest.startsWith('http') ? dest : new URL(dest, request.url))
 }

@@ -3,17 +3,13 @@ import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { env } from '@/lib/env'
-import { adminClient } from '@/lib/supabase/admin'
+import { resolvePostLogin, safeNext } from '@/lib/post-login'
 
 type State = { error?: string; sent?: string } | null
 
-const safeNext = (n: FormDataEntryValue | null) => {
-  const s = typeof n === 'string' ? n : ''
-  return s.startsWith('/') && !s.startsWith('//') ? s : '/'
-}
-
 const email = z.email('อีเมลไม่ถูกต้อง').transform((e) => e.trim().toLowerCase())
 
+/** Email link + 6-digit code (same email). Creates the account on first use. */
 export async function sendMagicLink(_prev: State, form: FormData): Promise<State> {
   const parsed = email.safeParse(form.get('email'))
   if (!parsed.success) return { error: parsed.error.issues[0].message }
@@ -26,11 +22,23 @@ export async function sendMagicLink(_prev: State, form: FormData): Promise<State
   if (error) {
     return {
       error: /rate|seconds/i.test(error.message)
-        ? 'ส่งอีเมลถี่เกินไป กรุณารอสักครู่แล้วลองใหม่ หรือเข้าสู่ระบบด้วย LINE'
-        : `ส่งลิงก์ไม่สำเร็จ: ${error.message}`,
+        ? 'ส่งอีเมลถี่เกินไป กรุณารอสักครู่แล้วลองใหม่ หรือใช้รหัสผ่านแทน'
+        : `ส่งอีเมลไม่สำเร็จ: ${error.message}`,
     }
   }
   return { sent: parsed.data }
+}
+
+/** Verify the 6-digit code from the email — works inside LINE's in-app browser without switching apps. */
+export async function verifyEmailCode(_prev: State, form: FormData): Promise<State> {
+  const parsed = z
+    .object({ email, token: z.string().trim().regex(/^\d{6,8}$/, 'รหัสต้องเป็นตัวเลข 6 หลัก') })
+    .safeParse({ email: form.get('email'), token: form.get('token') })
+  if (!parsed.success) return { error: parsed.error.issues[0].message, sent: String(form.get('email') || '') }
+  const supabase = await createClient()
+  const { data, error } = await supabase.auth.verifyOtp({ email: parsed.data.email, token: parsed.data.token, type: 'email' })
+  if (error || !data.user) return { error: 'รหัสไม่ถูกต้องหรือหมดอายุ', sent: parsed.data.email }
+  redirect(await resolvePostLogin(data.user.id, form.get('next')))
 }
 
 const PasswordSchema = z.object({ email, password: z.string().min(8, 'รหัสผ่านอย่างน้อย 8 ตัวอักษร').max(72) })
@@ -51,9 +59,8 @@ export async function passwordAuth(_prev: State, form: FormData): Promise<State>
     userId = data.user.id
   } else {
     const { data, error } = await supabase.auth.signInWithPassword(parsed.data)
-    if (error || !data.user) return { error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง (ถ้าเคยสมัครด้วยลิงก์อีเมลหรือ LINE ให้ใช้วิธีเดิม)' }
+    if (error || !data.user) return { error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง (ถ้าเคยสมัครด้วยลิงก์/รหัสทางอีเมล ให้ใช้วิธีเดิม)' }
     userId = data.user.id
   }
-  const { data: profile } = await adminClient().from('profiles').select('onboarded').eq('id', userId).maybeSingle()
-  redirect(profile?.onboarded ? next : `/onboarding?next=${encodeURIComponent(next)}`)
+  redirect(await resolvePostLogin(userId, next))
 }

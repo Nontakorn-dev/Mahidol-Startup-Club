@@ -2,6 +2,7 @@ import { NextResponse, after } from 'next/server'
 import { adminClient } from '@/lib/supabase/admin'
 import { verifyPayload } from '@/lib/crypto'
 import { eventsCarousel, noticeFlex, replyMessage, textMessage, verifyLineSignature } from '@/lib/line/messaging'
+import { LINK_CODE_RE, consumeLinkCode, consumeNonce, issueLinkToken, linkPageUrl } from '@/lib/line/link'
 import { parseIntent } from '@/lib/ai/intent'
 import { runSearch } from '@/lib/search'
 import { respondToRequest } from '@/lib/messaging'
@@ -17,59 +18,94 @@ type LineEvent = {
   source: { type: string; userId?: string }
   message?: { type: string; text?: string }
   postback?: { data: string }
+  link?: { result: 'ok' | 'failed'; nonce: string }
 }
+
+type Linked = { id: string; first_name: string; onboarded: boolean }
 
 const QUICK = [
   { label: 'งานแข่งที่เปิดอยู่', text: 'งานแข่ง' },
   { label: 'หาทีม', url: '/teams?src=line' },
-  { label: 'ตั้งค่าแจ้งเตือน', url: '/settings/notifications?src=line' },
+  { label: 'ตั้งค่าแจ้งเตือน', text: 'ตั้งค่าแจ้งเตือน' },
 ]
+const LINK_QUICK = { label: 'เชื่อมบัญชีเว็บ', text: 'เชื่อมบัญชี' }
 
-const loginUrl = (next: string) => `/api/auth/line/start?next=${encodeURIComponent(next)}`
-
-async function profileByLine(lineUserId: string) {
-  const { data } = await adminClient().from('profiles').select('id, first_name').eq('line_user_id', lineUserId).maybeSingle()
+async function linkedProfile(lineUserId: string): Promise<Linked | null> {
+  const { data } = await adminClient().from('profiles').select('id, first_name, onboarded').eq('line_user_id', lineUserId).maybeSingle()
   return data
+}
+
+/** Personal link for an unlinked LINE user: website → email sign-up/in → LINE account-link dialog. */
+async function linkInvite(lineUserId: string, intro: string) {
+  const linkToken = await issueLinkToken(lineUserId)
+  return noticeFlex({
+    altText: 'เชื่อมบัญชีเว็บ Mahidol Startup Club กับ LINE',
+    headerBar: 'เชื่อมบัญชีกับเว็บ',
+    title: intro,
+    subtitle: 'แตะปุ่ม → สมัครหรือเข้าสู่ระบบด้วยอีเมล → ยืนยันกับ LINE เท่านี้ข่าวสาร คำชวนเข้าทีม และงานแข่งที่ตรงกับคุณจะส่งมาที่แชตนี้ (ลิงก์ใช้ได้ 10 นาที)',
+    actions: [
+      { type: 'uri', label: 'เชื่อมบัญชี', url: linkPageUrl(linkToken) },
+      { type: 'uri', label: 'ดูงานแข่ง', url: '/opportunities?src=line' },
+    ],
+  })
+}
+
+function linkedDone(p: Linked) {
+  return noticeFlex({
+    altText: 'เชื่อมบัญชีสำเร็จ',
+    headerBar: 'เชื่อมบัญชีสำเร็จ 🎉',
+    title: `บัญชีเว็บของ${p.first_name ? ` ${p.first_name}` : 'คุณ'}เชื่อมกับ LINE นี้แล้ว`,
+    subtitle: p.onboarded
+      ? 'ข่าวสารและแจ้งเตือนจากเว็บจะส่งมาที่แชตนี้ เลือกเรื่องที่อยากรู้ได้ในหน้าตั้งค่า'
+      : 'ข่าวสารจะส่งมาที่แชตนี้ — กรอกโปรไฟล์ต่ออีกนิด เพื่อให้เราแนะนำงานแข่งและทีมที่ตรงกับคุณ',
+    actions: [
+      p.onboarded
+        ? { type: 'uri', label: 'ตั้งค่าแจ้งเตือน', url: '/settings/notifications?src=line' }
+        : { type: 'uri', label: 'กรอกโปรไฟล์ต่อ', url: '/onboarding?src=line' },
+    ],
+  })
 }
 
 async function onFollow(e: LineEvent) {
   const uid = e.source.userId!
-  const db = adminClient()
-  const profile = await profileByLine(uid)
-  if (profile) await db.from('profiles').update({ line_is_friend: true }).eq('id', profile.id)
+  const profile = await linkedProfile(uid)
+  if (profile) await adminClient().from('profiles').update({ line_is_friend: true }).eq('id', profile.id)
   if (!e.replyToken) return
   if (profile) {
     await replyMessage(e.replyToken, [
       textMessage(
-        `ยินดีต้อนรับกลับ ${profile.first_name || ''} 🎉\nบัญชีเว็บของคุณเชื่อมกับ LINE นี้แล้ว — เราจะแจ้งเตือนคำชวนเข้าทีมและงานแข่งที่ตรงกับคุณทางนี้\n\nลองพิมพ์สิ่งที่อยากทำได้เลย เช่น “หาทีมลง TED Youth ฉันทำ UX ได้”`,
+        `ยินดีต้อนรับกลับ ${profile.first_name || ''} 🎉\nบัญชีเว็บของคุณเชื่อมกับ LINE นี้อยู่แล้ว\n\nลองพิมพ์สิ่งที่อยากทำได้เลย เช่น “หาทีมลง TED Youth ฉันทำ UX ได้”`,
         QUICK,
       ),
     ])
   } else {
-    await replyMessage(e.replyToken, [
-      noticeFlex({
-        altText: 'ยินดีต้อนรับสู่ Mahidol Startup Club',
-        headerBar: 'ยินดีต้อนรับสู่ Mahidol Startup Club',
-        title: 'เชื่อมบัญชีเว็บกับ LINE เพื่อรับแจ้งเตือน',
-        subtitle: 'แตะปุ่มด้านล่างเพื่อเข้าสู่ระบบ/สมัครด้วย LINE ได้ในแตะเดียว ถ้าเคยสมัครด้วยอีเมล ให้เข้าสู่ระบบบนเว็บแล้วกด “เชื่อม LINE” ในหน้าตั้งค่า',
-        actions: [
-          { type: 'uri', label: 'เชื่อมบัญชี', url: loginUrl('/settings/notifications') },
-          { type: 'uri', label: 'ดูงานแข่ง', url: '/opportunities?src=line' },
-        ],
-      }),
-    ])
+    await replyMessage(e.replyToken, [await linkInvite(uid, 'ยินดีต้อนรับสู่ Mahidol Startup Club 👋 เชื่อมบัญชีเว็บเพื่อรับข่าวสารผ่าน LINE')])
   }
 }
 
 async function onUnfollow(e: LineEvent) {
-  const profile = await profileByLine(e.source.userId!)
+  const profile = await linkedProfile(e.source.userId!)
   if (profile) await adminClient().from('profiles').update({ line_is_friend: false }).eq('id', profile.id)
+}
+
+/** LINE account-link result (after the user confirmed on access.line.me/dialog/bot/accountLink). */
+async function onAccountLink(e: LineEvent) {
+  const uid = e.source.userId!
+  if (e.link?.result === 'ok' && e.link.nonce) {
+    const userId = await consumeNonce(e.link.nonce, uid)
+    const profile = userId ? await linkedProfile(uid) : null
+    if (e.replyToken) {
+      await replyMessage(e.replyToken, [profile ? linkedDone(profile) : await linkInvite(uid, 'ลิงก์หมดอายุ — แตะเพื่อเชื่อมบัญชีอีกครั้ง')])
+    }
+  } else if (e.replyToken) {
+    await replyMessage(e.replyToken, [await linkInvite(uid, 'เชื่อมบัญชีไม่สำเร็จ — ลองอีกครั้งได้เลย')])
+  }
 }
 
 async function onPostback(e: LineEvent) {
   const data = verifyPayload<{ a: string; c: string; u: string }>(e.postback?.data)
   if (!data || !e.replyToken) return
-  const profile = await profileByLine(e.source.userId!)
+  const profile = await linkedProfile(e.source.userId!)
   if (!profile || profile.id !== data.u) {
     await replyMessage(e.replyToken, [textMessage('ปุ่มนี้ใช้ได้เฉพาะบัญชีที่ได้รับคำขอ กรุณาเปิดบนเว็บแทน', [{ label: 'เปิดกล่องข้อความ', url: '/inbox' }])])
     return
@@ -107,19 +143,37 @@ async function replyOpenEvents(replyToken: string) {
 }
 
 async function onText(e: LineEvent) {
+  const uid = e.source.userId!
   const text = (e.message?.text || '').trim()
   if (!e.replyToken || !text) return
-  if (/^(งานแข่ง|ทุน|งาน|events?)$/i.test(text)) return replyOpenEvents(e.replyToken)
-  if (/^(ตั้งค่า|แจ้งเตือน|settings?)$/i.test(text)) {
-    return replyMessage(e.replyToken, [textMessage('ตั้งค่าเรื่องที่อยากรับแจ้งเตือนได้ที่นี่', [{ label: 'ตั้งค่าแจ้งเตือน', url: '/settings/notifications?src=line' }])])
+
+  // "เชื่อมบัญชี ABC123" — code shown on the website's "เชื่อมต่อ LINE" screen
+  const code = text.match(LINK_CODE_RE)?.[1]
+  if (code) {
+    const userId = await consumeLinkCode(code, uid)
+    const profile = userId ? await linkedProfile(uid) : null
+    await replyMessage(e.replyToken, [
+      profile ? linkedDone(profile) : textMessage('รหัสนี้หมดอายุหรือถูกใช้ไปแล้ว — กลับไปที่หน้าเว็บเพื่อรับรหัสใหม่ หรือแตะ “เชื่อมบัญชีเว็บ”', [LINK_QUICK]),
+    ])
+    return
   }
+
+  const profile = await linkedProfile(uid)
+  if (/^(เชื่อมบัญชี|เชื่อม line|ผูกบัญชี|ตั้งค่า|ตั้งค่าแจ้งเตือน|แจ้งเตือน|settings?)$/i.test(text)) {
+    if (profile) {
+      return replyMessage(e.replyToken, [
+        textMessage('บัญชีนี้เชื่อมกับเว็บแล้ว ✓ ตั้งค่าเรื่องที่อยากรับแจ้งเตือนได้ที่นี่', [{ label: 'ตั้งค่าแจ้งเตือน', url: '/settings/notifications?src=line' }]),
+      ])
+    }
+    return replyMessage(e.replyToken, [await linkInvite(uid, 'เชื่อมบัญชีเว็บกับ LINE นี้')])
+  }
+  if (/^(งานแข่ง|ทุน|งาน|events?)$/i.test(text)) return replyOpenEvents(e.replyToken)
   if (/^(ทีม|หาทีม|เพื่อนร่วมทีม)$/i.test(text)) {
     return replyMessage(e.replyToken, [textMessage('ดูคนที่กำลังหาทีม และทีมที่กำลังหาคน', [{ label: 'เปิดหน้าเพื่อนร่วมทีม', url: '/teams?src=line' }])])
   }
 
   // Free text → the same DeepSeek intent pipeline as the website.
   const { intent, usedFallback } = await parseIntent(text)
-  const profile = await profileByLine(e.source.userId!)
   const results = await runSearch(intent, profile?.id ?? null)
   const searchUrl = `/search?q=${encodeURIComponent(text)}&src=line`
   await adminClient()
@@ -140,7 +194,8 @@ async function onText(e: LineEvent) {
   ]
     .filter(Boolean)
     .join('\n')
-  const messages = [textMessage(summary, [{ label: 'ดูผลทั้งหมดบนเว็บ', url: searchUrl }, ...QUICK.slice(0, 1)])]
+  const quick = [{ label: 'ดูผลทั้งหมดบนเว็บ', url: searchUrl }, profile ? QUICK[0] : LINK_QUICK]
+  const messages = [textMessage(summary, quick)]
   if (results.events.length) {
     messages.push(
       eventsCarousel(
@@ -173,6 +228,7 @@ async function handle(e: LineEvent) {
   try {
     if (e.type === 'follow') await onFollow(e)
     else if (e.type === 'unfollow') await onUnfollow(e)
+    else if (e.type === 'accountLink') await onAccountLink(e)
     else if (e.type === 'postback') await onPostback(e)
     else if (e.type === 'message' && e.message?.type === 'text') await onText(e)
   } catch (err) {

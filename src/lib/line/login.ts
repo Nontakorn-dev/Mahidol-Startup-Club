@@ -11,7 +11,7 @@ export function lineAuthorizeUrl(opts: { state: string; nonce: string; redirectU
     redirect_uri: opts.redirectUri,
     state: opts.state,
     nonce: opts.nonce,
-    scope: 'profile openid email',
+    scope: 'profile openid',
     // Shows "add the Official Account as a friend" on the consent screen
     // (requires the LINE Login channel to be linked to the OA).
     bot_prompt: 'aggressive',

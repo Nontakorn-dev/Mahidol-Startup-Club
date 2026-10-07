@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import Crumbs from '@/components/Crumbs'
 import ProfileForm from '@/components/forms/ProfileForm'
+import LineLinkCard from '@/components/LineLinkCard'
 import { EmptyState, EventCard } from '@/components/Cards'
 import { setPostStatus } from '@/app/actions/posts'
 import { requireViewer } from '@/lib/auth'
@@ -76,7 +77,18 @@ export default async function MePage({ searchParams }: PageProps<'/me'>) {
 
   let body: React.ReactNode = null
   if (tab === 'profile') {
-    body = <ProfileForm p={p} />
+    body = (
+      <div className="stack" style={{ gap: 20 }}>
+        <section id="line" className="card stack" style={{ padding: 24, gap: 14 }}>
+          <h2 style={{ margin: 0, fontWeight: 500, fontSize: 20 }}>🔗 เชื่อมต่อ LINE</h2>
+          <p className="muted" style={{ margin: 0, fontSize: 14 }}>
+            ผูกบัญชีอีเมลนี้กับ LINE เพื่อรับข่าวสาร คำชวนเข้าทีม และงานแข่งที่ตรงกับคุณผ่าน LINE OA — ถ้าไม่เชื่อมจะได้รับทางอีเมลแทน
+          </p>
+          <LineLinkCard p={p} next="/me" compact />
+        </section>
+        <ProfileForm p={p} />
+      </div>
+    )
   } else if (tab === 'posts') {
     const [{ data: teams }, { data: seekers }, { data: cof }] = await Promise.all([
       db.from('team_posts').select('*, event:events(title)').eq('owner_id', viewer.userId).order('created_at', { ascending: false }),

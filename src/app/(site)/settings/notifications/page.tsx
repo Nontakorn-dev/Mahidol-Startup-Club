@@ -1,11 +1,11 @@
 import Link from 'next/link'
-import QRCode from 'qrcode'
 import type { Metadata } from 'next'
 import Crumbs from '@/components/Crumbs'
-import { NotificationTopics, UnlinkLineButton, EmailSection } from '@/components/NotificationSettings'
-import { IconChatSimple, IconLine, IconQr, IconShield } from '@/components/icons'
+import { NotificationTopics, EmailSection } from '@/components/NotificationSettings'
+import LineLinkCard from '@/components/LineLinkCard'
+import { IconChatSimple, IconLine, IconShield } from '@/components/icons'
 import { requireViewer } from '@/lib/auth'
-import { emailEnabled, lineAddFriendUrl, lineLoginEnabled, lineMessagingEnabled } from '@/lib/env'
+import { lineMessagingEnabled } from '@/lib/env'
 
 export const metadata: Metadata = { title: 'รับแจ้งเตือนผ่าน LINE' }
 export const dynamic = 'force-dynamic'
@@ -17,16 +17,11 @@ export default async function NotificationSettingsPage({ searchParams }: PagePro
   const onboarding = sp.onboarding === '1'
   const rawNext = typeof sp.next === 'string' ? sp.next : '/'
   const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/'
-  const addFriend = lineAddFriendUrl()
-  const qrSvg = addFriend ? await QRCode.toString(addFriend, { type: 'svg', margin: 1, color: { dark: '#10233F', light: '#FFFFFF' } }) : null
   const linked = Boolean(p.line_user_id)
-  const linkHref = `/api/auth/line/start?mode=link&next=${encodeURIComponent(onboarding ? `/settings/notifications?onboarding=1&next=${encodeURIComponent(next)}` : '/settings/notifications')}`
 
   const notices: { kind: 'ok' | 'error'; text: string }[] = []
   if (sp.linked === '1') notices.push({ kind: 'ok', text: 'เชื่อม LINE สำเร็จ 🎉' })
   if (typeof sp.line_error === 'string') notices.push({ kind: 'error', text: sp.line_error })
-  if (sp.email === 'verified') notices.push({ kind: 'ok', text: 'ยืนยันอีเมลเรียบร้อย' })
-  if (typeof sp.email_error === 'string') notices.push({ kind: 'error', text: sp.email_error })
 
   return (
     <div style={{ background: 'radial-gradient(100% 40% at 100% 0%, rgba(0,53,173,0.10) 0%, rgba(0,53,173,0) 60%), linear-gradient(180deg, #E6ECF8 0px, #F4F7FC 420px)', lineHeight: 1.65 }}>
@@ -65,88 +60,14 @@ export default async function NotificationSettingsPage({ searchParams }: PagePro
                   <IconLine size={26} />
                 </span>
                 <div className="stack" style={{ lineHeight: 1.35 }}>
-                  <h2 style={{ margin: 0, fontWeight: 500, fontSize: 22 }}>{linked ? 'เชื่อม LINE แล้ว' : 'เชื่อมบัญชี LINE'}</h2>
+                  <h2 style={{ margin: 0, fontWeight: 500, fontSize: 22 }}>🔗 เชื่อมต่อ LINE</h2>
                   <span className="muted" style={{ fontSize: 14 }}>
-                    {linked ? `บัญชี LINE: ${p.line_display_name ?? '—'}` : 'ใช้เวลาไม่ถึง 1 นาที'}
+                    บันทึก LINE ของคุณคู่กับบัญชีอีเมล เพื่อรับข่าวสารจาก LINE OA
                   </span>
                 </div>
               </div>
 
-              {linked ? (
-                <div className="stack" style={{ gap: 14 }}>
-                  {p.line_is_friend ? (
-                    <div className="alert alert-ok">พร้อมรับข่าวสารผ่าน LINE OA แล้ว ✓</div>
-                  ) : (
-                    <div className="alert alert-info">
-                      ยังไม่ได้เพิ่มเพื่อน Mahidol Startup Club — เพิ่มเพื่อนก่อน ระบบจึงส่งข้อความหาคุณได้ (ระหว่างนี้จะส่งทางอีเมลแทน)
-                    </div>
-                  )}
-                  <div className="row" style={{ gap: 20, padding: 16, borderRadius: 18, background: 'var(--bg)' }}>
-                    {qrSvg && <div className="qr-box" style={{ borderStyle: 'solid' }} dangerouslySetInnerHTML={{ __html: qrSvg }} />}
-                    <div className="stack" style={{ flex: 1, minWidth: 0, gap: 10 }}>
-                      <span className="stack" style={{ lineHeight: 1.45 }}>
-                        <span style={{ fontWeight: 600, fontSize: 15 }}>{p.line_is_friend ? 'เปิดแชต LINE OA' : 'เพิ่มเพื่อน LINE OA'}</span>
-                        <span className="muted" style={{ fontSize: 13 }}>
-                          พิมพ์สิ่งที่อยากทำในแชตได้เลย เช่น “หาทีมลง TED Youth” แล้ว AI จะส่งงานที่ตรงให้
-                        </span>
-                      </span>
-                      <span className="row wrap" style={{ gap: 8 }}>
-                        {addFriend && (
-                          <a href={addFriend} target="_blank" rel="noopener" className="btn btn-line">
-                            <IconLine size={20} />
-                            {p.line_is_friend ? 'เปิด LINE OA' : 'เพิ่มเพื่อน'}
-                          </a>
-                        )}
-                        <UnlinkLineButton />
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="stack" style={{ flex: 1, gap: 22 }}>
-                  <ol className="step-list">
-                    <li>
-                      <span>1</span>สแกน QR หรือกดปุ่ม “เชื่อมต่อ LINE”
-                    </li>
-                    <li>
-                      <span>2</span>อนุญาตและเพิ่มเพื่อน Mahidol Startup Club
-                    </li>
-                    <li>
-                      <span>3</span>กลับมาที่หน้านี้ ระบบจะเชื่อมให้อัตโนมัติ
-                    </li>
-                  </ol>
-                  <div className="row" style={{ marginTop: 'auto', gap: 20, padding: 16, borderRadius: 18, background: 'var(--bg)' }}>
-                    <div className="qr-box">
-                      {qrSvg ? (
-                        <span dangerouslySetInnerHTML={{ __html: qrSvg }} style={{ width: '100%', height: '100%', display: 'block' }} />
-                      ) : (
-                        <>
-                          <IconQr size={28} />
-                          QR LINE OA
-                        </>
-                      )}
-                    </div>
-                    <div className="stack" style={{ flex: 1, minWidth: 0, gap: 10 }}>
-                      <span className="stack" style={{ lineHeight: 1.45 }}>
-                        <span style={{ fontWeight: 600, fontSize: 15 }}>สแกนด้วยกล้องมือถือ</span>
-                        <span className="muted" style={{ fontSize: 13 }}>
-                          หรือถ้าเปิดบนมือถืออยู่ กดปุ่มนี้ได้เลย
-                        </span>
-                      </span>
-                      {lineLoginEnabled() ? (
-                        <a href={linkHref} className="btn btn-line" style={{ alignSelf: 'flex-start', minHeight: 50, padding: '0 24px', borderRadius: 14, fontSize: 16 }}>
-                          <IconLine size={22} />
-                          เชื่อมต่อ LINE
-                        </a>
-                      ) : (
-                        <span className="muted" style={{ fontSize: 13 }}>
-                          ผู้ดูแลยังไม่ได้ตั้งค่า LINE Login
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
+              <LineLinkCard p={p} next={onboarding ? `/settings/notifications?onboarding=1&next=${encodeURIComponent(next)}` : '/settings/notifications'} />
             </div>
             <div className="stack" style={{ gap: 10 }}>
               <span className="muted" style={{ fontSize: 13, fontWeight: 600 }}>
@@ -192,11 +113,7 @@ export default async function NotificationSettingsPage({ searchParams }: PagePro
             lineReady={linked && p.line_is_friend && lineMessagingEnabled()}
           />
 
-          <EmailSection
-            email={p.email_is_placeholder ? null : p.email}
-            emailNotifications={p.email_notifications}
-            canSendEmail={emailEnabled()}
-          />
+          <EmailSection email={p.email} emailNotifications={p.email_notifications} />
 
           {onboarding ? (
             <div className="row" style={{ justifyContent: 'space-between', gap: 12 }}>
