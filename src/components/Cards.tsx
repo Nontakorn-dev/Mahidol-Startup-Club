@@ -79,16 +79,35 @@ export function EventCard({ e, reason }: { e: EventRow; reason?: string }) {
       </div>
       <div className="info">
         <span className="cat">{CATEGORIES[e.category]}</span>
+        {/* Phones show the card as a compact row like the home page: these m-* parts replace the ones above/below. */}
+        <span className="m-tags row wrap">
+          {closed ? <span className="tag tag-closed">ปิดรับแล้ว</span> : e.is_club && <ClubTag />}
+          <span className="tag tag-blue">{CATEGORIES[e.category]}</span>
+          {!closed && <DeadlineBadge closesAt={closesAt(e)?.toISOString() ?? null} openNote={e.open_note} size="sm" />}
+        </span>
         <span className="title">{e.title}</span>
-        <span className="row wrap" style={{ gap: 8, marginTop: 2 }}>
+        {e.summary && <span className="m-summary">{e.summary}</span>}
+        <span className="d-only row wrap" style={{ gap: 8, marginTop: 2 }}>
           <DeadlineBadge closesAt={closesAt(e)?.toISOString() ?? null} openNote={e.open_note} size="sm" />
           {e.deadline && !closed && <span style={{ fontSize: 13, color: 'var(--muted)' }}>{thaiDeadline(e)}</span>}
         </span>
         {(e.format || e.location) && (
-          <span style={{ fontSize: 13, color: 'var(--muted)' }}>
+          <span className="d-only" style={{ fontSize: 13, color: 'var(--muted)' }}>
             {[e.format === 'online' ? 'ออนไลน์' : e.format === 'hybrid' ? 'ออนไลน์ + ออนไซต์' : e.format === 'onsite' ? 'ออนไซต์' : null, e.location].filter(Boolean).join(' · ')}
           </span>
         )}
+        <span className="m-facts">
+          <span>
+            <IconCalendar size={16} />
+            <span style={{ fontWeight: 600, color: 'var(--navy)' }}>{e.deadline ? `ปิดรับ ${thaiDeadline(e)}` : e.open_note || 'เปิดรับสมัครอยู่'}</span>
+          </span>
+          {e.organizer && (
+            <span>
+              <IconHome size={16} />
+              <span className="org">{e.organizer}</span>
+            </span>
+          )}
+        </span>
         {reason && <span className="reason">แนะนำเพราะ {reason}</span>}
       </div>
     </Link>
