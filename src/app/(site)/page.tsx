@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import SearchBox from '@/components/SearchBox'
+import ConnectMap from '@/components/ConnectMap'
 import { EmptyState, EventCardH, SeekerCardView } from '@/components/Cards'
 import { IconArrowRight, IconLock, IconPeople, IconTrophy, IconUserPlus } from '@/components/icons'
 import { getViewer } from '@/lib/auth'
@@ -78,6 +79,7 @@ export default async function HomePage() {
                 Co-founder
               </Link>
             </nav>
+            <ConnectMap />
           </div>
           <div className="art" style={{ flex: '1 1 420px', minWidth: 0, justifyContent: 'center' }}>
             <Image

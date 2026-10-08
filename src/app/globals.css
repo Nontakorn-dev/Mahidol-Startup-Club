@@ -715,3 +715,45 @@ h1.mantra .line { white-space: nowrap; color: inherit; }
 .hero h1.mantra .accent { color: var(--brand); }
 .login-brand h1.mantra { font-size: min(46px, 7.6vw); }
 .login-brand h1.mantra .accent { color: var(--yellow); }
+
+/* Hero "MSC Connect" map for phones and tablets (the full artwork shows beside the copy on desktop).
+   Everything is sized in --u = 1/340 of the map width, so it scales as one piece. */
+.connect-map { display: none; container-type: inline-size; width: 100%; }
+.cm-stage { --u: calc(100cqw / 340); position: relative; width: 100%; aspect-ratio: 340 / 232; }
+.cm-lines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; }
+.cm-orbit { fill: none; stroke: #C9D6EE; stroke-width: 1; stroke-dasharray: 3 5; }
+.cm-hub, .cm-node, .cm-badge, .cm-brand { position: absolute; transform: translate(-50%, -50%); }
+.cm-hub {
+  width: calc(76 * var(--u)); height: calc(76 * var(--u)); border-radius: 50%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(1 * var(--u));
+  background: radial-gradient(circle at 35% 30%, #1D57D6 0%, var(--brand) 55%, #0A2A8A 100%); color: #fff;
+  box-shadow: 0 calc(10 * var(--u)) calc(24 * var(--u)) calc(-8 * var(--u)) rgba(0, 53, 173, 0.6), 0 0 0 calc(5 * var(--u)) rgba(255, 255, 255, 0.85);
+}
+.cm-hub svg { width: calc(24 * var(--u)); height: calc(24 * var(--u)); }
+.cm-hub b { font-family: var(--font-head); font-weight: 700; font-size: calc(19 * var(--u)); line-height: 1; }
+.cm-pulse { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(0, 53, 173, 0.35); animation: cm-pulse 2.6s ease-out infinite; }
+@keyframes cm-pulse { from { transform: scale(1); opacity: 0.9; } to { transform: scale(1.5); opacity: 0; } }
+.cm-brand { white-space: nowrap; font-family: var(--font-head); font-weight: 700; font-size: calc(10.5 * var(--u)); letter-spacing: 0.08em; color: var(--navy); }
+.cm-node {
+  width: calc(56 * var(--u)); height: calc(56 * var(--u)); border-radius: 50%; border: calc(2.5 * var(--u)) solid; background: #fff;
+  box-shadow: 0 calc(8 * var(--u)) calc(18 * var(--u)) calc(-8 * var(--u)) rgba(16, 35, 63, 0.35), 0 0 0 calc(3 * var(--u)) #fff;
+}
+.cm-node img { display: block; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.cm-label {
+  position: absolute; left: 50%; top: 100%; transform: translateX(-50%); margin-top: calc(4 * var(--u)); white-space: nowrap;
+  padding: calc(1 * var(--u)) calc(6 * var(--u)); border-radius: 999px; background: rgba(255, 255, 255, 0.92);
+  font-family: var(--font-head); font-weight: 600; font-size: calc(11.5 * var(--u)); line-height: 1.2; color: var(--navy);
+}
+.cm-badge {
+  width: calc(20 * var(--u)); height: calc(20 * var(--u)); border-radius: 50%; border: 1.5px solid; background: #fff;
+  display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px -2px rgba(16, 35, 63, 0.25);
+}
+.cm-badge svg { width: calc(11 * var(--u)); height: calc(11 * var(--u)); }
+@media (prefers-reduced-motion: reduce) { .cm-pulse { animation: none; opacity: 0; } }
+@media (max-width: 1100px) {
+  .hero .art { display: none; }
+  .connect-map { display: block; }
+}
+@media (min-width: 641px) and (max-width: 1100px) {
+  .hero-copy .connect-map { max-width: 540px; margin-top: 18px; }
+}
