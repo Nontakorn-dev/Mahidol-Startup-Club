@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "line:richmenu": "node --env-file=.env.local scripts/setup-line-richmenu.mjs"
+    "line:richmenu": "node --env-file=.env.local scripts/setup-line-richmenu.mjs",
+    "supabase:auth": "node --env-file=.env.local scripts/configure-supabase-auth.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

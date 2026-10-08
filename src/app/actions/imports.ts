@@ -1,6 +1,6 @@
 'use server'
 import { redirect } from 'next/navigation'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, updateTag } from 'next/cache'
 import { after } from 'next/server'
 import { z } from 'zod'
 import { actionAdmin } from '@/lib/auth'
@@ -80,6 +80,7 @@ export async function approveImport(form: FormData) {
   const publish = form.get('mode') !== 'edit'
   const event = await approveOne(id, admin.userId, publish)
   revalidatePath('/admin/imports')
+  updateTag('events')
   revalidatePath('/', 'layout')
   if (event && publish) after(() => notifyEventMatches(event))
   if (event && !publish) redirect(`/admin/events/${event.id}`)
@@ -94,6 +95,7 @@ export async function approveSelected(form: FormData) {
     if (e) published.push(e)
   }
   revalidatePath('/admin/imports')
+  updateTag('events')
   revalidatePath('/', 'layout')
   after(async () => {
     for (const e of published) await notifyEventMatches(e)

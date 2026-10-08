@@ -3,7 +3,9 @@ import Image from 'next/image'
 import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import Crumbs from '@/components/Crumbs'
-import LoginForm from '@/components/LoginForm'
+import LoginForm, { GoogleButton } from '@/components/LoginForm'
+import AuthCompleter from '@/components/AuthCompleter'
+import { enabledProviders } from '@/lib/auth-providers'
 import { IconCheck, IconLine } from '@/components/icons'
 import { getViewer } from '@/lib/auth'
 
@@ -13,9 +15,14 @@ export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
   const sp = await searchParams
   const raw = typeof sp.next === 'string' ? sp.next : '/'
   const next = raw.startsWith('/') && !raw.startsWith('//') ? raw : '/'
-  if (await getViewer()) redirect(next)
-  const error = typeof sp.error === 'string' ? sp.error : null
+  const str = (k: string) => (typeof sp[k] === 'string' ? (sp[k] as string) : undefined)
+  // Coming back from Google (?code) or an email button (?token_hash): finish sign-in in the browser.
+  const returning = Boolean(str('code') || str('token_hash') || str('error_description'))
+  if (!returning && (await getViewer())) redirect(next)
+  const providerError = str('error_description')
+  const error = !returning ? (str('error') ?? null) : null
   const fromLine = sp.from === 'line'
+  const { google } = returning ? { google: false } : await enabledProviders()
 
   return (
     <div className="login-wrap">
@@ -73,8 +80,20 @@ export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
               </span>
             </div>
           )}
-          {error && <div className="alert alert-error">{error}</div>}
-          <LoginForm next={next} />
+          {returning ? (
+            <AuthCompleter next={next} code={str('code')} tokenHash={str('token_hash')} type={str('type')} providerError={providerError} />
+          ) : (
+            <>
+              {error && <div className="alert alert-error">{error}</div>}
+              {google && (
+                <>
+                  <GoogleButton next={next} />
+                  <div className="divider">หรือใช้อีเมล</div>
+                </>
+              )}
+              <LoginForm next={next} />
+            </>
+          )}
           {!fromLine && (
             <span className="row muted" style={{ fontSize: 13, gap: 8, alignItems: 'flex-start' }}>
               <span style={{ display: 'inline-flex', color: '#06C755' }}>

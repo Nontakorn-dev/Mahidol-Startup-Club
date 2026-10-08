@@ -2,7 +2,7 @@ import 'server-only'
 import { adminClient } from '@/lib/supabase/admin'
 import { emailEnabled, lineMessagingEnabled } from '@/lib/env'
 import { multicast, noticeFlex, pushMessage, type NoticeContent } from '@/lib/line/messaging'
-import { noticeEmailHtml, noticeEmailText, sendEmails } from '@/lib/email'
+import { processOutbox } from '@/lib/outbox'
 
 export type Topic = 'invites' | 'matches' | 'reminders' | 'announcements' | 'system'
 
@@ -91,9 +91,13 @@ export async function notifyUsers(
       rows.push({ ...base, status: 'digest', channel })
       continue
     }
-    rows.push({ ...base, status: 'sent', channel, sent_at: new Date().toISOString() })
-    if (channel === 'line') lineTargets.push(r)
-    else emailTargets.push(r)
+    if (channel === 'line') {
+      rows.push({ ...base, status: 'sent', channel, sent_at: new Date().toISOString() })
+      lineTargets.push(r)
+    } else {
+      rows.push({ ...base, status: 'queued', channel, payload: content })
+      emailTargets.push(r)
+    }
   }
 
   if (lineTargets.length) {
@@ -105,10 +109,11 @@ export async function notifyUsers(
     } catch (err) {
       console.error('LINE send failed', err)
       // Fall back to email for those who have one.
+      const rowByUser = new Map(rows.map((x) => [x.user_id as string, x]))
       for (const r of lineTargets) {
-        const row = rows.find((x) => x.user_id === r.id)!
+        const row = rowByUser.get(r.id)!
         if (allow.email && r.email && !r.email_is_placeholder && r.email_notifications && emailEnabled()) {
-          row.channel = 'email'
+          Object.assign(row, { channel: 'email', status: 'queued', payload: content, sent_at: null })
           emailTargets.push(r)
         } else {
           row.status = 'failed'
@@ -119,25 +124,12 @@ export async function notifyUsers(
     }
   }
 
-  if (emailTargets.length) {
-    const html = noticeEmailHtml(content)
-    const text = noticeEmailText(content)
-    const { sent, failed } = await sendEmails(
-      emailTargets.map((r) => ({ to: r.email!, subject: content.altText, html, text })),
-    )
-    stats.email += sent
-    if (failed) {
-      stats.failed += failed
-      for (const r of emailTargets) {
-        const row = rows.find((x) => x.user_id === r.id)!
-        if (row.channel === 'email' && sent === 0) row.status = 'failed'
-      }
-    }
-  }
-
+  stats.email = emailTargets.length // queued; delivered by the outbox worker
   for (let i = 0; i < rows.length; i += 500) {
     await db.from('notifications').insert(rows.slice(i, i + 500))
   }
+  // Deliver right away when small; anything left is drained by pg_cron every minute.
+  if (emailTargets.length) await processOutbox({ budgetMs: 8_000 }).catch((err) => console.error('outbox', err))
   return stats
 }
 
@@ -158,7 +150,7 @@ export async function sendDigests(): Promise<number> {
     .from('profiles')
     .select('id, email, email_is_placeholder, line_user_id, line_is_friend')
     .in('id', [...byUser.keys()])
-  const mails: { to: string; subject: string; html: string; text: string }[] = []
+  const queued: Record<string, unknown>[] = []
   let count = 0
   for (const p of profiles || []) {
     const items = byUser.get(p.id) || []
@@ -175,14 +167,16 @@ export async function sendDigests(): Promise<number> {
       if (p.line_user_id && p.line_is_friend && lineMessagingEnabled()) {
         await pushMessage(p.line_user_id, [noticeFlex(content)])
       } else if (p.email && !p.email_is_placeholder) {
-        mails.push({ to: p.email, subject: content.altText, html: noticeEmailHtml(content), text: noticeEmailText(content) })
+        queued.push({ user_id: p.id, topic: 'system', title: content.title, url: '/inbox', status: 'queued', channel: 'email', payload: content })
       }
       count++
     } catch (err) {
       console.error('digest failed', p.id, err)
     }
   }
-  if (mails.length) await sendEmails(mails)
+  if (queued.length) {
+    for (let i = 0; i < queued.length; i += 500) await db.from('notifications').insert(queued.slice(i, i + 500))
+  }
   await db
     .from('notifications')
     .update({ status: 'sent', sent_at: new Date().toISOString() })

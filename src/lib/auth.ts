@@ -11,10 +11,11 @@ export type Viewer = { userId: string; email: string | null; profile: Profile }
 /** The signed-in user and their profile, or null. Memoised per request. */
 export const getViewer = cache(async (): Promise<Viewer | null> => {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return null
+  // Verified locally against the project's ES256 JWKS — no Auth round-trip per request.
+  const { data } = await supabase.auth.getClaims()
+  const claims = data?.claims
+  if (!claims?.sub) return null
+  const user = { id: claims.sub, email: (claims.email as string | undefined) ?? null }
 
   const db = adminClient()
   let { data: profile } = await db.from('profiles').select('*').eq('id', user.id).maybeSingle()
@@ -22,7 +23,7 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
     // Trigger missed (e.g. user created before migration) — create it now.
     const { data } = await db
       .from('profiles')
-      .upsert({ id: user.id, email: user.email ?? null })
+      .upsert({ id: user.id, email: user.email })
       .select('*')
       .single()
     profile = data
@@ -34,7 +35,7 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
     await db.from('profiles').update({ role: 'admin' }).eq('id', user.id)
     profile.role = 'admin'
   }
-  return { userId: user.id, email: user.email ?? null, profile: profile as Profile }
+  return { userId: user.id, email: user.email, profile: profile as Profile }
 })
 
 export async function requireViewer(next = '/'): Promise<Viewer> {

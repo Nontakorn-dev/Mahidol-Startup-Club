@@ -1,4 +1,5 @@
 import 'server-only'
+import { unstable_cache } from 'next/cache'
 import { adminClient } from '@/lib/supabase/admin'
 import { daysUntil, isClosed } from '@/lib/format'
 import { HOME_FEATURED_LIMIT, type Category } from '@/lib/constants'
@@ -17,18 +18,35 @@ export function sortEvents(events: EventRow[]): EventRow[] {
   })
 }
 
+export const EVENTS_TAG = 'events'
+
+/**
+ * All published events, cached across requests for 60 s (tag `events`). Every page that lists
+ * events reads this one cached query, so traffic spikes don't turn into database load.
+ * Admin mutations call updateTag('events') so changes show up immediately.
+ */
+const publishedEventRows = unstable_cache(
+  async (): Promise<EventRow[]> => {
+    const { data } = await adminClient().from('events').select('*').eq('status', 'published').limit(500)
+    return (data || []) as EventRow[]
+  },
+  ['published-events'],
+  { revalidate: 60, tags: [EVENTS_TAG] },
+)
+
 export async function listPublishedEvents(opts: { category?: Category; ids?: string[] } = {}): Promise<EventRow[]> {
-  let q = adminClient().from('events').select('*').eq('status', 'published').limit(200)
-  if (opts.category) q = q.eq('category', opts.category)
-  if (opts.ids) q = q.in('id', opts.ids.length ? opts.ids : ['00000000-0000-0000-0000-000000000000'])
-  const { data } = await q
-  return sortEvents((data || []) as EventRow[])
+  let rows = await publishedEventRows()
+  if (opts.category) rows = rows.filter((e) => e.category === opts.category)
+  if (opts.ids) {
+    const ids = new Set(opts.ids)
+    rows = rows.filter((e) => ids.has(e.id))
+  }
+  return sortEvents(rows)
 }
 
 export async function getEventBySlug(slug: string, includeDraft = false): Promise<EventRow | null> {
-  let q = adminClient().from('events').select('*').eq('slug', slug)
-  if (!includeDraft) q = q.eq('status', 'published')
-  const { data } = await q.maybeSingle()
+  if (!includeDraft) return (await publishedEventRows()).find((e) => e.slug === slug) ?? null
+  const { data } = await adminClient().from('events').select('*').eq('slug', slug).maybeSingle()
   return (data as EventRow) || null
 }
 

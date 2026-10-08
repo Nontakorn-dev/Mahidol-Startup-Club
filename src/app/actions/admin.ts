@@ -1,6 +1,6 @@
 'use server'
 import { redirect } from 'next/navigation'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, updateTag } from 'next/cache'
 import { after } from 'next/server'
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
@@ -121,7 +121,8 @@ export async function saveEvent(_prev: State, form: FormData): Promise<State> {
     if (saved.status === 'published' && saved.notify_on_publish && !saved.notified_at && !isClosed(saved.deadline)) {
       after(() => notifyEventMatches(saved))
     }
-    revalidatePath('/', 'layout')
+    updateTag('events')
+  revalidatePath('/', 'layout')
     dest = `/admin/events/${saved.id}?saved=${publish ? 'published' : 'draft'}`
   } catch (err) {
     return { error: errMsg(err) }
@@ -133,6 +134,7 @@ export async function unpublishEvent(form: FormData) {
   await actionAdmin()
   const id = z.uuid().parse(form.get('id'))
   await adminClient().from('events').update({ status: 'draft', featured: false }).eq('id', id)
+  updateTag('events')
   revalidatePath('/', 'layout')
 }
 
@@ -140,6 +142,7 @@ export async function deleteEvent(form: FormData) {
   await actionAdmin()
   const id = z.uuid().parse(form.get('id'))
   await adminClient().from('events').delete().eq('id', id)
+  updateTag('events')
   revalidatePath('/', 'layout')
   redirect('/admin/events')
 }
@@ -157,7 +160,8 @@ export async function toggleFeatured(id: string): Promise<{ featured?: boolean; 
         throw new Error(`หน้าแรกแสดงได้ ${HOME_FEATURED_LIMIT} งาน — เอาดาวงานอื่นออกก่อน`)
     }
     await db.from('events').update({ featured: !e.featured }).eq('id', e.id)
-    revalidatePath('/', 'layout')
+    updateTag('events')
+  revalidatePath('/', 'layout')
     return { featured: !e.featured }
   } catch (err) {
     return { error: errMsg(err) }
@@ -273,7 +277,7 @@ export async function sendBroadcast(_prev: State, form: FormData): Promise<State
     )
     await db.from('broadcasts').update({ stats: { ...stats, recipients: ids.length }, sent_at: new Date().toISOString() }).eq('id', b.id)
     revalidatePath('/admin/broadcasts')
-    return { ok: `ส่งแล้ว · LINE ${stats.line} · อีเมล ${stats.email} · สรุปรายวัน ${stats.digest} · ข้าม ${stats.skipped}${stats.failed ? ` · ล้มเหลว ${stats.failed}` : ''}` }
+    return { ok: `ส่งแล้ว · LINE ${stats.line} · อีเมล ${stats.email} (เข้าคิว ทยอยส่งอัตโนมัติ) · สรุปรายวัน ${stats.digest} · ข้าม ${stats.skipped}${stats.failed ? ` · ล้มเหลว ${stats.failed}` : ''}` }
   } catch (err) {
     return { error: errMsg(err) }
   }

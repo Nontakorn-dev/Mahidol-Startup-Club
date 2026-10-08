@@ -15,7 +15,7 @@
 | เพื่อนร่วมทีม | `/teams` (คนหาทีม / ทีมหาคน), `/teams/new`, `/teams/looking/new` |
 | Co-founder | `/cofounder`, `/cofounder/new` |
 | ข้อความ | `/inbox` — ส่งข้อความ, ขอทำความรู้จักแบบไม่ระบุชื่อ (เปิดเผยชื่อเมื่อตอบรับ), ชวนเข้าทีม/ขอเข้าทีม, ไฟล์แนบ, realtime |
-| บัญชี | `/login` (อีเมล: รหัส 6 หลัก/ลิงก์ หรือรหัสผ่าน), `/onboarding`, `/me` (🔗 เชื่อมต่อ LINE), `/u/[id]`, `/settings/notifications` (เชื่อม/ยกเลิก LINE, หัวข้อแจ้งเตือน, ความถี่) |
+| บัญชี | `/login` (Google · อีเมลรหัส 6 หลัก/ปุ่มในอีเมล · รหัสผ่าน), `/onboarding`, `/me` (🔗 เชื่อมต่อ LINE), `/u/[id]`, `/settings/notifications` (เชื่อม/ยกเลิก LINE, หัวข้อแจ้งเตือน, ความถี่) |
 | แอดมิน | `/admin` ภาพรวม · `/admin/imports` ตรวจงานที่ดึงจาก Hackza · `/admin/events` เพิ่ม/แก้งาน + พรีวิว + ดาวหน้าแรก · `/admin/community` ตรวจ/ลบโพสต์ · `/admin/users` ตั้งแอดมิน/ระงับ · `/admin/broadcasts` ส่งประกาศ LINE + อีเมล |
 | LINE OA | webhook: follow/unfollow, account link, ปุ่ม “ยอมรับ/ปฏิเสธ” ในแชต, พิมพ์ประโยคในแชตแล้ว AI ตอบเป็นการ์ดงาน, rich menu |
 
@@ -44,6 +44,30 @@ LINE ไม่ใช่ช่องทางล็อกอิน — ใช้�
 - ตัวตั้งเวลา: Vercel แพ็กเกจ Hobby รัน cron ได้วันละครั้ง จึงใช้ **Supabase pg_cron + pg_net** เรียก endpoint ทุก 6 ชม. (job `hackza-sync`, token เก็บใน Supabase Vault ชื่อ `hackza_cron_token`) และมี Vercel cron วันละครั้งเป็นสำรอง — endpoint ข้ามการดึงถ้าเพิ่งซิงก์สำเร็จภายใน 5 ชม. · ถ้าเปลี่ยนโดเมน ให้แก้ URL ใน job (`supabase/migrations/0007_hackza_pg_cron.sql`) · ถ้าอัปเกรด Vercel Pro เปลี่ยน schedule ใน `vercel.json` เป็น `0 */6 * * *` แทนได้
 - คะแนนความเกี่ยวข้อง (`src/lib/importers/hackza.ts`): คำสำคัญ startup/ผู้ประกอบการ/ธุรกิจ/นวัตกรรม/pitch/บ่มเพาะ (ชื่อหนัก × 2) + workshop/hackathon/AI/สุขภาพ/ความยั่งยืน + ประเภทงาน, ตัดงานที่ปิดรับแล้ว, งานเฉพาะ ม.ปลาย, ประกวดภาพยนตร์/ออกแบบ/exchange — ปรับ threshold ได้ที่ `RELEVANCE_THRESHOLD`
 - งานที่อนุมัติแสดงเครดิต “ข้อมูลจาก Hackza” และใช้ลิงก์สมัครของผู้จัด · การตัดสินใจอนุมัติ/ไม่เอาจะไม่ถูกเขียนทับในรอบซิงก์ถัดไป
+
+## รองรับผู้ใช้จำนวนมากในต้นทุนต่ำ
+
+| ส่วน | ทำอย่างไร |
+| --- | --- |
+| ล็อกอิน (อีเมลรหัส 6 หลัก · รหัสผ่าน · Google) | เรียก Supabase Auth **จากเบราว์เซอร์ผู้ใช้** — rate limit ของ Supabase นับต่อ IP จึงไม่ไปชนกันที่ IP ของ Vercel · Google กลับมาที่ `/login?code=` แล้วเบราว์เซอร์สร้างเซสชันเอง (PKCE) |
+| ตรวจเซสชันทุกหน้า | `getClaims()` ตรวจ JWT (ES256) ในเครื่อง ไม่ยิง Auth ทุก request · proxy ข้ามทันทีถ้าไม่มีคุกกี้ session · การ refresh จาก server ส่ง IP จริงผ่าน `sb-forwarded-for` |
+| หน้าเว็บสาธารณะ | รายการงานแคช 60 วินาที (`unstable_cache` tag `events`) และล้างทันทีเมื่อแอดมินแก้ |
+| อีเมลจำนวนมาก | คิว `notifications` (`status=queued`) → worker ส่งทีละ 100 ฉบับ/คำขอ (Resend batch, ≤ ~6 คำขอ/วินาที, Idempotency-Key กันส่งซ้ำ) · ส่งทันทีถ้าน้อย ที่เหลือ pg_cron ทยอยส่งทุกนาที (`email-outbox`, ทำงานเฉพาะตอนมีคิว) · ชนโควตา Resend → หยุดรอรอบโควตาใหม่อัตโนมัติ · retry แบบ backoff |
+| ส่งถึง inbox ไม่ตก spam | โดเมนของเราเอง (SPF/DKIM/DMARC) · ปิด click tracking (ไม่ทำลายลิงก์ล็อกอิน) · `List-Unsubscribe` + one-click (`/api/email/unsubscribe`) ตามกฎ Gmail/Yahoo |
+
+ต้นทุนโดยประมาณ: Vercel Hobby ฟรี · Supabase Free (50,000 MAU) · Resend Free 100 ฉบับ/วัน (3,000/เดือน) → Pro $20/เดือน 50,000 ฉบับ ไม่จำกัดรายวัน · อีเมลล็อกอินของ Supabase ก็ส่งผ่าน Resend และนับรวมโควตาเดียวกัน
+
+## Google + อีเมล (ตั้งค่าครั้งเดียว)
+
+1. **DNS ที่ Namecheap** (Domain List → mahidolstartup.site → Advanced DNS → Add new record) — ค่าดูได้ที่ Resend → Domains → mahidolstartup.site; เพิ่ม `_dmarc` TXT `v=DMARC1; p=none;` ด้วย แล้วกด Verify ใน Resend
+2. **Google Cloud Console** → APIs & Services → OAuth consent screen (External) → Credentials → Create OAuth client ID (Web application)
+   - Authorized JavaScript origins: `https://mahidol-startup-club.vercel.app`
+   - Authorized redirect URI: `https://hxbpcnlxyigjfqmkgcku.supabase.co/auth/v1/callback`
+3. ใส่ใน `.env.local`: `SUPABASE_ACCESS_TOKEN` (supabase.com/dashboard/account/tokens), `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `RESEND_API_KEY` (Resend → API Keys, สิทธิ์ Sending access โดเมน mahidolstartup.site)
+4. รัน `npm run supabase:auth` — ตั้งค่า Site URL/Redirect URLs, SMTP ผ่าน Resend, เทมเพลตอีเมลภาษาไทยพร้อมรหัส 6 หลัก (`supabase/email-templates/`), rate limit, IP forwarding และเปิด Google ในครั้งเดียว (รันซ้ำได้)
+5. `npx vercel env add RESEND_API_KEY production` แล้ว `npx vercel deploy --prod` — ปุ่ม “Continue with Google” จะแสดงเองเมื่อเปิด provider แล้ว
+
+หมายเหตุ: Google ไม่อนุญาตล็อกอินในเบราว์เซอร์ในแอป (LINE/Facebook) — ใน LINE ปุ่มจะเปิดหน้าใน Safari/Chrome ให้อัตโนมัติ (`openExternalBrowser=1`) หรือใช้รหัส 6 หลักทางอีเมลได้เลย
 
 ## ⚠️ สิ่งที่ต้องตั้งค่าเพิ่ม
 
