@@ -1,6 +1,6 @@
 # Mahidol Startup Club — เช็กลิสต์ตั้งค่าให้ระบบครบ
 
-> อัปเดตล่าสุด: 8 ต.ค. 2569 · เว็บ: https://mahidol-startup-club.vercel.app · โค้ด: https://github.com/Nontakorn-dev/Mahidol-Startup-Club
+> อัปเดตล่าสุด: 8 ต.ค. 2569 · เว็บ: https://mahidolstartup.site · โค้ด: https://github.com/Nontakorn-dev/Mahidol-Startup-Club
 >
 > ทำตามลำดับจากบนลงล่าง ทุกขั้นมี ☐ ให้ติ๊ก
 > - 👤 = **คุณต้องทำเอง** (ต้องล็อกอินบัญชีของคุณ หรือเกี่ยวกับรหัสลับ)
@@ -22,6 +22,7 @@
 | Continue with Google | ❌ ปุ่มยังซ่อน | **ขั้น 4** |
 | อีเมลแจ้งเตือน/ประกาศ | ❌ ยังไม่ส่ง | DNS + Resend key → **ขั้น 1–3** |
 | LINE OA (เชื่อมบัญชี, แจ้งเตือน, แชตบอต AI, rich menu) | ❌ ยังไม่เปิด | **ขั้น 5–6** |
+| โดเมน https://mahidolstartup.site + อีเมลผ่าน Resend | ✅ ใช้งานได้ | — |
 | ดึงงานจาก Hackza · Contester.Life · CAMPHUB · DekPort · Devpost (แต่ละแหล่ง ~ทุก 6 ชม.) | ✅ ทำงานอยู่ | อนุมัติงานที่ `/admin/imports` เป็นประจำ |
 | งานตั้งต้น 4 งาน | ⚠️ ยังไม่มีลิงก์สมัคร | **ขั้น 7** |
 
@@ -104,7 +105,7 @@
    - scope พื้นฐานไม่ต้องรอ Google ตรวจสอบ
 5. ☐ **Clients → Create client**
    - Application type: **Web application** · Name: `msc-web`
-   - **Authorized JavaScript origins:** `https://mahidol-startup-club.vercel.app` และ `http://localhost:3000`
+   - **Authorized JavaScript origins:** `https://mahidolstartup.site` และ `http://localhost:3000`
    - **Authorized redirect URIs:** `https://hxbpcnlxyigjfqmkgcku.supabase.co/auth/v1/callback`
    - กด **Create** → คัดลอก **Client ID** และ **Client secret**
 6. ☐ ใส่ใน `.env.local` บรรทัด `GOOGLE_CLIENT_ID=` และ `GOOGLE_CLIENT_SECRET=`
@@ -132,7 +133,7 @@
 6. ☐ แท็บ **Messaging API**:
    - **Channel access token (long-lived)** → กด **Issue** → ใส่ `LINE_MESSAGING_ACCESS_TOKEN=`
    - **Bot basic ID** (เช่น `@123abcde`) → ใส่ `NEXT_PUBLIC_LINE_OA_ID=` (ใส่ `@` ด้วย)
-   - **Webhook URL:** `https://mahidol-startup-club.vercel.app/api/line/webhook` → **Update**
+   - **Webhook URL:** `https://mahidolstartup.site/api/line/webhook` → **Update**
    - **Use webhook:** เปิด
    - ⚠️ ปุ่ม **Verify** จะผ่านหลังจากขั้น 5.3 เท่านั้น เพราะต้องใส่ secret ใน Vercel ก่อน
 7. ☐ ในแท็บเดียวกัน — **Allow bot to join group chats:** ปิด · **Auto-reply messages:** Disabled · **Greeting messages:** Disabled
@@ -164,7 +165,7 @@
 
 1. ☐ https://developers.line.biz/console → Provider **เดียวกับ OA** → **Create a new channel → LINE Login**
    - Region: Thailand · Channel name: `Mahidol Startup Club` · App types: **Web app** · email: ของคุณ
-2. ☐ แท็บ **LINE Login** → **Callback URL:** `https://mahidol-startup-club.vercel.app/api/auth/line/callback`
+2. ☐ แท็บ **LINE Login** → **Callback URL:** `https://mahidolstartup.site/api/auth/line/callback`
 3. ☐ แท็บ **Basic settings**:
    - **Linked LINE Official Account** → เลือก OA จากขั้น 5
    - คัดลอก **Channel ID** → `LINE_LOGIN_CHANNEL_ID=`
@@ -202,23 +203,19 @@
 
 ---
 
-## ขั้น 9 — (ไม่บังคับ) ใช้โดเมน mahidolstartup.site กับตัวเว็บ
+## ขั้น 9 — ใช้โดเมน mahidolstartup.site กับตัวเว็บ ✅ เสร็จแล้ว (8 ต.ค. 2569)
 
-ทำให้ลิงก์เป็น `https://mahidolstartup.site` แทน `vercel.app` ดูน่าเชื่อถือขึ้น และตรงกับโดเมนผู้ส่งอีเมล
+- Namecheap: `A @ 216.198.79.1`, `A @ 64.29.17.1`, `CNAME www 8992a15a6890d8fb.vercel-dns-017.com.` (แถวอีเมล Resend ยังอยู่ครบ)
+- Vercel: โดเมนหลัก `mahidolstartup.site`, `www` เด้งมาโดเมนหลัก, `NEXT_PUBLIC_SITE_URL=https://mahidolstartup.site`
+- ลิงก์ `mahidol-startup-club.vercel.app` เด้งมาโดเมนใหม่ (ยกเว้น `/api/*` — Supabase cron ยังเรียกที่อยู่เดิมได้ ไม่ต้องแก้)
+- Supabase Auth: Site URL = `https://mahidolstartup.site`, ส่งอีเมลผ่าน Resend (`noreply@mahidolstartup.site`)
+- 👤 ที่ยังต้องใช้โดเมนใหม่ตอนทำขั้นอื่น: Google Authorized JavaScript origin, LINE Webhook URL, LINE Login Callback URL (ใส่ไว้ในขั้นนั้น ๆ แล้ว)
 
-1. ☐ บอก Claude “ผูกโดเมนกับเว็บ” 🤖 → Claude เพิ่มโดเมนใน Vercel และบอกค่า DNS
-2. ☐ 👤 ที่ Namecheap Advanced DNS:
-   - **ลบ** แถว parking/URL redirect เดิมของ `@`
-   - เพิ่ม `A Record` Host `@` และ `CNAME` Host `www` ตามที่ Vercel ให้
-   - **ห้ามลบ** แถวอีเมลจากขั้น 1
-3. ☐ เมื่อโดเมนใช้ได้ ต้องเปลี่ยน URL ใน **7 จุด** (🤖 ทำให้ได้ทั้งหมด ยกเว้นข้อที่บอก):
-   1. Vercel env `NEXT_PUBLIC_SITE_URL` + redeploy
-   2. Supabase Site URL (รันสคริปต์ขั้น 3 ด้วย `AUTH_SITE_URL=https://mahidolstartup.site`)
-   3. 👤 Google Cloud: เพิ่ม Authorized JavaScript origin `https://mahidolstartup.site`
-   4. 👤 LINE Messaging API: Webhook URL
-   5. 👤 LINE Login: Callback URL
-   6. Supabase cron 2 jobs (`imports-sync`, `email-outbox`) ที่เรียก URL เว็บ
-   7. Rich menu (รันสคริปต์ใหม่)
+### ค่าหน้า Branding ของ Google (ขั้น 4)
+- Application home page: `https://mahidolstartup.site`
+- Application privacy policy link: `https://mahidolstartup.site/privacy`
+- Application terms of service link: `https://mahidolstartup.site/terms`
+- Authorized domains: `mahidolstartup.site`
 
 ---
 

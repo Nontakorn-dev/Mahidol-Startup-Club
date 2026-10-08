@@ -2,7 +2,7 @@
 
 เว็บช่วยนักศึกษาหางานแข่ง ทุน ทีม และ co-founder — พิมพ์ความต้องการเป็นประโยค แล้ว DeepSeek (ผ่าน OpenRouter) แปลงเป็นตัวกรองและพาไปหน้าที่ใช่ บัญชีผู้ใช้เป็น **อีเมล** เสมอ แล้ว **เชื่อม LINE** ภายหลังเพื่อรับข่าวสารผ่าน LINE OA (คนที่ไม่เชื่อมได้รับทางอีเมล)
 
-- Production: https://mahidol-startup-club.vercel.app
+- Production: https://mahidolstartup.site (ที่อยู่เดิม mahidol-startup-club.vercel.app เด้งมาที่นี่ ยกเว้น /api)
 - Stack: Next.js 16 (App Router) · Supabase (Postgres, Auth, Storage, Realtime) · Vercel · OpenRouter `deepseek/deepseek-v4.1-flash` · LINE Login + Messaging API · Resend
 - ดีไซน์ต้นฉบับ: `MahidolStartupClub-design/` (ไม่ถูก deploy)
 
@@ -108,7 +108,7 @@ LINE ไม่ใช่ช่องทางล็อกอิน — ใช้�
 
 1. **DNS ที่ Namecheap** (Domain List → mahidolstartup.site → Advanced DNS → Add new record) — ค่าดูได้ที่ Resend → Domains → mahidolstartup.site; เพิ่ม `_dmarc` TXT `v=DMARC1; p=none;` ด้วย แล้วกด Verify ใน Resend
 2. **Google Cloud Console** → APIs & Services → OAuth consent screen (External) → Credentials → Create OAuth client ID (Web application)
-   - Authorized JavaScript origins: `https://mahidol-startup-club.vercel.app`
+   - Authorized JavaScript origins: `https://mahidolstartup.site`
    - Authorized redirect URI: `https://hxbpcnlxyigjfqmkgcku.supabase.co/auth/v1/callback`
 3. ใส่ใน `.env.local`: `SUPABASE_ACCESS_TOKEN` (supabase.com/dashboard/account/tokens), `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `RESEND_API_KEY` (Resend → API Keys, สิทธิ์ Sending access โดเมน mahidolstartup.site)
 4. รัน `npm run supabase:auth` — ตั้งค่า Site URL/Redirect URLs, SMTP ผ่าน Resend, เทมเพลตอีเมลภาษาไทยพร้อมรหัส 6 หลัก (`supabase/email-templates/`), rate limit, IP forwarding และเปิด Google ในครั้งเดียว (รันซ้ำได้)
@@ -120,8 +120,8 @@ LINE ไม่ใช่ช่องทางล็อกอิน — ใช้�
 
 ### 1. Supabase Auth URL (จำเป็นสำหรับลิงก์อีเมล)
 Dashboard → Authentication → URL Configuration
-- **Site URL**: `https://mahidol-startup-club.vercel.app`
-- **Redirect URLs**: `https://mahidol-startup-club.vercel.app/**` และ `http://localhost:3000/**`
+- **Site URL**: `https://mahidolstartup.site`
+- **Redirect URLs**: `https://mahidolstartup.site/**`, `https://mahidol-startup-club.vercel.app/**` และ `http://localhost:3000/**`
 
 **Email Templates** (Authentication → Email Templates) — ทั้ง “Magic Link” และ “Confirm signup” ให้ใส่
 - รหัส 6 หลัก `{{ .Token }}` — ผู้ที่สมัครจากในแอป LINE กรอกรหัสได้โดยไม่ต้องสลับแอป
@@ -133,13 +133,13 @@ Dashboard → Authentication → URL Configuration
 1. **Messaging API channel (จำเป็น)** — LINE Official Account Manager → Settings → Messaging API → เลือก Provider
    - Channel secret → `LINE_MESSAGING_CHANNEL_SECRET`
    - Messaging API → Channel access token (long-lived) → `LINE_MESSAGING_ACCESS_TOKEN` (ใช้ทั้งส่งข้อความและออก linkToken สำหรับ account link)
-   - Webhook URL: `https://mahidol-startup-club.vercel.app/api/line/webhook` → เปิด **Use webhook**
+   - Webhook URL: `https://mahidolstartup.site/api/line/webhook` → เปิด **Use webhook**
    - ปิด Auto-reply messages และ Greeting messages (บอทตอบเอง)
    - Basic ID ของ OA (เช่น `@mahidolstartup`) → `NEXT_PUBLIC_LINE_OA_ID` (ใช้สร้าง QR / ลิงก์เปิดแชตพร้อมรหัส)
 2. **LINE Login channel (ไม่บังคับ)** — ทำให้ปุ่ม “เชื่อมต่อ LINE” บนเว็บไปหน้ายืนยันของ LINE โดยตรง (ไม่มีก็ใช้ QR/รหัสแทนได้)
    - ต้องอยู่ **Provider เดียวกับ OA** (LINE User ID จึงตรงกัน)
    - Channel ID / secret → `LINE_LOGIN_CHANNEL_ID`, `LINE_LOGIN_CHANNEL_SECRET`
-   - Callback URL: `https://mahidol-startup-club.vercel.app/api/auth/line/callback`
+   - Callback URL: `https://mahidolstartup.site/api/auth/line/callback`
    - Basic settings → **Linked LINE Official Account** = OA ข้างบน แล้วเปลี่ยนเป็น **Published**
 3. ใส่ค่าใน Vercel แล้ว deploy ใหม่:
    ```bash
