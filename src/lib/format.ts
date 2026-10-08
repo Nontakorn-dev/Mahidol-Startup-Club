@@ -36,17 +36,91 @@ export function daysUntil(d: string): number {
   return Math.round((Date.UTC(b.y, b.m - 1, b.day) - Date.UTC(a.y, a.m - 1, a.day)) / 86_400_000)
 }
 
-export function isClosed(deadline: string | null | undefined): boolean {
-  return Boolean(deadline) && daysUntil(deadline!) < 0
+// ------------------------------------------------------------------ deadlines (exact closing time)
+
+/** A deadline: a date string (closes 23:59:59 Bangkok time), or an event row with an exact `deadline_at`. */
+export type Deadline = string | null | undefined | { deadline: string | null; deadline_at?: string | null }
+
+const BKK_OFFSET_MS = 7 * 3_600_000
+
+/** The exact moment applications close. Date-only deadlines close at 23:59:59 Asia/Bangkok. */
+export function closesAt(d: Deadline): Date | null {
+  if (!d) return null
+  if (typeof d === 'object') {
+    if (d.deadline_at) return new Date(d.deadline_at)
+    return closesAt(d.deadline)
+  }
+  if (d.length > 10) return new Date(d)
+  const { y, m, day } = parseDateOnly(d)
+  return new Date(Date.UTC(y, m - 1, day, 23, 59, 59) - BKK_OFFSET_MS)
 }
 
-/** Line under an event title: "ปิดรับ 30 พ.ย. 2569 · อีก 54 วัน" / "ปิดรับเมื่อ 15 มี.ค. 2569" */
-export function deadlineLine(deadline: string | null, openNote?: string | null): string {
-  if (!deadline) return openNote || 'เปิดรับสมัครอยู่'
-  const n = daysUntil(deadline)
-  if (n < 0) return `ปิดรับเมื่อ ${thaiDate(deadline)}`
-  if (n === 0) return `ปิดรับวันนี้ (${thaiDate(deadline)})`
-  return `ปิดรับ ${thaiDate(deadline)} · อีก ${n} วัน`
+export function msLeft(d: Deadline, now = Date.now()): number | null {
+  const c = closesAt(d)
+  return c ? c.getTime() - now : null
+}
+
+export function isClosed(d: Deadline, now = Date.now()): boolean {
+  const ms = msLeft(d, now)
+  return ms !== null && ms <= 0
+}
+
+/** Bangkok calendar date (YYYY-MM-DD) of the closing moment. */
+function closingDate(d: Deadline): string | null {
+  const c = closesAt(d)
+  return c ? new Date(c.getTime() + BKK_OFFSET_MS).toISOString().slice(0, 10) : null
+}
+
+/** "20:00 น." — or null when the deadline is the default end of day. */
+export function closingTime(d: Deadline): string | null {
+  const c = closesAt(d)
+  if (!c) return null
+  const t = new Date(c.getTime() + BKK_OFFSET_MS).toISOString().slice(11, 16)
+  return t === '23:59' ? null : `${t} น.`
+}
+
+/** "12 ต.ค. 2569 เวลา 20:00 น." */
+export function thaiDeadline(d: Deadline): string {
+  const date = closingDate(d)
+  if (!date) return '—'
+  const t = closingTime(d)
+  return t ? `${thaiDate(date)} เวลา ${t}` : thaiDate(date)
+}
+
+/** "อีก 3 วัน" · "อีก 5 ชม." · "อีก 12 นาที" · "ปิดรับแล้ว" */
+export function timeLeftLabel(ms: number | null): string {
+  if (ms === null) return 'เปิดรับอยู่'
+  if (ms <= 0) return 'ปิดรับแล้ว'
+  const min = Math.ceil(ms / 60_000)
+  if (min < 60) return `อีก ${min} นาที`
+  const hours = Math.floor(min / 60)
+  if (hours < 24) return `อีก ${hours} ชม. ${min % 60 ? `${min % 60} นาที` : ''}`.trim()
+  const days = Math.floor(hours / 24)
+  return days < 3 ? `อีก ${days} วัน ${hours % 24} ชม.` : `อีก ${days} วัน`
+}
+
+export type Urgency = 'none' | 'closed' | 'today' | 'soon' | 'week' | 'normal'
+
+/** today = closes within 24 h · soon = ≤ 3 days · week = ≤ 7 days */
+export function urgency(d: Deadline, now = Date.now()): Urgency {
+  const ms = msLeft(d, now)
+  if (ms === null) return 'none'
+  if (ms <= 0) return 'closed'
+  if (ms <= 86_400_000) return 'today'
+  if (ms <= 3 * 86_400_000) return 'soon'
+  if (ms <= 7 * 86_400_000) return 'week'
+  return 'normal'
+}
+
+/** Line under an event title: "ปิดรับ 30 พ.ย. 2569 · อีก 54 วัน" / "ปิดรับวันนี้ 20:00 น." / "ปิดรับเมื่อ 15 มี.ค. 2569" */
+export function deadlineLine(d: Deadline, openNote?: string | null): string {
+  const ms = msLeft(d)
+  if (ms === null) return openNote || 'เปิดรับสมัครอยู่'
+  if (ms <= 0) return `ปิดรับเมื่อ ${thaiDate(closingDate(d))}`
+  const date = closingDate(d)!
+  const t = closingTime(d)
+  if (date === todayBangkok()) return `ปิดรับวันนี้ ${t ?? '23:59 น.'} · ${timeLeftLabel(ms)}`
+  return `ปิดรับ ${thaiDeadline(d)} · ${timeLeftLabel(ms)}`
 }
 
 /** "10:42" today, "เมื่อวาน", weekday this week, else "3 ต.ค." */

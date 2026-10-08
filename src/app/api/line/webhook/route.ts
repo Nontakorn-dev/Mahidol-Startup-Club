@@ -122,7 +122,7 @@ async function onPostback(e: LineEvent) {
 }
 
 async function replyOpenEvents(replyToken: string) {
-  const events = (await listPublishedEvents()).filter((ev) => !isClosed(ev.deadline)).slice(0, 8)
+  const events = (await listPublishedEvents()).filter((ev) => !isClosed(ev)).slice(0, 8)
   if (!events.length) {
     await replyMessage(replyToken, [textMessage('ตอนนี้ยังไม่มีงานที่เปิดรับ — เราจะแจ้งทันทีที่มีงานใหม่', QUICK)])
     return
@@ -132,7 +132,7 @@ async function replyOpenEvents(replyToken: string) {
       'งานแข่ง & ทุนที่เปิดรับอยู่',
       events.map((ev) => ({
         title: ev.title,
-        subtitle: `${CATEGORIES[ev.category]} · ${deadlineLine(ev.deadline, ev.open_note)}`,
+        subtitle: `${CATEGORIES[ev.category]} · ${deadlineLine(ev, ev.open_note)}`,
         imageUrl: ev.poster_url,
         url: `/opportunities/${ev.slug}?src=line`,
         badge: ev.is_club ? 'จากชมรม' : undefined,
@@ -205,7 +205,7 @@ async function onText(e: LineEvent) {
           subtitle: `แนะนำเพราะ ${r.reason}`,
           imageUrl: r.item.poster_url,
           url: `/opportunities/${r.item.slug}${results.teams.length ? '#teams' : ''}`,
-          badge: deadlineLine(r.item.deadline, r.item.open_note).split(' · ')[1],
+          badge: deadlineLine(r.item, r.item.open_note).split(' · ')[1],
         })),
         searchUrl,
       ),

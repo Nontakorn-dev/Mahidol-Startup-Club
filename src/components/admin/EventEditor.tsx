@@ -7,7 +7,7 @@ import Switch from '../Switch'
 import ChipSelect from '../ChipSelect'
 import { IconExternal, IconEye, IconLink, IconPin } from '../icons'
 import { CATEGORIES, CATEGORY_KEYS, ROLES, ROLE_KEYS, HOME_FEATURED_LIMIT } from '@/lib/constants'
-import { daysUntil, hostOf, thaiDate } from '@/lib/format'
+import { hostOf, msLeft, thaiDeadline, timeLeftLabel } from '@/lib/format'
 import type { EventRow } from '@/lib/types'
 
 export default function EventEditor({ e, editor, saved }: { e?: EventRow; editor?: string | null; saved?: string | null }) {
@@ -16,6 +16,13 @@ export default function EventEditor({ e, editor, saved }: { e?: EventRow; editor
     title: e?.title ?? '',
     category: e?.category ?? 'competition',
     deadline: e?.deadline ?? '',
+    deadline_time: e?.deadline_at
+      ? new Date(new Date(e.deadline_at).getTime() + 7 * 3_600_000).toISOString().slice(11, 16)
+      : '23:59',
+    event_start: e?.event_start ?? '',
+    event_end: e?.event_end ?? '',
+    location: e?.location ?? '',
+    format: e?.format ?? '',
     open_note: e?.open_note ?? '',
     organizer: e?.organizer ?? '',
     summary: e?.summary ?? '',
@@ -36,7 +43,8 @@ export default function EventEditor({ e, editor, saved }: { e?: EventRow; editor
     setF((cur) => ({ ...cur, [k]: ev.target.value }))
   const overviewLen = f.overview.length
   const paragraphs = useMemo(() => f.overview.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean), [f.overview])
-  const days = f.deadline ? daysUntil(f.deadline) : null
+  const previewDeadline = f.deadline ? `${f.deadline}T${f.deadline_time || '23:59'}:00+07:00` : null
+  const left = previewDeadline ? msLeft(previewDeadline) : null
   const published = e?.status === 'published'
   const lenTag =
     overviewLen < 300
@@ -149,9 +157,13 @@ export default function EventEditor({ e, editor, saved }: { e?: EventRow; editor
                 </div>
                 <div className="field">
                   <label htmlFor="d" style={{ fontSize: 14 }}>
-                    วันปิดรับ
+                    วันและเวลาปิดรับ <span className="opt">(เวลาไทย)</span>
                   </label>
-                  <input id="d" name="deadline" type="date" className="input" value={f.deadline} onChange={set('deadline')} />
+                  <div className="row" style={{ gap: 8 }}>
+                    <input id="d" name="deadline" type="date" className="input" value={f.deadline} onChange={set('deadline')} style={{ flex: 1 }} />
+                    <input aria-label="เวลาปิดรับ" name="deadline_time" type="time" className="input" value={f.deadline_time} onChange={set('deadline_time')} style={{ flex: '0 0 120px' }} />
+                  </div>
+                  {left !== null && <p className="help" style={{ fontSize: 12 }}>{left > 0 ? `นับถอยหลังบนเว็บ: ${timeLeftLabel(left)}` : 'เวลานี้ผ่านไปแล้ว — งานจะแสดงเป็น “ปิดรับแล้ว”'}</p>}
                 </div>
                 <div className="field">
                   <label htmlFor="o" style={{ fontSize: 14 }}>
@@ -164,6 +176,37 @@ export default function EventEditor({ e, editor, saved }: { e?: EventRow; editor
                     ประโยชน์ที่ได้รับ
                   </label>
                   <input id="f" name="benefit" className="input" value={f.benefit} onChange={set('benefit')} maxLength={80} placeholder="เช่น ทุน 1.5 ล้านบาท + Mentoring" />
+                </div>
+              </div>
+              <div className="grid-2" style={{ gap: 14 }}>
+                <div className="field">
+                  <label htmlFor="es" style={{ fontSize: 14 }}>
+                    วันเริ่มกิจกรรม <span className="opt">(ไม่บังคับ)</span>
+                  </label>
+                  <input id="es" name="event_start" type="date" className="input" value={f.event_start} onChange={set('event_start')} />
+                </div>
+                <div className="field">
+                  <label htmlFor="ee" style={{ fontSize: 14 }}>
+                    วันสิ้นสุดกิจกรรม <span className="opt">(ไม่บังคับ)</span>
+                  </label>
+                  <input id="ee" name="event_end" type="date" className="input" value={f.event_end} onChange={set('event_end')} />
+                </div>
+                <div className="field">
+                  <label htmlFor="fm" style={{ fontSize: 14 }}>
+                    รูปแบบ
+                  </label>
+                  <select id="fm" name="format" className="select" value={f.format} onChange={set('format')}>
+                    <option value="">— ไม่ระบุ —</option>
+                    <option value="onsite">ออนไซต์</option>
+                    <option value="online">ออนไลน์</option>
+                    <option value="hybrid">ออนไลน์ + ออนไซต์</option>
+                  </select>
+                </div>
+                <div className="field">
+                  <label htmlFor="lc" style={{ fontSize: 14 }}>
+                    สถานที่ <span className="opt">(ไม่บังคับ)</span>
+                  </label>
+                  <input id="lc" name="location" className="input" value={f.location} onChange={set('location')} maxLength={80} placeholder="เช่น ม.มหิดล ศาลายา / กรุงเทพฯ" />
                 </div>
               </div>
               {!f.deadline && (
@@ -296,7 +339,7 @@ export default function EventEditor({ e, editor, saved }: { e?: EventRow; editor
                 <span className="cat">{CATEGORIES[f.category as keyof typeof CATEGORIES]}</span>
                 <span className="title">{f.title || 'ชื่องาน'}</span>
                 <span className="muted" style={{ fontSize: 14 }}>
-                  {f.deadline ? `ปิดรับ ${thaiDate(f.deadline)}${days !== null && days >= 0 ? ` · อีก ${days} วัน` : ''}` : f.open_note || 'เปิดรับสมัครอยู่'}
+                  {previewDeadline ? `ปิดรับ ${thaiDeadline(previewDeadline)}${left !== null && left > 0 ? ` · ${timeLeftLabel(left)}` : ''}` : f.open_note || 'เปิดรับสมัครอยู่'}
                 </span>
               </div>
             </div>
@@ -312,12 +355,12 @@ export default function EventEditor({ e, editor, saved }: { e?: EventRow; editor
                   {f.title || 'ชื่องาน'}
                   <span style={{ display: 'inline-flex', gap: 6, marginLeft: 8, verticalAlign: 3, fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 600, lineHeight: 1.6, whiteSpace: 'nowrap' }}>
                     <span style={{ padding: '1px 8px', borderRadius: 999, background: 'var(--bg-2)', color: 'var(--navy-2)' }}>{CATEGORIES[f.category as keyof typeof CATEGORIES]}</span>
-                    {days !== null && days >= 0 && <span style={{ padding: '1px 8px', borderRadius: 999, background: 'var(--yellow)' }}>เหลืออีก {days} วัน</span>}
+                    {left !== null && left > 0 && <span style={{ padding: '1px 8px', borderRadius: 999, background: 'var(--yellow)' }}>{timeLeftLabel(left)}</span>}
                   </span>
                 </span>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: 'var(--bg-2)', border: '1px solid var(--bg-2)', borderRadius: 12, overflow: 'hidden', fontSize: 13, lineHeight: 1.4 }}>
                   {[
-                    ['ปิดรับ', f.deadline ? thaiDate(f.deadline) : f.open_note || '—'],
+                    ['ปิดรับ', previewDeadline ? thaiDeadline(previewDeadline) : f.open_note || '—'],
                     ['ประโยชน์ที่ได้รับ', f.benefit || '—'],
                     ['ผู้จัด', f.organizer || '—'],
                     ['ใครสมัครได้', f.eligibility || '—'],

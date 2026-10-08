@@ -65,10 +65,30 @@ export async function robotsAllows(path: string): Promise<boolean> {
 
 // ------------------------------------------------------------------ fetch + parse
 
+/**
+ * RSC moves long strings into separate text rows (`2c:T5a3,<utf-8 text>`) and leaves `"$2c"` in
+ * the JSON. Collect those rows so references can be swapped back for the real text.
+ */
+function textRows(payload: string): Map<string, string> {
+  const rows = new Map<string, string>()
+  const bytes = Buffer.from(payload, 'utf8')
+  for (const m of payload.matchAll(/([0-9a-f]{1,4}):T([0-9a-f]+),/g)) {
+    const startByte = Buffer.byteLength(payload.slice(0, m.index! + m[0].length), 'utf8')
+    rows.set(m[1], bytes.subarray(startByte, startByte + parseInt(m[2], 16)).toString('utf8'))
+  }
+  return rows
+}
+
 /** Pull the `initialOpportunities` array out of the page's Next.js RSC payload. */
 export function parseOpportunities(html: string): HackzaItem[] {
   const chunks = [...html.matchAll(/self\.__next_f\.push\(\[1,"((?:[^"\\]|\\.)*)"\]\)/g)].map((m) => JSON.parse(`"${m[1]}"`) as string)
   const payload = chunks.join('')
+  const rows = textRows(payload)
+  const resolve = (v: unknown) => {
+    if (v === '$undefined') return null
+    if (typeof v === 'string' && /^\$[0-9a-f]{1,4}$/.test(v)) return rows.get(v.slice(1)) ?? null
+    return v
+  }
   const key = '"initialOpportunities":'
   const start = payload.indexOf(key)
   if (start < 0) throw new Error('Hackza page structure changed: initialOpportunities not found')
@@ -86,8 +106,14 @@ export function parseOpportunities(html: string): HackzaItem[] {
     else if (c === '[') depth++
     else if (c === ']' && --depth === 0) {
       const arr = JSON.parse(payload.slice(i, j + 1)) as Record<string, unknown>[]
-      // RSC encodes undefined as "$undefined"
-      return arr.map((o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, v === '$undefined' ? null : v]))) as HackzaItem[]
+      return arr.map((o) => {
+        const item = Object.fromEntries(Object.entries(o).map(([k, v]) => [k, resolve(v)])) as HackzaItem
+        // Some listings repeat the title twice back-to-back ("X HackathonX Hackathon").
+        const t = item.title?.trim() ?? ''
+        const half = t.length / 2
+        if (t.length % 2 === 0 && t.slice(0, half) === t.slice(half)) item.title = t.slice(0, half)
+        return item
+      })
     }
   }
   throw new Error('Hackza page structure changed: unterminated opportunities array')
@@ -187,6 +213,12 @@ export function mapToEvent(it: HackzaItem, matched: string[]) {
     overview: description.replace(/\n{3,}/g, '\n\n').slice(0, 6000) || null,
     apply_url: it.registration_url || it.source_post_url || sourceUrl,
     deadline: bangkokDate(it.registration_deadline),
+    deadline_at: it.registration_deadline,
+    // Hackza fills event dates with the deadline when unknown — only keep real ones.
+    event_start: it.event_start_date && bangkokDate(it.event_start_date) !== bangkokDate(it.registration_deadline) ? bangkokDate(it.event_start_date) : null,
+    event_end: it.event_end_date && bangkokDate(it.event_end_date) !== bangkokDate(it.registration_deadline) ? bangkokDate(it.event_end_date) : null,
+    location: it.location?.slice(0, 80) || null,
+    format: it.format === 'online' || it.format === 'hybrid' || it.format === 'onsite' ? it.format : null,
     poster_url: it.banner_url,
     tags: [...tags],
     source: 'hackza',

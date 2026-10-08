@@ -6,15 +6,19 @@ import type { Metadata } from 'next'
 import Crumbs from '@/components/Crumbs'
 import { ClubTag, EmptyState, TeamCardView } from '@/components/Cards'
 import { ApplyButton, SaveButton, ShareButton } from '@/components/EventActions'
-import { IconBuilding, IconCalendar, IconMoney, IconUser } from '@/components/icons'
+import { IconBuilding, IconCalendar, IconHome, IconMoney, IconUser } from '@/components/icons'
 import { getViewer } from '@/lib/auth'
 import { getEventBySlug, isSaved } from '@/lib/data/events'
 import { listTeams } from '@/lib/data/community'
 import { adminClient } from '@/lib/supabase/admin'
-import { daysUntil, isClosed, thaiDate } from '@/lib/format'
+import DeadlineBadge from '@/components/DeadlineBadge'
+import { closesAt, isClosed, thaiDate, thaiDeadline } from '@/lib/format'
+import { googleCalendarUrl } from '@/lib/calendar'
 import { CATEGORIES } from '@/lib/constants'
 
 export const dynamic = 'force-dynamic'
+
+const SOURCE_NAMES: Record<string, string> = { hackza: 'Hackza', devpost: 'Devpost', dekport: 'DekPort', camphub: 'CAMPHUB', zeekr: 'เว็บไซต์ทางการ ZEEKR Design Lab', 'chula-inter': 'Chula International Affairs' }
 
 export async function generateMetadata({ params }: PageProps<'/opportunities/[slug]'>): Promise<Metadata> {
   const { slug } = await params
@@ -48,8 +52,17 @@ export default async function EventDetailPage({ params }: PageProps<'/opportunit
   const e = await getEventBySlug(decodeURIComponent(slug), isAdmin)
   if (!e) notFound()
 
-  const closed = isClosed(e.deadline)
-  const days = e.deadline ? daysUntil(e.deadline) : null
+  const closed = isClosed(e)
+  const closeIso = closesAt(e)?.toISOString() ?? null
+  const period =
+    e.event_start && e.event_end && e.event_end !== e.event_start
+      ? `${thaiDate(e.event_start)} – ${thaiDate(e.event_end)}`
+      : e.event_start
+        ? thaiDate(e.event_start)
+        : null
+  const where = [e.format === 'online' ? 'ออนไลน์' : e.format === 'hybrid' ? 'ออนไลน์ + ออนไซต์' : e.format === 'onsite' ? 'ออนไซต์' : null, e.location]
+    .filter(Boolean)
+    .join(' · ')
   const [saved, teams] = await Promise.all([
     isSaved(viewer?.userId, e.id),
     e.allow_teams ? listTeams(viewer?.userId ?? null, { eventId: e.id, limit: 12 }) : Promise.resolve([]),
@@ -99,7 +112,7 @@ export default async function EventDetailPage({ params }: PageProps<'/opportunit
                   {closed ? (
                     <span className="tag tag-closed">ปิดรับแล้ว</span>
                   ) : (
-                    days !== null && <span className="tag tag-club">{days === 0 ? 'ปิดรับวันนี้' : `เหลืออีก ${days} วัน`}</span>
+                    e.deadline && <DeadlineBadge closesAt={closeIso} />
                   )}
                 </div>
                 <h1 className="detail-title" style={{ margin: 0, fontWeight: 600, fontSize: 46, lineHeight: 1.15 }}>
@@ -107,16 +120,28 @@ export default async function EventDetailPage({ params }: PageProps<'/opportunit
                 </h1>
               </div>
               <div className="facts-grid">
-                <Fact icon={<IconCalendar size={20} />} k="ปิดรับสมัคร" v={e.deadline ? thaiDate(e.deadline) : e.open_note || 'เปิดรับอยู่'} />
+                <Fact icon={<IconCalendar size={20} />} k="ปิดรับสมัคร" v={e.deadline ? thaiDeadline(e) : e.open_note || 'เปิดรับอยู่'} />
                 <Fact icon={<IconMoney size={20} />} k="ประโยชน์ที่ได้รับ" v={e.benefit || '—'} />
                 <Fact icon={<IconBuilding size={20} />} k="ผู้จัด" v={e.organizer || '—'} strong={false} />
                 <Fact icon={<IconUser size={20} />} k="ใครสมัครได้" v={e.eligibility || '—'} strong={false} />
+                {(period || where) && <Fact icon={<IconCalendar size={20} />} k="วันจัดกิจกรรม" v={period || 'ดูรายละเอียด'} strong={false} />}
+                {(period || where) && <Fact icon={<IconHome size={20} />} k="รูปแบบ / สถานที่" v={where || '—'} strong={false} />}
               </div>
-              {e.source === 'hackza' && e.source_url && (
+              {e.deadline && !closed && (
+                <div className="row wrap" style={{ gap: 8 }}>
+                  <a href={googleCalendarUrl(e)} target="_blank" rel="noopener" className="btn btn-outline btn-sm">
+                    <IconCalendar size={16} /> เพิ่มวันปิดรับลง Google Calendar
+                  </a>
+                  <a href={`/api/events/${e.id}/ics`} className="btn btn-outline btn-sm">
+                    ไฟล์ปฏิทิน (.ics)
+                  </a>
+                </div>
+              )}
+              {e.source && e.source_url && (
                 <p className="muted" style={{ margin: 0, fontSize: 13 }}>
                   ข้อมูลจาก{' '}
                   <a href={e.source_url} target="_blank" rel="noopener">
-                    Hackza
+                    {SOURCE_NAMES[e.source] ?? new URL(e.source_url).hostname.replace(/^www\./, '')}
                   </a>{' '}
                   · รายละเอียดและการรับสมัครเป็นไปตามประกาศของผู้จัด กรุณาตรวจสอบกับผู้จัดก่อนสมัคร
                 </p>

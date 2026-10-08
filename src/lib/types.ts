@@ -51,6 +51,11 @@ export type EventRow = {
   overview: string | null
   apply_url: string | null
   deadline: string | null
+  deadline_at: string | null
+  event_start: string | null
+  event_end: string | null
+  location: string | null
+  format: 'onsite' | 'online' | 'hybrid' | null
   open_note: string | null
   tags: string[]
   status: 'draft' | 'published'

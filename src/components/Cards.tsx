@@ -4,7 +4,8 @@ import Avatar from './Avatar'
 import ContactButton from './ContactButton'
 import { IconCalendar, IconHome, IconLock, IconPin, IconVerified } from './icons'
 import { CATEGORIES, ROLES, STAGES, TRACK_SEEK_LABEL, type Role } from '@/lib/constants'
-import { deadlineLine, isClosed } from '@/lib/format'
+import DeadlineBadge from './DeadlineBadge'
+import { closesAt, isClosed, thaiDeadline } from '@/lib/format'
 import type { CofounderCard, EventRow, SeekerCard, TeamCard } from '@/lib/types'
 
 export function ClubTag({ small }: { small?: boolean }) {
@@ -29,6 +30,7 @@ export function EventCardH({ e }: { e: EventRow }) {
         <span className="row wrap">
           {e.is_club && <ClubTag />}
           <span className="tag tag-blue">{CATEGORIES[e.category]}</span>
+          {e.deadline && <DeadlineBadge closesAt={closesAt(e)?.toISOString() ?? null} size="sm" />}
         </span>
         <span className="title">{e.title}</span>
         {e.summary && <span style={{ fontSize: 15, color: 'var(--muted)' }}>{e.summary}</span>}
@@ -37,7 +39,7 @@ export function EventCardH({ e }: { e: EventRow }) {
             <span style={{ display: 'inline-flex', color: 'var(--gold)' }}>
               <IconCalendar size={16} />
             </span>
-            <span style={{ fontWeight: 600, color: 'var(--navy)' }}>{deadlineLine(e.deadline, e.open_note)}</span>
+            <span style={{ fontWeight: 600, color: 'var(--navy)' }}>{e.deadline ? `ปิดรับ ${thaiDeadline(e)}` : e.open_note || 'เปิดรับสมัครอยู่'}</span>
           </span>
           {e.organizer && (
             <span>
@@ -56,7 +58,7 @@ export function EventCardH({ e }: { e: EventRow }) {
 
 /** Vertical poster card used on the opportunities grid and search results. */
 export function EventCard({ e, reason }: { e: EventRow; reason?: string }) {
-  const closed = isClosed(e.deadline)
+  const closed = isClosed(e)
   return (
     <Link href={`/opportunities/${e.slug}`} className={`event-card ${closed ? 'closed' : ''}`}>
       <div className="media">
@@ -78,7 +80,15 @@ export function EventCard({ e, reason }: { e: EventRow; reason?: string }) {
       <div className="info">
         <span className="cat">{CATEGORIES[e.category]}</span>
         <span className="title">{e.title}</span>
-        <span style={{ fontSize: 14, color: 'var(--muted)' }}>{deadlineLine(e.deadline, e.open_note)}</span>
+        <span className="row wrap" style={{ gap: 8, marginTop: 2 }}>
+          <DeadlineBadge closesAt={closesAt(e)?.toISOString() ?? null} openNote={e.open_note} size="sm" />
+          {e.deadline && !closed && <span style={{ fontSize: 13, color: 'var(--muted)' }}>{thaiDeadline(e)}</span>}
+        </span>
+        {(e.format || e.location) && (
+          <span style={{ fontSize: 13, color: 'var(--muted)' }}>
+            {[e.format === 'online' ? 'ออนไลน์' : e.format === 'hybrid' ? 'ออนไลน์ + ออนไซต์' : e.format === 'onsite' ? 'ออนไซต์' : null, e.location].filter(Boolean).join(' · ')}
+          </span>
+        )}
         {reason && <span className="reason">แนะนำเพราะ {reason}</span>}
       </div>
     </Link>

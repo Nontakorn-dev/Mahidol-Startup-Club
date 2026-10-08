@@ -17,7 +17,7 @@ export async function notifyEventMatches(e: EventRow): Promise<DispatchStats & {
     altText: `งานใหม่ที่ตรงกับคุณ: ${e.title}`,
     badge: e.is_club ? 'จากชมรม' : 'ตรงกับสกิลของคุณ',
     title: e.title,
-    subtitle: [CATEGORIES[e.category], e.summary || (roles.length ? `มองหา ${roles.join(', ')}` : null), deadlineLine(e.deadline, e.open_note)]
+    subtitle: [CATEGORIES[e.category], e.summary || (roles.length ? `มองหา ${roles.join(', ')}` : null), deadlineLine(e, e.open_note)]
       .filter(Boolean)
       .join(' · '),
     imageUrl: e.poster_url,

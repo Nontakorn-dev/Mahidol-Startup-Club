@@ -19,7 +19,7 @@ export default async function AdminDashboard() {
     count(db.from('profiles').select('id', { count: 'exact', head: true })),
     count(db.from('profiles').select('id', { count: 'exact', head: true }).gt('created_at', weekAgo())),
     count(db.from('profiles').select('id', { count: 'exact', head: true }).not('line_user_id', 'is', null)),
-    db.from('events').select('id, title, slug, status, deadline, is_club, featured').then((r) => r.data || []),
+    db.from('events').select('id, title, slug, status, deadline, deadline_at, is_club, featured').then((r) => r.data || []),
     count(db.from('team_posts').select('id', { count: 'exact', head: true }).eq('status', 'open')),
     count(db.from('team_posts').select('id', { count: 'exact', head: true }).gt('created_at', weekAgo())),
     db.from('event_metrics').select('event_id, kind').gt('created_at', weekAgo()).limit(20000).then((r) => r.data || []),
@@ -34,9 +34,9 @@ export default async function AdminDashboard() {
   const postsToday = newToday.slice(0, 3).reduce((a, b) => a + b, 0)
   const sinceLast = newToday.slice(3).reduce((a, b) => a + b, 0)
   const published = events.filter((e) => e.status === 'published')
-  const open = published.filter((e) => !isClosed(e.deadline))
+  const open = published.filter((e) => !isClosed(e))
   const drafts = events.filter((e) => e.status === 'draft')
-  const pinned = published.filter((e) => e.is_club && !isClosed(e.deadline))
+  const pinned = published.filter((e) => e.is_club && !isClosed(e))
 
   const perEvent = new Map<string, { view: number; apply: number }>()
   for (const m of metrics) {

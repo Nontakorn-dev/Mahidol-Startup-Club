@@ -49,6 +49,11 @@ const EventSchema = z.object({
   deadline: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.literal('')]).optional().transform((v) => v || null),
   open_note: optText(60),
   tags: z.array(z.enum(ROLE_KEYS as [string, ...string[]])),
+  deadline_time: z.union([z.string().regex(/^\d{2}:\d{2}$/), z.literal('')]).optional().transform((v) => v || '23:59'),
+  event_start: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.literal('')]).optional().transform((v) => v || null),
+  event_end: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.literal('')]).optional().transform((v) => v || null),
+  location: optText(80),
+  format: z.union([z.enum(['onsite', 'online', 'hybrid']), z.literal('')]).optional().transform((v) => v || null),
 })
 
 export async function saveEvent(_prev: State, form: FormData): Promise<State> {
@@ -69,7 +74,13 @@ export async function saveEvent(_prev: State, form: FormData): Promise<State> {
       deadline: form.get('deadline') ?? '',
       open_note: form.get('open_note') ?? '',
       tags: form.getAll('tags'),
+      deadline_time: form.get('deadline_time') ?? '',
+      event_start: form.get('event_start') ?? '',
+      event_end: form.get('event_end') ?? '',
+      location: form.get('location') ?? '',
+      format: form.get('format') ?? '',
     })
+    if (v.event_start && v.event_end && v.event_end < v.event_start) throw new Error('วันสิ้นสุดกิจกรรมต้องไม่ก่อนวันเริ่ม')
     if (publish) {
       if (!v.title) throw new Error('กรุณาใส่ชื่องานก่อนเผยแพร่')
       if (!v.apply_url) throw new Error('กรุณาใส่ลิงก์สมัครก่อนเผยแพร่')
@@ -87,12 +98,15 @@ export async function saveEvent(_prev: State, form: FormData): Promise<State> {
       existing = data as EventRow
     }
     if (flags.featured && !existing?.featured) {
-      const { data: feats } = await db.from('events').select('id, deadline').eq('featured', true).eq('status', 'published')
-      const open = (feats || []).filter((f) => f.id !== id && !isClosed(f.deadline))
+      const { data: feats } = await db.from('events').select('id, deadline, deadline_at').eq('featured', true).eq('status', 'published')
+      const open = (feats || []).filter((f) => f.id !== id && !isClosed(f))
       if (open.length >= HOME_FEATURED_LIMIT) throw new Error(`หน้าแรกแสดงได้ ${HOME_FEATURED_LIMIT} งาน — เอาดาวงานอื่นออกก่อน`)
     }
+    const { deadline_time, ...fields } = v
     const row: Record<string, unknown> = {
-      ...v,
+      ...fields,
+      // exact closing moment in Thai time; the DB trigger keeps `deadline` in sync
+      deadline_at: v.deadline ? new Date(`${v.deadline}T${deadline_time}:00+07:00`).toISOString() : null,
       title: v.title || 'งานใหม่ (ยังไม่ตั้งชื่อ)',
       ...flags,
       updated_by: admin.userId,
@@ -118,7 +132,7 @@ export async function saveEvent(_prev: State, form: FormData): Promise<State> {
       if (error) throw new Error(error.message)
       saved = data as EventRow
     }
-    if (saved.status === 'published' && saved.notify_on_publish && !saved.notified_at && !isClosed(saved.deadline)) {
+    if (saved.status === 'published' && saved.notify_on_publish && !saved.notified_at && !isClosed(saved)) {
       after(() => notifyEventMatches(saved))
     }
     updateTag('events')
@@ -155,8 +169,8 @@ export async function toggleFeatured(id: string): Promise<{ featured?: boolean; 
     if (!e) throw new Error('ไม่พบงาน')
     if (!e.featured) {
       if (e.status !== 'published') throw new Error('เผยแพร่งานก่อนจึงขึ้นหน้าแรกได้')
-      const { data: feats } = await db.from('events').select('id, deadline').eq('featured', true).eq('status', 'published')
-      if ((feats || []).filter((f) => !isClosed(f.deadline)).length >= HOME_FEATURED_LIMIT)
+      const { data: feats } = await db.from('events').select('id, deadline, deadline_at').eq('featured', true).eq('status', 'published')
+      if ((feats || []).filter((f) => !isClosed(f)).length >= HOME_FEATURED_LIMIT)
         throw new Error(`หน้าแรกแสดงได้ ${HOME_FEATURED_LIMIT} งาน — เอาดาวงานอื่นออกก่อน`)
     }
     await db.from('events').update({ featured: !e.featured }).eq('id', e.id)

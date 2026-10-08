@@ -1,19 +1,20 @@
 import 'server-only'
 import { unstable_cache } from 'next/cache'
 import { adminClient } from '@/lib/supabase/admin'
-import { daysUntil, isClosed } from '@/lib/format'
+import { isClosed, msLeft } from '@/lib/format'
 import { HOME_FEATURED_LIMIT, type Category } from '@/lib/constants'
 import type { EventRow } from '@/lib/types'
 
 /** Club events pinned first, then open ones by nearest deadline, closed ones last. */
 export function sortEvents(events: EventRow[]): EventRow[] {
-  const rank = (e: EventRow) => (isClosed(e.deadline) ? 2 : e.is_club ? 0 : 1)
+  const rank = (e: EventRow) => (isClosed(e) ? 2 : e.is_club ? 0 : 1)
   return [...events].sort((a, b) => {
     const r = rank(a) - rank(b)
     if (r) return r
-    if (rank(a) === 2) return (b.deadline || '').localeCompare(a.deadline || '')
-    const da = a.deadline ? daysUntil(a.deadline) : -1
-    const db = b.deadline ? daysUntil(b.deadline) : -1
+    if (rank(a) === 2) return (msLeft(b) ?? 0) - (msLeft(a) ?? 0)
+    // soonest closing first; rolling/no-deadline items after dated ones
+    const da = msLeft(a) ?? Number.MAX_SAFE_INTEGER
+    const db = msLeft(b) ?? Number.MAX_SAFE_INTEGER
     return da - db
   })
 }
@@ -52,7 +53,7 @@ export async function getEventBySlug(slug: string, includeDraft = false): Promis
 
 /** Up to two open events for the home page "เปิดรับสมัครอยู่ตอนนี้". */
 export async function homeFeaturedEvents(): Promise<EventRow[]> {
-  const all = (await listPublishedEvents()).filter((e) => !isClosed(e.deadline))
+  const all = (await listPublishedEvents()).filter((e) => !isClosed(e))
   const featured = all.filter((e) => e.featured)
   const rest = all.filter((e) => !e.featured)
   return [...featured, ...rest].slice(0, HOME_FEATURED_LIMIT)
@@ -60,7 +61,7 @@ export async function homeFeaturedEvents(): Promise<EventRow[]> {
 
 export async function openEventOptions() {
   const all = await listPublishedEvents()
-  return all.filter((e) => !isClosed(e.deadline)).map((e) => ({ id: e.id, title: e.title, slug: e.slug }))
+  return all.filter((e) => !isClosed(e)).map((e) => ({ id: e.id, title: e.title, slug: e.slug }))
 }
 
 export async function isSaved(userId: string | undefined, eventId: string) {

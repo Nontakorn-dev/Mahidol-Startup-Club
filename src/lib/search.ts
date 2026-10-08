@@ -41,7 +41,7 @@ export async function runSearch(intent: Intent, viewerId: string | null): Promis
   // ---- events
   const events: Ranked<EventRow>[] = []
   for (const e of allEvents) {
-    const closed = isClosed(e.deadline)
+    const closed = isClosed(e)
     if (closed && !intent.include_closed && e.slug !== intent.event_slug) continue
     if (intent.deadline_from && e.deadline && e.deadline < intent.deadline_from) continue
     if (intent.deadline_to && e.deadline && e.deadline > intent.deadline_to) continue

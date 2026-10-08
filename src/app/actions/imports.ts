@@ -20,6 +20,11 @@ type Mapped = {
   overview: string | null
   apply_url: string | null
   deadline: string | null
+  deadline_at?: string | null
+  event_start?: string | null
+  event_end?: string | null
+  location?: string | null
+  format?: 'onsite' | 'online' | 'hybrid' | null
   poster_url: string | null
   tags: string[]
   source: string
@@ -39,10 +44,17 @@ async function uniqueSlug(base: string) {
 /** Approve one pending import: create the event (published, or draft to edit first). */
 async function approveOne(importId: string, adminId: string, publish: boolean): Promise<EventRow | null> {
   const db = adminClient()
-  const { data: imp } = await db.from('event_imports').select('*').eq('id', importId).maybeSingle()
-  if (!imp || imp.status === 'approved') return null
-  const m = imp.mapped as Mapped
   const now = new Date().toISOString()
+  // Claim the import atomically: a double click / two admins can only create one event.
+  const { data: imp } = await db
+    .from('event_imports')
+    .update({ status: 'approved', reviewed_by: adminId, reviewed_at: now })
+    .eq('id', importId)
+    .neq('status', 'approved')
+    .select('*')
+    .maybeSingle()
+  if (!imp) return null
+  const m = imp.mapped as Mapped
   const { data: event, error } = await db
     .from('events')
     .insert({
@@ -56,6 +68,11 @@ async function approveOne(importId: string, adminId: string, publish: boolean): 
       overview: m.overview,
       apply_url: m.apply_url,
       deadline: m.deadline,
+      deadline_at: m.deadline_at ?? null,
+      event_start: m.event_start ?? null,
+      event_end: m.event_end ?? null,
+      location: m.location ?? null,
+      format: m.format ?? null,
       poster_url: m.poster_url,
       tags: m.tags,
       source: m.source,
@@ -69,8 +86,11 @@ async function approveOne(importId: string, adminId: string, publish: boolean): 
     })
     .select('*')
     .single()
-  if (error || !event) throw new Error(`สร้างงานไม่สำเร็จ: ${error?.message}`)
-  await db.from('event_imports').update({ status: 'approved', event_id: event.id, reviewed_by: adminId, reviewed_at: now }).eq('id', importId)
+  if (error || !event) {
+    await db.from('event_imports').update({ status: imp.status === 'approved' ? 'pending' : imp.status }).eq('id', importId)
+    throw new Error(`สร้างงานไม่สำเร็จ: ${error?.message}`)
+  }
+  await db.from('event_imports').update({ event_id: event.id }).eq('id', importId)
   return event as EventRow
 }
 

@@ -27,7 +27,7 @@ export default async function AdminEventsPage({ searchParams }: PageProps<'/admi
     db.from('team_posts').select('event_id').eq('status', 'open').not('event_id', 'is', null),
   ])
   const all = sortEvents((data || []) as EventRow[])
-  const state = (e: EventRow) => (e.status === 'draft' ? 'draft' : isClosed(e.deadline) ? 'closed' : 'open')
+  const state = (e: EventRow) => (e.status === 'draft' ? 'draft' : isClosed(e) ? 'closed' : 'open')
   const tabs = [
     { key: 'all', label: 'ทั้งหมด', n: all.length },
     { key: 'open', label: 'เปิดรับ', n: all.filter((e) => state(e) === 'open').length },
