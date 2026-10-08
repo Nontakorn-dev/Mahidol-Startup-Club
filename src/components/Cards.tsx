@@ -27,13 +27,13 @@ export function EventCardH({ e }: { e: EventRow }) {
         <span className="poster" style={{ background: 'var(--bg-4)' }} />
       )}
       <div className="body">
-        <span className="row wrap">
+        <span className="row wrap tags">
           {e.is_club && <ClubTag />}
           <span className="tag tag-blue">{CATEGORIES[e.category]}</span>
           {e.deadline && <DeadlineBadge closesAt={closesAt(e)?.toISOString() ?? null} size="sm" />}
         </span>
         <span className="title">{e.title}</span>
-        {e.summary && <span style={{ fontSize: 15, color: 'var(--muted)' }}>{e.summary}</span>}
+        {e.summary && <span className="summary">{e.summary}</span>}
         <span className="facts">
           <span>
             <span style={{ display: 'inline-flex', color: 'var(--gold)' }}>
@@ -44,11 +44,11 @@ export function EventCardH({ e }: { e: EventRow }) {
           {e.organizer && (
             <span>
               <IconHome size={16} />
-              {e.organizer}
+              <span className="org">{e.organizer}</span>
             </span>
           )}
         </span>
-        <span style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <span className="more">
           <span className="btn btn-primary btn-pill btn-sm">ดูรายละเอียด →</span>
         </span>
       </div>

@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import SearchBox from '@/components/SearchBox'
@@ -26,7 +27,7 @@ function Marquee() {
           {[0, 1].map((k) => (
             <div key={k} className="set" aria-hidden={k === 1 || undefined}>
               {set.map((p, i) => (
-                <Image key={i} src={p.src} alt={k ? '' : p.alt} width={p.w} height={p.h} style={{ height: p.h, width: 'auto' }} />
+                <Image key={i} src={p.src} alt={k ? '' : p.alt} width={p.w} height={p.h} style={{ '--h': `${p.h}px` } as CSSProperties} />
               ))}
             </div>
           ))}
