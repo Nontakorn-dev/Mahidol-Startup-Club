@@ -3,7 +3,7 @@ import { adminClient } from '@/lib/supabase/admin'
 import { verifyPayload } from '@/lib/crypto'
 import { eventsCarousel, noticeFlex, replyMessage, textMessage, verifyLineSignature } from '@/lib/line/messaging'
 import { LINK_CODE_RE, consumeLinkCode, consumeNonce } from '@/lib/line/link'
-import { MENU_QUICK, handleMenu, help, linkInvite, linkedProfile, welcome } from '@/lib/line/bot'
+import { MENU_QUICK, handleMenu, linkInvite, linkedProfile, quickFor, welcome } from '@/lib/line/bot'
 import { parseIntent } from '@/lib/ai/intent'
 import { runSearch } from '@/lib/search'
 import { respondToRequest } from '@/lib/messaging'
@@ -106,7 +106,7 @@ async function onText(e: LineEvent): Promise<Msg[]> {
   const { intent, usedFallback } = parsed
   if (parsed.status !== 'ok') {
     await adminClient().from('search_logs').insert({ user_id: profile?.id ?? null, query: text.slice(0, 300), used_fallback: false, source: 'line', engine: parsed.engine, status: parsed.status })
-    return [textMessage(parsed.message ?? '', MENU_QUICK), help()]
+    return [textMessage(parsed.message ?? '', quickFor(profile))]
   }
   const results = await runSearch(intent, profile?.id ?? null)
   const searchUrl = `/search?q=${encodeURIComponent(text)}&src=line`
@@ -157,7 +157,7 @@ async function onText(e: LineEvent): Promise<Msg[]> {
       ),
     )
   }
-  messages.push(textMessage('ค้นอย่างอื่นได้เลย หรือเลือกจากเมนู 👇', MENU_QUICK))
+  messages.push(textMessage(profile ? 'ค้นอย่างอื่นได้เลย หรือเลือกจากเมนู 👇' : 'สมัครสมาชิกฟรี เพื่อรับงานที่ตรงกับคุณในแชตนี้ 👇', quickFor(profile)))
   return messages
 }
 

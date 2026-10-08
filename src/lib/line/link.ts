@@ -5,6 +5,7 @@ import { adminClient } from '@/lib/supabase/admin'
 import { env, serverEnv } from '@/lib/env'
 import { randomToken, signPayload, verifyPayload } from '@/lib/crypto'
 import { getLineProfile, isOaFriend } from '@/lib/line/messaging'
+import { setLineMenu } from '@/lib/line/richmenu'
 
 // Accounts are always email accounts. LINE is only *linked* to them so the OA can
 // push notifications. Three ways to link, all ending in linkLineToUser():
@@ -49,6 +50,7 @@ export async function linkLineToUser(
       ...(me?.avatar_url || !picture ? {} : { avatar_url: picture }),
     })
     .eq('id', userId)
+  await setLineMenu(lineUserId, true)
 }
 
 // ------------------------------------------------------------------ 2. one-time code

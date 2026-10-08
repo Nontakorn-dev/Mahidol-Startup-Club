@@ -25,15 +25,25 @@ export async function linkedProfile(lineUserId: string): Promise<Linked | null> 
 
 const web = (path: string) => `${path}${path.includes('?') ? '&' : '?'}src=line`
 
-export const MENU_QUICK: QuickReply[] = [
+const MEMBER_QUICK: QuickReply[] = [
   { label: '🏆 งานที่เปิดรับ', data: 'm:open' },
   { label: '⏰ ใกล้ปิดรับ', data: 'm:closing' },
   { label: '⭐ ตรงกับฉัน', data: 'm:foryou' },
   { label: '👥 หาทีม', data: 'm:teams' },
   { label: '🎯 เลือกความสนใจ', data: 'm:interests' },
-  { label: '💡 วิธีค้นหา', data: 'm:help' },
+  { label: '🌐 เปิดเว็บ', url: '/?src=line' },
 ]
-const quick = (text: string) => textMessage(text, MENU_QUICK)
+const GUEST_QUICK: QuickReply[] = [
+  { label: '🚀 สมัครสมาชิกฟรี', data: 'm:join' },
+  { label: '🏆 งานที่เปิดรับ', data: 'm:open' },
+  { label: '⏰ ใกล้ปิดรับ', data: 'm:closing' },
+  { label: '👥 หาทีม', data: 'm:teams' },
+  { label: '🌐 เปิดเว็บ', url: '/?src=line' },
+]
+/** Quick replies under a message: guests always see "สมัครสมาชิกฟรี" first. */
+export const quickFor = (p: Linked | null) => (p ? MEMBER_QUICK : GUEST_QUICK)
+export const MENU_QUICK = MEMBER_QUICK
+const quickMsg = (text: string, p: Linked | null) => textMessage(text, quickFor(p))
 
 // Interests use the same keys as the website profile ("สายที่สนใจ") and event tags.
 export const INTEREST_LABEL: Record<Role, string> = {
@@ -92,13 +102,13 @@ async function linkUrl(lineUserId: string): Promise<string> {
 export async function linkInvite(lineUserId: string, intro: string): Promise<LineMessage> {
   return noticeFlex({
     altText: 'เชื่อมบัญชีเว็บ Mahidol Startup Club กับ LINE',
-    headerBar: 'เชื่อมบัญชี',
+    headerBar: 'สมัครสมาชิกฟรี',
     title: intro,
-    subtitle: 'ใช้เวลาไม่ถึง 1 นาที (ลิงก์ใช้ได้ 10 นาที)',
-    bullets: ['1️⃣  แตะ “เชื่อมบัญชีเลย”', '2️⃣  สมัครหรือเข้าสู่ระบบ (Google / อีเมล)', '3️⃣  กดยืนยันกับ LINE — เสร็จ!'],
-    quote: 'เชื่อมแล้วเลือกเรื่องที่สนใจได้ แล้วเราจะส่งงานที่ตรงกับคุณ คำชวนเข้าทีม และการเตือนก่อนปิดรับมาที่แชตนี้',
+    subtitle: 'ใช้เวลาไม่ถึง 1 นาที — มีบัญชีอยู่แล้วก็เข้าสู่ระบบได้เลย (ลิงก์ใช้ได้ 10 นาที)',
+    bullets: ['1️⃣  แตะ “สมัคร / เข้าสู่ระบบ”', '2️⃣  เลือก Google หรืออีเมล', '3️⃣  กดยืนยันกับ LINE — เสร็จ!'],
+    quote: 'สมาชิกเลือกเรื่องที่สนใจได้ แล้วเราจะส่งงานที่ตรงกับคุณ คำชวนเข้าทีม และการเตือนก่อนปิดรับมาที่แชตนี้',
     actions: [
-      { type: 'uri', label: 'เชื่อมบัญชีเลย', url: await linkUrl(lineUserId) },
+      { type: 'uri', label: 'สมัคร / เข้าสู่ระบบ', url: await linkUrl(lineUserId) },
       { type: 'postback', label: 'ดูงานที่เปิดรับก่อน', data: 'm:open', displayText: 'งานที่เปิดรับ' },
     ],
   })
@@ -120,14 +130,14 @@ export async function welcome(lineUserId: string, profile: Linked | null, justLi
     return [
       noticeFlex({
         ...base,
-        quote: 'เชื่อมบัญชีเว็บเพื่อเลือกเรื่องที่สนใจ และรับงานที่ตรงกับคุณในแชตนี้',
+        quote: 'สมัครสมาชิกฟรีบนเว็บ (ใช้ Google ได้ ไม่ถึง 1 นาที) แล้ว LINE นี้จะเชื่อมกับบัญชีให้อัตโนมัติ — เลือกเรื่องที่สนใจ รับงานที่ตรงกับคุณ และคำชวนเข้าทีมในแชตนี้',
         actions: [
-          { type: 'uri', label: 'เชื่อมบัญชีเว็บ', url: await linkUrl(lineUserId) },
-          { type: 'postback', label: 'ดูงานที่เปิดรับ', data: 'm:open', displayText: 'งานที่เปิดรับ' },
+          { type: 'uri', label: 'สมัครสมาชิกฟรี', url: await linkUrl(lineUserId) },
+          { type: 'postback', label: 'ดูงานที่เปิดรับก่อน', data: 'm:open', displayText: 'งานที่เปิดรับ' },
           { type: 'uri', label: 'เปิดเว็บไซต์', url: web('/') },
         ],
       }),
-      quick('แตะเมนูด้านล่าง หรือพิมพ์สิ่งที่อยากทำได้เลย 👇'),
+      quickMsg('สมัครฟรีได้เลย หรือดูงานก่อนก็ได้ 👇', null),
     ]
   }
   return [
@@ -226,7 +236,7 @@ export function help(): LineMessage {
 }
 
 export async function account(lineUserId: string, p: Linked | null): Promise<LineMessage[]> {
-  if (!p) return [await linkInvite(lineUserId, 'เชื่อมบัญชีเว็บกับ LINE นี้')]
+  if (!p) return [await linkInvite(lineUserId, 'สมัครสมาชิก Mahidol Startup Club 🚀')]
   const chosen = p.interests.map((r) => INTEREST_LABEL[r as Role]?.replace(/^\S+\s/, '')).filter(Boolean)
   return [
     noticeFlex({
@@ -248,7 +258,7 @@ export async function account(lineUserId: string, p: Linked | null): Promise<Lin
   ]
 }
 
-export async function openEvents(closingSoon: boolean): Promise<LineMessage[]> {
+export async function openEvents(closingSoon: boolean, p: Linked | null = null): Promise<LineMessage[]> {
   const week = 7 * 86_400_000
   const events = (await listPublishedEvents())
     .filter((ev) => !isClosed(ev) && (!closingSoon || (msLeft(ev) ?? Infinity) <= week))
@@ -264,12 +274,16 @@ export async function openEvents(closingSoon: boolean): Promise<LineMessage[]> {
   }
   return [
     eventsCarousel(closingSoon ? 'งานที่ใกล้ปิดรับใน 7 วัน' : 'งานแข่ง & ทุนที่เปิดรับ', events.slice(0, 9).map((ev) => eventItem(ev)), web(more)),
-    quick(closingSoon ? `⏰ ${events.length} งานปิดรับภายใน 7 วัน — เลื่อนดูได้เลย` : `🏆 เปิดรับอยู่ ${events.length} งาน เรียงตามวันปิดรับ — เลื่อนดู หรือเปิดดูทั้งหมดบนเว็บ`),
+    quickMsg(
+      (closingSoon ? `⏰ ${events.length} งานปิดรับภายใน 7 วัน — เลื่อนดูได้เลย` : `🏆 เปิดรับอยู่ ${events.length} งาน เรียงตามวันปิดรับ — เลื่อนดู หรือเปิดดูทั้งหมดบนเว็บ`) +
+        (p ? '' : '\n\n🚀 สมัครสมาชิกฟรี เพื่อรับงานที่ตรงกับคุณและเตือนก่อนปิดรับ'),
+      p,
+    ),
   ]
 }
 
 export async function forYou(lineUserId: string, p: Linked | null): Promise<LineMessage[]> {
-  if (!p) return [await linkInvite(lineUserId, 'เชื่อมบัญชีเพื่อดูงานที่ตรงกับคุณ')]
+  if (!p) return [await linkInvite(lineUserId, 'สมัครสมาชิกฟรี เพื่อดูงานที่ตรงกับคุณ ⭐')]
   if (!p.interests.length) return [interestPicker(p, 'เลือกเรื่องที่สนใจก่อน แล้วเราจะหางานที่ตรงให้')]
   const matches = (await listPublishedEvents())
     .filter((ev) => !isClosed(ev))
@@ -286,7 +300,7 @@ export async function forYou(lineUserId: string, p: Linked | null): Promise<Line
   }
   return [
     eventsCarousel('งานที่ตรงกับคุณ', matches.slice(0, 9).map((m) => eventItem(m.ev, `ตรงกับ ${m.why}`)), web('/opportunities')),
-    quick(`⭐ ${matches.length} งานตรงกับความสนใจของคุณ — แก้ความสนใจได้ที่ “🎯 เลือกความสนใจ”`),
+    quickMsg(`⭐ ${matches.length} งานตรงกับความสนใจของคุณ — แก้ความสนใจได้ที่ “🎯 เลือกความสนใจ”`, p),
   ]
 }
 
@@ -319,25 +333,42 @@ export async function handleMenu(data: string, lineUserId: string): Promise<Line
   let p = await linkedProfile(lineUserId)
   switch (action) {
     case 'open':
-      return openEvents(false)
+      return openEvents(false, p)
     case 'closing':
-      return openEvents(true)
+      return openEvents(true, p)
+    case 'join':
+      return p
+        ? [
+            noticeFlex({
+              altText: 'คุณเป็นสมาชิกแล้ว',
+              headerBar: 'สมาชิก',
+              badge: 'เชื่อมบัญชีแล้ว ✓',
+              badgeTone: 'blue',
+              title: `คุณเป็นสมาชิกอยู่แล้ว${p.first_name ? ` คุณ${p.first_name}` : ''} 🎉`,
+              subtitle: 'ดูงานที่ตรงกับคุณ หรือเปิดเว็บเพื่อหาทีมได้เลย',
+              actions: [
+                { type: 'postback', label: 'ดูงานที่ตรงกับฉัน', data: 'm:foryou', displayText: 'งานที่ตรงกับฉัน' },
+                { type: 'uri', label: 'เปิดเว็บไซต์', url: web('/') },
+              ],
+            }),
+          ]
+        : [await linkInvite(lineUserId, 'สมัครสมาชิก Mahidol Startup Club ฟรี 🚀'), quickMsg('หรือดูงานก่อนก็ได้ 👇', null)]
     case 'foryou':
       return forYou(lineUserId, p)
     case 'teams':
       return teams(p?.id ?? null)
     case 'help':
-      return [help(), quick('หรือเลือกจากเมนู 👇')]
+      return [help(), quickMsg('หรือเลือกจากเมนู 👇', p)]
     case 'account':
       return account(lineUserId, p)
     case 'welcome':
       return welcome(lineUserId, p)
     case 'interests':
-      return p ? [interestPicker(p)] : [await linkInvite(lineUserId, 'เชื่อมบัญชีเพื่อเลือกเรื่องที่สนใจ')]
+      return p ? [interestPicker(p)] : [await linkInvite(lineUserId, 'สมัครสมาชิกฟรี เพื่อเลือกเรื่องที่สนใจ 🎯')]
     case 't': // toggle one interest
     case 'n': {
       // switch "notify me about matches"
-      if (!p) return [await linkInvite(lineUserId, 'เชื่อมบัญชีเพื่อเลือกเรื่องที่สนใจ')]
+      if (!p) return [await linkInvite(lineUserId, 'สมัครสมาชิกฟรี เพื่อเลือกเรื่องที่สนใจ 🎯')]
       const patch: Partial<Linked> = {}
       if (action === 't' && (ROLE_KEYS as string[]).includes(arg)) {
         patch.interests = p.interests.includes(arg) ? p.interests.filter((x) => x !== arg) : [...p.interests, arg]
@@ -349,6 +380,6 @@ export async function handleMenu(data: string, lineUserId: string): Promise<Line
       return [interestPicker(p, 'บันทึกแล้ว ✓ — เลือกต่อได้เลย')]
     }
     default:
-      return [quick('เลือกจากเมนูด้านล่างได้เลย 👇')]
+      return [quickMsg('เลือกจากเมนูด้านล่างได้เลย 👇', p)]
   }
 }

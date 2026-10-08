@@ -1,4 +1,5 @@
 'use server'
+import { setLineMenu } from '@/lib/line/richmenu'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { randomUUID } from 'node:crypto'
@@ -119,10 +120,12 @@ export async function setNotificationPref(key: string, value: boolean | string):
 export async function unlinkLine(): Promise<{ error?: string }> {
   try {
     const viewer = await actionViewer()
+    const lineUserId = viewer.profile.line_user_id
     await adminClient()
       .from('profiles')
       .update({ line_user_id: null, line_display_name: null, line_picture_url: null, line_is_friend: false, line_linked_at: null })
       .eq('id', viewer.userId)
+    if (lineUserId) await setLineMenu(lineUserId, false)
     revalidatePath('/settings/notifications')
     return {}
   } catch (err) {
