@@ -32,11 +32,12 @@
 }
 
 * { box-sizing: border-box; }
-/* The canvas behind the page (seen when scrolling past the end on iPad/iPhone) matches the footer */
+/* What shows behind the page when scrolling past the end (iPad/iPhone Safari) matches the footer.
+   Every page draws its own background on its wrapper (.page, .login-wrap, .admin-shell). */
 html { -webkit-text-size-adjust: 100%; background: #E6EDF9; }
 body {
   margin: 0;
-  background: var(--white);
+  background: #E6EDF9;
   color: var(--navy);
   font-family: var(--font-body);
   line-height: 1.7;
