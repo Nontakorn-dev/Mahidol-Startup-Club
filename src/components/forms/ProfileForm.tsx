@@ -1,5 +1,6 @@
 'use client'
-import { useActionState, useState } from 'react'
+import { useActionState, useRef, useState } from 'react'
+import AvatarCropper from '../AvatarCropper'
 import { saveProfile } from '@/app/actions/profile'
 import Avatar from '../Avatar'
 import ChipSelect from '../ChipSelect'
@@ -18,6 +19,8 @@ export default function ProfileForm({ p }: { p: Profile }) {
   const [exps, setExps] = useState<Exp[]>(() => p.experiences.map((x) => ({ ...x, k: key() })))
   const [preview, setPreview] = useState<string | null>(p.avatar_url)
   const [removeAvatar, setRemoveAvatar] = useState(false)
+  const [cropSrc, setCropSrc] = useState<string | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   return (
     <form action={action} className="stack" style={{ gap: 20 }}>
@@ -33,16 +36,15 @@ export default function ProfileForm({ p }: { p: Profile }) {
               <label className="btn btn-outline btn-sm" style={{ alignSelf: 'flex-start' }}>
                 เปลี่ยนรูป
                 <input
+                  ref={fileRef}
                   type="file"
                   name="avatar"
                   accept="image/jpeg,image/png,image/webp"
                   hidden
                   onChange={(e) => {
+                    // Open the cropper; the cropped JPEG replaces the picked file before saving.
                     const f = e.target.files?.[0]
-                    if (f) {
-                      setPreview(URL.createObjectURL(f))
-                      setRemoveAvatar(false)
-                    }
+                    if (f && !cropSrc) setCropSrc(URL.createObjectURL(f))
                   }}
                 />
               </label>
@@ -51,9 +53,31 @@ export default function ProfileForm({ p }: { p: Profile }) {
                   ลบรูป
                 </button>
               )}
-              <span className="muted" style={{ fontSize: 12 }}>JPG / PNG / WebP ไม่เกิน 2 MB</span>
+              <span className="muted" style={{ fontSize: 12 }}>JPG / PNG / WebP · เลือกแล้วจัดตำแหน่งให้เห็นหน้าได้</span>
+              {preview && !removeAvatar && preview.startsWith('blob:') && (
+                <span style={{ fontSize: 12, color: 'var(--ok)' }}>✓ จัดรูปแล้ว — กด “บันทึก” ด้านล่างเพื่อใช้รูปนี้</span>
+              )}
             </div>
             {removeAvatar && <input type="hidden" name="remove_avatar" value="1" />}
+            {cropSrc && (
+              <AvatarCropper
+                src={cropSrc}
+                onCancel={() => {
+                  URL.revokeObjectURL(cropSrc)
+                  setCropSrc(null)
+                  if (fileRef.current) fileRef.current.value = ''
+                }}
+                onDone={(file, url) => {
+                  const dt = new DataTransfer()
+                  dt.items.add(file)
+                  if (fileRef.current) fileRef.current.files = dt.files
+                  URL.revokeObjectURL(cropSrc)
+                  setCropSrc(null)
+                  setPreview(url)
+                  setRemoveAvatar(false)
+                }}
+              />
+            )}
           </div>
           <div className="grid-2">
             <div className="field">

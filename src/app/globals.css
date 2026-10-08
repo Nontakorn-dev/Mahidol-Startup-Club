@@ -641,3 +641,11 @@ dl.kv dd { margin: 0; font-weight: 600; }
 .btn.is-pending, button.is-pending { cursor: progress; opacity: 0.85; }
 .btn-spinner { display: inline-block; width: 14px; height: 14px; margin-right: 6px; vertical-align: -2px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; }
 @media (prefers-reduced-motion: reduce) { .nav-progress.running { transition: opacity 0.1s; } }
+
+/* Profile picture cropper */
+.cropper-backdrop { position: fixed; inset: 0; z-index: 900; background: rgba(10, 37, 88, 0.55); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.cropper-panel { background: #fff; border-radius: 22px; padding: 22px; display: flex; flex-direction: column; align-items: center; gap: 12px; max-width: 100%; box-shadow: 0 30px 80px -30px rgba(10, 37, 88, 0.6); }
+.cropper-view { position: relative; overflow: hidden; border-radius: 16px; background: #0F172A; touch-action: none; cursor: grab; outline: none; }
+.cropper-view:active { cursor: grabbing; }
+.cropper-view:focus-visible { box-shadow: 0 0 0 3px var(--brand); }
+.cropper-ring { position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 999px rgba(15, 23, 42, 0.55); border: 2px solid rgba(255, 255, 255, 0.9); pointer-events: none; }
