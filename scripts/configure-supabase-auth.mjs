@@ -15,12 +15,12 @@ if (!token) {
   console.error('Set SUPABASE_ACCESS_TOKEN in .env.local first (https://supabase.com/dashboard/account/tokens).')
   process.exit(1)
 }
-const site = (process.env.AUTH_SITE_URL || 'https://mahidol-startup-club.vercel.app').replace(/\/$/, '')
+const site = (process.env.AUTH_SITE_URL || 'https://mahidolstartup.site').replace(/\/$/, '')
 const tpl = (name) => readFileSync(new URL(`../supabase/email-templates/${name}.html`, import.meta.url), 'utf8')
 
 const config = {
   site_url: site,
-  uri_allow_list: [`${site}/**`, 'https://mahidolstartup.site/**', 'https://www.mahidolstartup.site/**', 'http://localhost:3000/**'].join(','),
+  uri_allow_list: [...new Set([`${site}/**`, 'https://mahidolstartup.site/**', 'https://www.mahidolstartup.site/**', 'https://mahidol-startup-club.vercel.app/**', 'http://localhost:3000/**'])].join(','),
   // Per-IP limits must see the visitor's IP when Next.js calls Auth from the server.
   security_sb_forwarded_for_enabled: true,
   // Project-wide hourly caps (custom SMTP only). Real ceiling = your Resend plan.
