@@ -15,21 +15,20 @@ const RX = 132
 const RY = 118
 const HUB = 76 // diameter of "คุณ" (avatars are 56; sizes mirrored in globals.css)
 
-const BLUE = '#0035AD'
-const GOLD = '#E3A817'
-
-type Node = { key: string; label: string; deg: number; tone: string; icon?: ReactNode }
+type Tone = 'blue' | 'gold'
+type Node = { key: string; label: string; deg: number; tone: Tone; icon?: ReactNode }
 const NODES: Node[] = [
-  { key: 'partner', label: 'Partner', deg: 180, tone: BLUE, icon: <IconFile size={11} /> },
-  { key: 'team', label: 'เพื่อนร่วมทีม', deg: 135, tone: BLUE, icon: <IconChat size={11} /> },
-  { key: 'mentor', label: 'Mentor', deg: 90, tone: GOLD, icon: <IconCheck size={11} /> },
-  { key: 'startup', label: 'Startup', deg: 45, tone: GOLD },
-  { key: 'investor', label: 'นักลงทุน', deg: 0, tone: GOLD, icon: <IconPeople size={11} /> },
+  { key: 'partner', label: 'Partner', deg: 180, tone: 'blue', icon: <IconFile size={11} /> },
+  { key: 'team', label: 'เพื่อนร่วมทีม', deg: 135, tone: 'blue', icon: <IconChat size={11} /> },
+  { key: 'mentor', label: 'Mentor', deg: 90, tone: 'gold', icon: <IconCheck size={11} /> },
+  { key: 'startup', label: 'Startup', deg: 45, tone: 'gold' },
+  { key: 'investor', label: 'นักลงทุน', deg: 0, tone: 'gold', icon: <IconPeople size={11} /> },
 ]
 
 const pct = (v: number, of: number) => `${(v / of) * 100}%`
 
-export default function ConnectMap({ className = '' }: { className?: string }) {
+/** `dark`: for navy backgrounds (login brand panel) — light lines, white hub. */
+export default function ConnectMap({ className = '', dark = false }: { className?: string; dark?: boolean }) {
   const nodes = NODES.map((n) => {
     const a = (n.deg * Math.PI) / 180
     const x = CX + RX * Math.cos(a)
@@ -41,19 +40,19 @@ export default function ConnectMap({ className = '' }: { className?: string }) {
   })
 
   return (
-    <div className={`connect-map ${className}`} role="img" aria-label="MSC Connect: คุณเชื่อมกับเพื่อนร่วมทีม Mentor Startup Partner และนักลงทุน">
+    <div className={`connect-map ${dark ? 'cm-dark' : ''} ${className}`} role="img" aria-label="MSC Connect: คุณเชื่อมกับเพื่อนร่วมทีม Mentor Startup Partner และนักลงทุน">
       <div className="cm-stage" aria-hidden="true">
         <svg className="cm-lines" viewBox={`0 0 ${W} ${H}`}>
           <ellipse cx={CX} cy={CY} rx={RX} ry={RY} className="cm-orbit" />
           <ellipse cx={CX} cy={CY} rx={RX * 0.62} ry={RY * 0.62} className="cm-orbit" />
           {nodes.map((n) => (
-            <line key={n.key} x1={CX} y1={CY} x2={n.x} y2={n.y} stroke={n.tone} strokeWidth={2} strokeLinecap="round" />
+            <line key={n.key} x1={CX} y1={CY} x2={n.x} y2={n.y} className={`cm-line ${n.tone}`} strokeWidth={2} strokeLinecap="round" />
           ))}
         </svg>
         {nodes.map(
           (n) =>
             n.icon && (
-              <span key={`b-${n.key}`} className="cm-badge" style={{ left: pct(n.bx, W), top: pct(n.by, H), color: n.tone, borderColor: n.tone }}>
+              <span key={`b-${n.key}`} className={`cm-badge ${n.tone}`} style={{ left: pct(n.bx, W), top: pct(n.by, H) }}>
                 {n.icon}
               </span>
             ),
@@ -67,7 +66,7 @@ export default function ConnectMap({ className = '' }: { className?: string }) {
           MSC CONNECT
         </span>
         {nodes.map((n) => (
-          <span key={n.key} className="cm-node" style={{ left: pct(n.x, W), top: pct(n.y, H), borderColor: n.tone }}>
+          <span key={n.key} className={`cm-node ${n.tone}`} style={{ left: pct(n.x, W), top: pct(n.y, H) }}>
             <Image src={`/assets/connect/${n.key}.webp`} alt="" width={192} height={192} sizes="96px" />
             <span className="cm-label">{n.label}</span>
           </span>

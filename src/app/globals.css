@@ -514,18 +514,57 @@ dl.kv dd { margin: 0; font-weight: 600; }
 .social-lg img { width: 30px; height: 30px; }
 
 /* ------------------------------------------------------------ login */
-.login-wrap { min-height: 100vh; display: flex; flex-wrap: wrap; background: var(--bg); }
+.login-wrap { min-height: 100vh; min-height: 100dvh; display: flex; background: var(--bg); }
 .login-brand {
-  flex: 1 1 520px; min-height: 100vh; padding: 40px 64px; color: #fff; display: flex; flex-direction: column; justify-content: space-between; gap: 48px;
-  background: radial-gradient(90% 60% at 100% 0%, rgba(255, 199, 38, 0.18) 0%, rgba(255, 199, 38, 0) 60%), linear-gradient(160deg, var(--navy-2) 0%, var(--brand) 100%);
+  flex: 0 0 46%; max-width: 680px; min-height: 100vh; min-height: 100dvh; padding: 40px 56px; color: #fff;
+  display: flex; flex-direction: column; justify-content: space-between; gap: 32px;
+  background: radial-gradient(80% 55% at 100% 0%, rgba(255, 199, 38, 0.16) 0%, rgba(255, 199, 38, 0) 60%),
+    radial-gradient(70% 50% at 0% 100%, rgba(143, 176, 255, 0.18) 0%, rgba(143, 176, 255, 0) 60%),
+    linear-gradient(160deg, var(--navy-2) 0%, var(--brand) 100%);
 }
-.login-brand h1 { margin: 0; font-weight: 600; font-size: 48px; line-height: 1.1; }
-.login-brand h1 span { color: var(--yellow); }
-.login-brand .bullets { display: flex; flex-direction: column; gap: 16px; font-size: 17px; color: #d6e0f5; }
-.login-brand .bullets span { display: flex; gap: 12px; align-items: center; }
-.login-brand .bullets i { flex: none; width: 32px; height: 32px; border-radius: 10px; background: rgba(255, 255, 255, 0.12); color: var(--yellow); display: inline-flex; align-items: center; justify-content: center; }
-.login-side { flex: 1 1 520px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; padding: 48px 32px; }
-.login-card { width: 100%; max-width: 420px; padding: 40px; border-radius: 28px; background: #fff; box-shadow: 0 24px 60px -24px rgba(0, 53, 173, 0.3); display: flex; flex-direction: column; gap: 22px; }
+.login-logo { align-self: flex-start; display: inline-flex; padding: 8px 16px; border-radius: 14px; background: #fff; }
+.login-brand-body { display: flex; flex-direction: column; align-items: center; gap: 28px; }
+.login-map { max-width: 440px; }
+.login-brand h2.mantra { margin: 0; align-items: center; text-align: center; font-weight: 600; color: #fff; }
+.login-backed { font-size: 13px; color: #A9BCE8; }
+.login-side { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; padding: 40px 32px; }
+.login-top { width: 100%; max-width: 440px; display: flex; align-items: center; justify-content: space-between; }
+.login-back {
+  display: inline-flex; align-items: center; gap: 4px; min-height: 40px; padding: 0 16px 0 10px; border-radius: 999px; background: #fff;
+  border: 1px solid var(--border-4); color: var(--navy-2); font-size: 14px; font-weight: 600; text-decoration: none;
+}
+.login-top-logo { display: none; }
+.login-card { width: 100%; max-width: 440px; padding: 36px 36px 28px; border-radius: 28px; background: #fff; box-shadow: 0 24px 60px -24px rgba(0, 53, 173, 0.3); display: flex; flex-direction: column; gap: 20px; }
+.login-line-note { display: flex; gap: 10px; align-items: center; padding: 10px 14px; border-radius: 14px; background: #E7F8EE; color: #065F2C; font-size: 14px; }
+.login-line-note svg { flex: none; color: #06C755; }
+.login-terms { margin: 4px 0 0; font-size: 12px; line-height: 1.6; color: var(--muted); text-align: center; text-wrap: balance; }
+
+/* Sign-in / sign-up form */
+.auth-form { display: flex; flex-direction: column; gap: 16px; }
+.auth-tabs { display: flex; width: 100%; }
+.auth-tabs > * { flex: 1 1 0; min-height: 44px; font-size: 15px; }
+.auth-head h1 { margin: 0; font-weight: 600; font-size: 26px; line-height: 1.25; }
+.auth-head p { margin: 4px 0 0; font-size: 14.5px; line-height: 1.6; color: var(--muted); }
+.auth-field { display: flex; flex-direction: column; gap: 8px; }
+.auth-field label { font-size: 14px; font-weight: 600; }
+.auth-field .input { min-height: 50px; font-size: 16px; }
+.auth-label-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.auth-hint { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
+.auth-hint svg { flex: none; }
+.auth-submit { min-height: 52px; font-size: 16px; }
+.auth-link { border: 0; padding: 0; background: none; color: var(--brand); font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.auth-link:hover { text-decoration: underline; }
+.auth-link.center { align-self: center; }
+.auth-switch { margin: 0; text-align: center; font-size: 14px; color: var(--muted); }
+.otp-input { min-height: 56px !important; font-size: 24px !important; letter-spacing: 0.4em; text-align: center; }
+.pw-field { position: relative; }
+.pw-field .input { width: 100%; padding-right: 52px; }
+.pw-toggle {
+  position: absolute; right: 5px; top: 50%; transform: translateY(-50%); width: 42px; height: 42px; border: 0; border-radius: 10px;
+  background: transparent; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.pw-toggle:hover { background: var(--bg); color: var(--navy-2); }
+.pw-toggle:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
 .divider { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--muted); }
 .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #e2e8f0; }
 
@@ -644,8 +683,11 @@ dl.kv dd { margin: 0; font-weight: 600; }
   .admin-two { grid-template-columns: 1fr !important; }
   .admin-search { width: 100%; }
   .login-brand { display: none; }
-  .login-side { padding: 24px 16px; justify-content: flex-start; }
-  .login-card { padding: 28px 22px; }
+  .login-side { padding: 20px 20px 40px; }
+  .login-top { position: relative; justify-content: center; }
+  .login-top .login-back { position: absolute; left: 0; width: 40px; padding: 0; justify-content: center; }
+  .login-top .login-back .txt { display: none; }
+  .login-top-logo { display: inline-flex; }
 }
 
 @media (max-width: 640px) {
@@ -818,15 +860,28 @@ dl.kv dd { margin: 0; font-weight: 600; }
 @media (prefers-reduced-motion: reduce) { .cta-link, .cta-link .arrow { transition: none; } }
 
 /* Club mantra headline: two balanced lines, each kept on one line and sized to fit */
-h1.mantra { display: flex; flex-direction: column; align-items: flex-start; gap: 0.06em; font-size: min(56px, 8.2vw); line-height: 1.12; letter-spacing: -0.01em; }
-h1.mantra .line { white-space: nowrap; color: inherit; }
+h1.mantra, h2.mantra { display: flex; flex-direction: column; align-items: flex-start; gap: 0.06em; font-size: min(56px, 8.2vw); line-height: 1.12; letter-spacing: -0.01em; }
+.mantra .line { white-space: nowrap; color: inherit; }
 .hero h1.mantra .accent { color: var(--brand); }
-.login-brand h1.mantra { font-size: min(46px, 7.6vw); }
-.login-brand h1.mantra .accent { color: var(--yellow); }
+.login-brand h2.mantra { font-size: clamp(30px, 3.2vw, 44px); }
+.login-brand h2.mantra .accent { color: var(--yellow); }
 
 /* Hero "MSC Connect" map for phones and tablets (the full artwork shows beside the copy on desktop).
    Everything is sized in --u = 1/340 of the map width, so it scales as one piece. */
-.connect-map { display: none; container-type: inline-size; width: 100%; }
+.connect-map { --cm-blue: #0035AD; --cm-gold: #E3A817; display: none; container-type: inline-size; width: 100%; }
+.cm-line.blue { stroke: var(--cm-blue); }
+.cm-line.gold { stroke: var(--cm-gold); }
+.cm-node.blue, .cm-badge.blue { border-color: var(--cm-blue); color: var(--cm-blue); }
+.cm-node.gold, .cm-badge.gold { border-color: var(--cm-gold); color: var(--cm-gold); }
+/* Dark variant (navy panels): softer lines, white hub with navy text */
+.connect-map.cm-dark { --cm-blue: #8FB0FF; --cm-gold: #FFC726; display: block; }
+.cm-dark .cm-orbit { stroke: rgba(255, 255, 255, 0.22); }
+.cm-dark .cm-hub { background: #fff; color: var(--brand); box-shadow: 0 0 0 calc(6 * var(--u)) rgba(255, 255, 255, 0.14), 0 calc(14 * var(--u)) calc(30 * var(--u)) calc(-8 * var(--u)) rgba(0, 0, 0, 0.45); }
+.cm-dark .cm-pulse { border-color: rgba(255, 255, 255, 0.45); }
+.cm-dark .cm-brand { color: #fff; opacity: 0.85; }
+.cm-dark .cm-node { box-shadow: 0 calc(10 * var(--u)) calc(22 * var(--u)) calc(-8 * var(--u)) rgba(0, 0, 0, 0.45), 0 0 0 calc(3 * var(--u)) rgba(255, 255, 255, 0.95); }
+.cm-dark .cm-label { background: rgba(255, 255, 255, 0.96); }
+.cm-dark .cm-badge { background: #fff; }
 .cm-stage { --u: calc(100cqw / 340); position: relative; width: 100%; aspect-ratio: 340 / 232; }
 .cm-lines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; }
 .cm-orbit { fill: none; stroke: #C9D6EE; stroke-width: 1; stroke-dasharray: 3 5; }
@@ -914,4 +969,15 @@ h1.mantra .line { white-space: nowrap; color: inherit; }
 @media (max-width: 900px) {
   .section.home-open { padding-bottom: 32px; }
   .section.home-seekers { padding-top: 24px; padding-bottom: 64px; }
+}
+
+/* The login page has no footer: what shows behind it (Safari bars, overscroll) matches the page */
+html:has(.login-wrap), html:has(.login-wrap) body { background: var(--bg); }
+/* Phones: flat white page, no floating card */
+@media (max-width: 640px) {
+  html:has(.login-wrap), html:has(.login-wrap) body { background: #fff; }
+  .login-wrap { background: #fff; }
+  .login-side { justify-content: flex-start; gap: 28px; padding: 16px 20px 40px; }
+  .login-card { padding: 0; box-shadow: none; border-radius: 0; gap: 18px; }
+  .auth-head h1 { font-size: 24px; }
 }

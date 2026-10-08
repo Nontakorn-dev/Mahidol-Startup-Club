@@ -7,16 +7,15 @@ import { IconInfo } from './icons'
 // All sign-in calls run in the browser: Supabase Auth rate-limits per IP, so each visitor
 // spends their own quota instead of everyone sharing the Vercel server's IP.
 
-const linkBtn = { border: 0, background: 'none', color: 'var(--brand)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13 }
 type Mode = 'email' | 'signin' | 'signup'
 
 function message(err: AuthError | Error): string {
   const code = (err as AuthError).code
   if (code === 'over_email_send_rate_limit' || code === 'over_request_rate_limit' || /rate limit|seconds/i.test(err.message))
     return 'มีการขอถี่เกินไป กรุณารอ 1 นาทีแล้วลองใหม่'
-  if (code === 'invalid_credentials') return 'อีเมลหรือรหัสผ่านไม่ถูกต้อง (ถ้าเคยเข้าด้วย Google หรือรหัสทางอีเมล ให้ใช้วิธีเดิม)'
+  if (code === 'invalid_credentials') return 'อีเมลหรือรหัสผ่านไม่ถูกต้อง — ถ้าเคยเข้าด้วย Google หรือรหัสทางอีเมล ให้ใช้วิธีเดิม'
   if (code === 'user_already_exists') return 'อีเมลนี้มีบัญชีแล้ว ลองเข้าสู่ระบบแทน'
-  if (code === 'email_not_confirmed') return 'ยังไม่ได้ยืนยันอีเมล — ใช้ “รับรหัสทางอีเมล” เพื่อยืนยันและเข้าสู่ระบบ'
+  if (code === 'email_not_confirmed') return 'ยังไม่ได้ยืนยันอีเมล — ใช้ “เข้าด้วยรหัสทางอีเมล” เพื่อยืนยันและเข้าสู่ระบบ'
   if (code === 'otp_expired' || /expired|invalid/i.test(err.message)) return 'รหัสไม่ถูกต้องหรือหมดอายุ'
   if (code === 'weak_password') return 'รหัสผ่านง่ายเกินไป ลองใช้รหัสที่ยาวขึ้น'
   return err.message
@@ -35,7 +34,7 @@ function GoogleIcon() {
   )
 }
 
-export function GoogleButton({ next }: { next: string }) {
+export function GoogleButton({ next, label = 'Continue with Google' }: { next: string; label?: string }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const start = async () => {
@@ -69,15 +68,54 @@ export function GoogleButton({ next }: { next: string }) {
     <div className="stack" style={{ gap: 8 }}>
       <button type="button" className="btn btn-outline btn-lg btn-block" style={{ color: 'var(--navy)', gap: 12 }} onClick={start} disabled={busy}>
         <GoogleIcon />
-        {busy ? 'กำลังไปที่ Google…' : 'Continue with Google'}
+        {busy ? 'กำลังไปที่ Google…' : label}
       </button>
       {error && <div className="alert alert-error">{error}</div>}
     </div>
   )
 }
 
-export default function LoginForm({ next }: { next: string }) {
-  const [mode, setMode] = useState<Mode>('email')
+function EyeIcon({ off }: { off: boolean }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+      <circle cx="12" cy="12" r="3" />
+      {off && <path d="M4 4l16 16" />}
+    </svg>
+  )
+}
+
+/** Password input with a show/hide toggle. */
+function PasswordField({ value, onChange, autoComplete }: { value: string; onChange: (v: string) => void; autoComplete: string }) {
+  const [show, setShow] = useState(false)
+  return (
+    <div className="pw-field">
+      <input
+        id="pw"
+        type={show ? 'text' : 'password'}
+        required
+        minLength={8}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        autoComplete={autoComplete}
+        className="input"
+        placeholder={autoComplete === 'new-password' ? 'อย่างน้อย 8 ตัวอักษร' : 'รหัสผ่านของคุณ'}
+      />
+      <button type="button" className="pw-toggle" onClick={() => setShow((v) => !v)} aria-label={show ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'} aria-pressed={show}>
+        <EyeIcon off={show} />
+      </button>
+    </div>
+  )
+}
+
+const HEADINGS: Record<Mode, [string, string]> = {
+  signin: ['ยินดีต้อนรับกลับมา', 'เข้าสู่ระบบเพื่อไปต่อ'],
+  signup: ['สร้างบัญชีใหม่', 'ฟรี ใช้เวลาไม่ถึง 1 นาที'],
+  email: ['เข้าสู่ระบบด้วยรหัสทางอีเมล', 'ไม่ต้องใช้รหัสผ่าน — เราจะส่งรหัส 6 หลักไปที่อีเมลของคุณ'],
+}
+
+export default function LoginForm({ next, google, initialMode = 'signin' }: { next: string; google: boolean; initialMode?: 'signin' | 'signup' }) {
+  const [mode, setMode] = useState<Mode>(initialMode)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [code, setCode] = useState('')
@@ -85,6 +123,7 @@ export default function LoginForm({ next }: { next: string }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const redirectTo = () => `${window.location.origin}/login?next=${encodeURIComponent(next)}`
+  const switchTo = (m: Mode) => (setMode(m), setError(null))
 
   const run = async (fn: () => Promise<void>) => {
     setBusy(true)
@@ -134,80 +173,110 @@ export default function LoginForm({ next }: { next: string }) {
 
   if (codeSentTo) {
     return (
-      <form onSubmit={verify} className="stack" style={{ gap: 10 }}>
-        <div className="alert alert-ok" style={{ flexDirection: 'column', gap: 2 }}>
-          <b>ส่งอีเมลไปที่ {codeSentTo} แล้ว</b>
-          <span>กรอกรหัส 6 หลักจากอีเมล หรือกดปุ่มในอีเมล (ลองดูในโฟลเดอร์ Spam/Promotions ด้วย)</span>
+      <form onSubmit={verify} className="auth-form">
+        <div className="auth-head">
+          <h1>เช็กอีเมลของคุณ</h1>
+          <p>
+            ส่งรหัส 6 หลักไปที่ <b>{codeSentTo}</b> แล้ว — กรอกรหัส หรือกดปุ่มในอีเมล (ดูในโฟลเดอร์ Spam/Promotions ด้วย)
+          </p>
         </div>
-        <label htmlFor="otp" style={{ fontSize: 14, fontWeight: 600 }}>
-          รหัสจากอีเมล
-        </label>
-        <input
-          id="otp"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          maxLength={8}
-          required
-          value={code}
-          onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-          className="input"
-          style={{ minHeight: 54, fontSize: 24, letterSpacing: '0.4em', textAlign: 'center' }}
-          placeholder="••••••"
-        />
+        <div className="auth-field">
+          <label htmlFor="otp">รหัสจากอีเมล</label>
+          <input
+            id="otp"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={8}
+            required
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+            className="input otp-input"
+            placeholder="••••••"
+          />
+        </div>
         {error && <div className="alert alert-error">{error}</div>}
-        <button type="submit" className="btn btn-primary" style={{ minHeight: 50, fontSize: 16 }} disabled={busy}>
+        <button type="submit" className="btn btn-primary auth-submit" disabled={busy}>
           {busy ? 'กำลังตรวจสอบ…' : 'ยืนยันรหัส'}
         </button>
-        <button type="button" style={linkBtn} onClick={() => (setCodeSentTo(null), setCode(''), setError(null))}>
-          ใช้อีเมลอื่น / ส่งใหม่
+        <button type="button" className="auth-link" onClick={() => (setCodeSentTo(null), setCode(''), setError(null))}>
+          ใช้อีเมลอื่น / ส่งรหัสใหม่
         </button>
       </form>
     )
   }
 
+  const [title, sub] = HEADINGS[mode]
   return (
-    <div className="stack" style={{ gap: 10 }}>
-      <form onSubmit={submit} className="stack" style={{ gap: 10 }} noValidate>
-        <label htmlFor="em" style={{ fontSize: 14, fontWeight: 600 }}>
-          อีเมล
-        </label>
-        <input id="em" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input" style={{ minHeight: 50 }} placeholder="you@student.mahidol.ac.th" />
+    <div className="auth-form">
+      {mode !== 'email' && (
+        <div className="segmented auth-tabs" role="tablist" aria-label="เข้าสู่ระบบหรือสมัครสมาชิก">
+          <button type="button" role="tab" aria-selected={mode === 'signin'} onClick={() => switchTo('signin')}>
+            เข้าสู่ระบบ
+          </button>
+          <button type="button" role="tab" aria-selected={mode === 'signup'} onClick={() => switchTo('signup')}>
+            สมัครสมาชิก
+          </button>
+        </div>
+      )}
+      <div className="auth-head">
+        <h1>{title}</h1>
+        <p>{sub}</p>
+      </div>
+      {google && mode !== 'email' && (
+        <>
+          <GoogleButton next={next} label={mode === 'signup' ? 'สมัครด้วย Google' : 'เข้าสู่ระบบด้วย Google'} />
+          <div className="divider">หรือใช้อีเมล</div>
+        </>
+      )}
+      <form onSubmit={submit} className="auth-form" noValidate>
+        <div className="auth-field">
+          <label htmlFor="em">อีเมล</label>
+          <input id="em" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input" placeholder="you@student.mahidol.ac.th" />
+          {mode === 'signup' && (
+            <span className="auth-hint">
+              <IconInfo size={14} />
+              อีเมล @student.mahidol.ac.th ได้ป้าย “Mahidol verified”
+            </span>
+          )}
+        </div>
         {mode !== 'email' && (
-          <>
-            <label htmlFor="pw" style={{ fontSize: 14, fontWeight: 600 }}>
-              รหัสผ่าน
-            </label>
-            <input id="pw" type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} className="input" style={{ minHeight: 50 }} />
-          </>
+          <div className="auth-field">
+            <div className="auth-label-row">
+              <label htmlFor="pw">รหัสผ่าน</label>
+              {mode === 'signin' && (
+                <button type="button" className="auth-link" onClick={() => switchTo('email')}>
+                  ลืมรหัสผ่าน?
+                </button>
+              )}
+            </div>
+            <PasswordField value={password} onChange={setPassword} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} />
+          </div>
         )}
-        <span className="row muted" style={{ fontSize: 13, gap: 8, alignItems: 'flex-start' }}>
-          <span style={{ display: 'inline-flex', marginTop: 3 }}>
-            <IconInfo size={16} />
-          </span>
-          ใช้อีเมล @student.mahidol.ac.th เพื่อรับป้าย “Mahidol verified”
-        </span>
         {error && <div className="alert alert-error">{error}</div>}
-        <button type="submit" className="btn btn-primary" style={{ minHeight: 50, fontSize: 16 }} disabled={busy}>
-          {mode === 'email' ? (busy ? 'กำลังส่ง…' : 'รับรหัสเข้าสู่ระบบทางอีเมล') : mode === 'signin' ? (busy ? 'กำลังเข้าสู่ระบบ…' : 'เข้าสู่ระบบ') : busy ? 'กำลังสมัคร…' : 'สมัครสมาชิก'}
+        <button type="submit" className="btn btn-primary auth-submit" disabled={busy}>
+          {mode === 'email' ? (busy ? 'กำลังส่ง…' : 'ส่งรหัสไปที่อีเมล') : mode === 'signin' ? (busy ? 'กำลังเข้าสู่ระบบ…' : 'เข้าสู่ระบบ') : busy ? 'กำลังสมัคร…' : 'สมัครสมาชิก'}
         </button>
       </form>
-      <div className="row wrap" style={{ justifyContent: 'center', gap: 12 }}>
-        {mode !== 'email' && (
-          <button type="button" style={linkBtn} onClick={() => setMode('email')}>
-            ใช้รหัสทางอีเมลแทน
+      {mode === 'email' ? (
+        <button type="button" className="auth-link center" onClick={() => switchTo('signin')}>
+          ← กลับไปเข้าสู่ระบบด้วยรหัสผ่าน
+        </button>
+      ) : (
+        <p className="auth-switch">
+          {mode === 'signin' ? 'ยังไม่มีบัญชี? ' : 'มีบัญชีอยู่แล้ว? '}
+          <button type="button" className="auth-link" onClick={() => switchTo(mode === 'signin' ? 'signup' : 'signin')}>
+            {mode === 'signin' ? 'สมัครสมาชิก' : 'เข้าสู่ระบบ'}
           </button>
-        )}
-        {mode !== 'signin' && (
-          <button type="button" style={linkBtn} onClick={() => setMode('signin')}>
-            เข้าด้วยรหัสผ่าน
-          </button>
-        )}
-        {mode !== 'signup' && (
-          <button type="button" style={linkBtn} onClick={() => setMode('signup')}>
-            สมัครด้วยรหัสผ่าน
-          </button>
-        )}
-      </div>
+          {mode === 'signin' && (
+            <>
+              {' · '}
+              <button type="button" className="auth-link" onClick={() => switchTo('email')}>
+                เข้าด้วยรหัสทางอีเมล
+              </button>
+            </>
+          )}
+        </p>
+      )}
     </div>
   )
 }
