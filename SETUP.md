@@ -18,9 +18,9 @@
 | ฐานข้อมูล Supabase | ✅ ใช้งานได้ | — |
 | ค้นหาด้วยประโยค (OpenRouter, เรียกโมเดลเฉพาะประโยคที่ซับซ้อน) | ✅ ใช้งานได้ | ดูยอดเครดิต OpenRouter เป็นระยะ · ปรับเพดานรายวันด้วย env `AI_DAILY_LIMIT` (ค่าเริ่ม 2000) |
 | ล็อกอินด้วยรหัสผ่าน | ✅ ใช้งานได้ | — |
-| ล็อกอินด้วยรหัส 6 หลักทางอีเมล / สมัครสมาชิก | ⚠️ ใช้ได้น้อยมาก | Supabase ส่งอีเมลเองได้ไม่กี่ฉบับ/ชม. และลิงก์ในอีเมลยังพาไป `localhost` → **ขั้น 1–3** |
-| Continue with Google | ❌ ปุ่มยังซ่อน | **ขั้น 4** |
-| อีเมลแจ้งเตือน/ประกาศ | ❌ ยังไม่ส่ง | DNS + Resend key → **ขั้น 1–3** |
+| ล็อกอินด้วยรหัส 6 หลักทางอีเมล / สมัครสมาชิก | ✅ ใช้งานได้ (ขั้น 1–3 เสร็จ) | Resend ฟรีส่งได้ 100 ฉบับ/วัน · 3,000/เดือน → อัปเกรด Pro ($20) ก่อนเปิดรับสมาชิกจำนวนมาก |
+| Continue with Google | ✅ ใช้งานได้ (ขั้น 4 เสร็จ) | (ไม่บังคับ) ยืนยันแบรนด์กับ Google ให้หน้าเลือกบัญชีขึ้นชื่อชมรมแทนโดเมน supabase.co |
+| อีเมลแจ้งเตือน/ประกาศ | ✅ ใช้งานได้ | ใช้โควตา Resend ร่วมกับอีเมลล็อกอิน |
 | LINE OA (เชื่อมบัญชี, แจ้งเตือน, แชตบอต AI, rich menu) | ❌ ยังไม่เปิด | **ขั้น 5–6** |
 | โดเมน https://mahidolstartup.site + อีเมลผ่าน Resend | ✅ ใช้งานได้ | — |
 | ดึงงานจาก Hackza · Contester.Life · CAMPHUB · DekPort · Devpost (แต่ละแหล่ง ~ทุก 6 ชม.) | ✅ ทำงานอยู่ | อนุมัติงานที่ `/admin/imports` เป็นประจำ |
@@ -28,7 +28,7 @@
 
 ---
 
-## ขั้น 1 — ใส่ DNS อีเมลที่ Namecheap (👤 ~10 นาที แล้วรอ 5–30 นาที)
+## ขั้น 1 ✅ — ใส่ DNS อีเมลที่ Namecheap (👤 ~10 นาที แล้วรอ 5–30 นาที)
 
 เพื่อให้ส่งอีเมลในนาม `noreply@mahidolstartup.site` ได้ และไม่ตกถังขยะ (เพิ่มโดเมนใน Resend ไว้ให้แล้ว)
 
@@ -54,7 +54,7 @@
 
 ---
 
-## ขั้น 2 — สร้าง Resend API key + เลือกแพ็กเกจ (👤 ~5 นาที)
+## ขั้น 2 ✅ — สร้าง Resend API key + เลือกแพ็กเกจ (👤 ~5 นาที)
 
 1. ☐ https://resend.com/api-keys → **Create API Key**
    - Name: `mahidol-startup-club`
@@ -74,7 +74,7 @@
 
 ---
 
-## ขั้น 3 — Supabase Access Token (👤 ~2 นาที) แล้วให้ Claude ตั้งค่า Supabase ทั้งหมด (🤖)
+## ขั้น 3 ✅ — Supabase Access Token (👤 ~2 นาที) แล้วให้ Claude ตั้งค่า Supabase ทั้งหมด (🤖)
 
 1. ☐ https://supabase.com/dashboard/account/tokens → **Generate new token** ชื่อ `msc-setup`
 2. ☐ ใส่ใน `.env.local` บรรทัด `SUPABASE_ACCESS_TOKEN=`
@@ -91,7 +91,7 @@
 
 ---
 
-## ขั้น 4 — ล็อกอินด้วย Google (👤 ~15 นาที)
+## ขั้น 4 ✅ — ล็อกอินด้วย Google (👤 ~15 นาที)
 
 1. ☐ https://console.cloud.google.com → มุมบนซ้าย **Select a project → New Project** ชื่อ `Mahidol Startup Club`
 2. ☐ เมนู **APIs & Services → OAuth consent screen** (หรือ **Google Auth Platform**) → **Get started**
