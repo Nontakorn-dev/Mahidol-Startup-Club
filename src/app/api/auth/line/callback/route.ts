@@ -5,8 +5,6 @@ import { env } from '@/lib/env'
 import { exchangeLineCode, lineFriendshipStatus } from '@/lib/line/login'
 import { linkLineToUser } from '@/lib/line/link'
 import { getViewer } from '@/lib/auth'
-import { isOaFriend, pushMessage } from '@/lib/line/messaging'
-import { linkedProfile, welcome } from '@/lib/line/bot'
 
 const LINE_COOKIE = 'msc_line_oauth'
 type Flow = { state: string; nonce: string; next: string; uid: string }
@@ -32,14 +30,9 @@ export async function GET(request: NextRequest) {
     const identity = await exchangeLineCode(code, `${env.siteUrl}/api/auth/line/callback`, flow.nonce)
     const friend = await lineFriendshipStatus(identity.accessToken).catch(() => null)
     await linkLineToUser(viewer.userId, identity.sub, { displayName: identity.name, picture: identity.picture, friend })
-    // Just added as a friend on the consent screen → the follow event greets them (free reply).
-    // Already a friend → one push: welcome + "pick your interests" (one push = one message).
-    const justAdded = sp.get('friendship_status_changed') === 'true'
-    const isFriend = friend ?? (await isOaFriend(identity.sub))
-    if (isFriend && !justAdded) {
-      const profile = await linkedProfile(identity.sub)
-      await pushMessage(identity.sub, await welcome(identity.sub, profile, true)).catch((err) => console.error('LINE welcome push', err))
-    }
+    // No push here: someone who just added the OA is greeted by the follow event (a free
+    // reply); someone who was already a friend got that welcome before. Linking switches them
+    // to the member menu, where "บัญชี & ความสนใจ" opens the interest picker (also a reply).
   } catch (err) {
     console.error(err)
     return back(`line_error=${encodeURIComponent('เชื่อมต่อ LINE ไม่สำเร็จ กรุณาลองใหม่')}`, flow.next)
