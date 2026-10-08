@@ -8,7 +8,7 @@ type Item = { href: string; label: string; icon: (p: { size?: number }) => React
 const ITEMS: Item[] = [
   { href: '/admin', label: 'ภาพรวม', icon: IconDashboard, exact: true },
   { href: '/admin/events', label: 'งานแข่ง & ทุน', icon: IconTrophy },
-  { href: '/admin/imports', label: 'นำเข้างาน (Hackza)', icon: IconSparkle, badge: 'imports' },
+  { href: '/admin/imports', label: 'นำเข้างาน', icon: IconSparkle, badge: 'imports' },
   { href: '/admin/community', label: 'ทีม & โปรไฟล์', icon: IconPeople, badge: 'posts' },
   { href: '/admin/users', label: 'ผู้ใช้', icon: IconUser },
   { href: '/admin/broadcasts', label: 'ประกาศข่าวสาร', icon: IconMegaphone },

@@ -630,3 +630,6 @@ dl.kv dd { margin: 0; font-weight: 600; }
 .cal-event:hover { color: var(--navy); box-shadow: 0 8px 24px -10px rgba(16, 35, 63, 0.25); }
 .cal-event.closed { opacity: 0.55; }
 @media (max-width: 640px) { .cal-row { grid-template-columns: 58px minmax(0, 1fr); gap: 10px; } .cal-day b { font-size: 21px; } .cal-event { flex-wrap: wrap; } }
+
+/* Admin · import sources */
+.import-sources { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }

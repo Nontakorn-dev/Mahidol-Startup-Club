@@ -22,7 +22,7 @@
 | Continue with Google | ❌ ปุ่มยังซ่อน | **ขั้น 4** |
 | อีเมลแจ้งเตือน/ประกาศ | ❌ ยังไม่ส่ง | DNS + Resend key → **ขั้น 1–3** |
 | LINE OA (เชื่อมบัญชี, แจ้งเตือน, แชตบอต AI, rich menu) | ❌ ยังไม่เปิด | **ขั้น 5–6** |
-| ดึงงานจาก Hackza ทุก 6 ชม. | ✅ ทำงานอยู่ | อนุมัติงานที่ `/admin/imports` เป็นประจำ |
+| ดึงงานจาก Hackza · Contester.Life · CAMPHUB · DekPort · Devpost (แต่ละแหล่ง ~ทุก 6 ชม.) | ✅ ทำงานอยู่ | อนุมัติงานที่ `/admin/imports` เป็นประจำ |
 | งานตั้งต้น 4 งาน | ⚠️ ยังไม่มีลิงก์สมัคร | **ขั้น 7** |
 
 ---
@@ -217,7 +217,7 @@
    3. 👤 Google Cloud: เพิ่ม Authorized JavaScript origin `https://mahidolstartup.site`
    4. 👤 LINE Messaging API: Webhook URL
    5. 👤 LINE Login: Callback URL
-   6. Supabase cron 2 jobs (`hackza-sync`, `email-outbox`) ที่เรียก URL เว็บ
+   6. Supabase cron 2 jobs (`imports-sync`, `email-outbox`) ที่เรียก URL เว็บ
    7. Rich menu (รันสคริปต์ใหม่)
 
 ---
@@ -287,7 +287,7 @@
 
 ## สิ่งที่ทำงานอัตโนมัติอยู่แล้ว (ไม่ต้องทำอะไร)
 
-- ดึงงานจาก Hackza ทุก 6 ชม. (Supabase pg_cron `hackza-sync`) → รอแอดมินอนุมัติ
+- ดึงงานจาก 5 แหล่ง (Supabase pg_cron `imports-sync` ทุกชั่วโมง, แต่ละแหล่ง ~ทุก 6 ชม.) → รอแอดมินอนุมัติ (ดูแท็บ “ซ้ำกับที่มีแล้ว” และ “ข้ามอัตโนมัติ” เป็นครั้งคราว)
 - ส่งอีเมลค้างในคิวทุกนาที (pg_cron `email-outbox` ทำงานเฉพาะตอนมีคิว)
 - ทุกวัน 08:00 น.: เตือนงานที่บันทึกไว้ก่อนปิดรับ 3 วัน + ส่งสรุปรายวัน (Vercel Cron `/api/cron/daily`)
 - ย้ายงานที่รอตรวจแต่หมดเขตไปเป็น “หมดเวลา”, ล้างแคชคำค้น AI ที่เก่าเกิน 2 วัน

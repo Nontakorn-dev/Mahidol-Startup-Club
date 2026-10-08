@@ -9,7 +9,7 @@
       "schedule": "0 1 * * *"
     },
     {
-      "path": "/api/cron/hackza",
+      "path": "/api/cron/imports",
       "schedule": "37 13 * * *"
     }
   ]

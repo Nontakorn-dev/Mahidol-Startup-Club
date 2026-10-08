@@ -7,28 +7,32 @@ import { actionAdmin } from '@/lib/auth'
 import { adminClient } from '@/lib/supabase/admin'
 import { notifyEventMatches } from '@/lib/event-notify'
 import { slugify } from '@/lib/format'
-import { syncHackza } from '@/lib/importers/hackza'
+import { BOT_UA } from '@/lib/importers/http'
+import type { MappedEvent } from '@/lib/importers/map'
+import { SOURCE_BY_KEY, syncDue } from '@/lib/importers/sync'
 import type { EventRow } from '@/lib/types'
 
-type Mapped = {
-  title: string
-  category: string
-  organizer: string | null
-  summary: string | null
-  benefit: string | null
-  eligibility: string | null
-  overview: string | null
-  apply_url: string | null
-  deadline: string | null
-  deadline_at?: string | null
-  event_start?: string | null
-  event_end?: string | null
-  location?: string | null
-  format?: 'onsite' | 'online' | 'hybrid' | null
-  poster_url: string | null
-  tags: string[]
-  source: string
-  source_url: string
+type Mapped = Partial<MappedEvent> & Pick<MappedEvent, 'title' | 'category' | 'source' | 'source_url'>
+
+const POSTER_TYPES: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }
+
+/** Keep our own copy of the poster so the event doesn't break when the source removes it. */
+async function copyPoster(url: string | null | undefined, slug: string): Promise<string | null> {
+  if (!url) return null
+  try {
+    const res = await fetch(url, { headers: { 'User-Agent': BOT_UA }, signal: AbortSignal.timeout(15_000) })
+    const type = (res.headers.get('content-type') || '').split(';')[0].trim()
+    if (!res.ok || !POSTER_TYPES[type]) return url
+    const buf = Buffer.from(await res.arrayBuffer())
+    if (buf.length > 2 * 1024 * 1024) return url // bucket limit; next.config allows the source hosts
+    const db = adminClient()
+    const path = `imported/${slug.replace(/[^a-z0-9ก-๙-]/gi, '').slice(0, 60) || 'event'}-${Date.now().toString(36)}.${POSTER_TYPES[type]}`
+    const { error } = await db.storage.from('posters').upload(path, buf, { contentType: type, upsert: true })
+    if (error) return url
+    return db.storage.from('posters').getPublicUrl(path).data.publicUrl
+  } catch {
+    return url
+  }
 }
 
 async function uniqueSlug(base: string) {
@@ -55,26 +59,27 @@ async function approveOne(importId: string, adminId: string, publish: boolean): 
     .maybeSingle()
   if (!imp) return null
   const m = imp.mapped as Mapped
+  const slug = await uniqueSlug(slugify(m.title))
   const { data: event, error } = await db
     .from('events')
     .insert({
-      slug: await uniqueSlug(slugify(m.title)),
+      slug,
       title: m.title,
       category: m.category,
-      organizer: m.organizer,
-      summary: m.summary,
-      benefit: m.benefit,
-      eligibility: m.eligibility,
-      overview: m.overview,
-      apply_url: m.apply_url,
-      deadline: m.deadline,
+      organizer: m.organizer ?? null,
+      summary: m.summary ?? null,
+      benefit: m.benefit ?? null,
+      eligibility: m.eligibility ?? null,
+      overview: m.overview ?? null,
+      apply_url: m.apply_url ?? m.source_url,
+      deadline: m.deadline ?? null,
       deadline_at: m.deadline_at ?? null,
       event_start: m.event_start ?? null,
       event_end: m.event_end ?? null,
       location: m.location ?? null,
       format: m.format ?? null,
-      poster_url: m.poster_url,
-      tags: m.tags,
+      poster_url: await copyPoster(m.poster_url, slug),
+      tags: m.tags ?? [],
       source: m.source,
       source_url: m.source_url,
       status: publish ? 'published' : 'draft',
@@ -128,22 +133,30 @@ export async function setImportStatus(form: FormData) {
   const status = z.enum(['rejected', 'pending']).parse(form.get('status'))
   await adminClient()
     .from('event_imports')
-    .update({ status, reviewed_by: admin.userId, reviewed_at: new Date().toISOString() })
+    .update({
+      status,
+      reviewed_by: admin.userId,
+      reviewed_at: new Date().toISOString(),
+      ...(status === 'pending' ? { duplicate_of: null, duplicate_event_id: null, skip_reason: null } : {}),
+    })
     .eq('id', id)
     .neq('status', 'approved')
   revalidatePath('/admin/imports')
 }
 
-export async function syncNow(): Promise<{ ok?: string; error?: string }> {
+export async function syncNow(form: FormData): Promise<{ ok?: string; error?: string }> {
   await actionAdmin()
-  const db = adminClient()
-  // Be polite to Hackza: at most one manual sync every 10 minutes.
-  const { data: last } = await db.from('import_runs').select('started_at').eq('source', 'hackza').order('started_at', { ascending: false }).limit(1).maybeSingle()
-  if (last && Date.now() - new Date(last.started_at).getTime() < 10 * 60_000) {
-    return { error: 'เพิ่งซิงก์ไปเมื่อไม่นานนี้ — รอ 10 นาทีแล้วลองใหม่ (เพื่อไม่ให้รบกวนเว็บต้นทาง)' }
-  }
-  const r = await syncHackza('manual')
+  const only = form.get('source')
+  const keys = typeof only === 'string' && SOURCE_BY_KEY[only] ? [only] : undefined
+  // Be polite to the sources: each one at most once every 10 minutes, even when forced.
+  const { results, waiting } = await syncDue('manual', { force: true, budgetMs: 50_000, only: keys })
   revalidatePath('/admin/imports')
-  if (r.error) return { error: `ซิงก์ไม่สำเร็จ: ${r.error}` }
-  return { ok: `ดึงมา ${r.fetched} รายการ · เกี่ยวข้อง ${r.relevant} · ใหม่ ${r.inserted} · อัปเดต ${r.updated} · ข้าม ${r.skipped}` }
+  if (!results.length) return { error: 'เพิ่งซิงก์ไปเมื่อไม่นานนี้ — รอ 10 นาทีแล้วลองใหม่ (เพื่อไม่ให้รบกวนเว็บต้นทาง)' }
+  const lines = results.map((r) =>
+    r.error
+      ? `${SOURCE_BY_KEY[r.source].name}: ไม่สำเร็จ (${r.error})`
+      : `${SOURCE_BY_KEY[r.source].name}: ใหม่ ${r.inserted} · ซ้ำ ${r.duplicates} · อัปเดต ${r.updated} · ข้าม ${r.skipped}`,
+  )
+  if (waiting.length) lines.push(`ยังไม่ถึงคิว: ${waiting.map((k) => SOURCE_BY_KEY[k].name).join(', ')} (กดอีกครั้งหลังจากนี้)`)
+  return results.every((r) => r.error) ? { error: lines.join('\n') } : { ok: lines.join('\n') }
 }

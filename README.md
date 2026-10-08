@@ -16,7 +16,7 @@
 | Co-founder | `/cofounder`, `/cofounder/new` |
 | ข้อความ | `/inbox` — ส่งข้อความ, ขอทำความรู้จักแบบไม่ระบุชื่อ (เปิดเผยชื่อเมื่อตอบรับ), ชวนเข้าทีม/ขอเข้าทีม, ไฟล์แนบ, realtime |
 | บัญชี | `/login` (Google · อีเมลรหัส 6 หลัก/ปุ่มในอีเมล · รหัสผ่าน), `/onboarding`, `/me` (🔗 เชื่อมต่อ LINE), `/u/[id]`, `/settings/notifications` (เชื่อม/ยกเลิก LINE, หัวข้อแจ้งเตือน, ความถี่) |
-| แอดมิน | `/admin` ภาพรวม · `/admin/imports` ตรวจงานที่ดึงจาก Hackza · `/admin/events` เพิ่ม/แก้งาน + พรีวิว + ดาวหน้าแรก · `/admin/community` ตรวจ/ลบโพสต์ · `/admin/users` ตั้งแอดมิน/ระงับ · `/admin/broadcasts` ส่งประกาศ LINE + อีเมล |
+| แอดมิน | `/admin` ภาพรวม · `/admin/imports` ตรวจงานที่ดึงจาก Hackza · Contester · CAMPHUB · DekPort · Devpost · `/admin/events` เพิ่ม/แก้งาน + พรีวิว + ดาวหน้าแรก · `/admin/community` ตรวจ/ลบโพสต์ · `/admin/users` ตั้งแอดมิน/ระงับ · `/admin/broadcasts` ส่งประกาศ LINE + อีเมล |
 | LINE OA | webhook: follow/unfollow, account link, ปุ่ม “ยอมรับ/ปฏิเสธ” ในแชต, พิมพ์ประโยคในแชตแล้ว AI ตอบเป็นการ์ดงาน, rich menu |
 
 ### การเชื่อม LINE (Email User ID ↔ LINE User ID)
@@ -44,18 +44,32 @@ LINE ไม่ใช่ช่องทางล็อกอิน — ใช้�
 
 ข้อมูลที่ตรวจสอบจากหน้าทางการแล้วอยู่ใน `scripts/data/opportunities-*.json` (มีลิงก์แหล่งที่มาทุกงาน) → `node --env-file=.env.local scripts/apply-opportunities.mjs scripts/data/opportunities-2026-10.json` — เผยแพร่ทันที (ไม่ยิงแจ้งเตือนทีละงาน), คัดลอกโปสเตอร์มาเก็บใน bucket `posters` ของเรา, รันซ้ำได้ (upsert ตาม slug)
 
-## ดึงงานจาก Hackza (อัตโนมัติ + แอดมินตรวจ)
+## ดึงงานอัตโนมัติจากหลายแหล่ง (แอดมินตรวจก่อนเผยแพร่เสมอ)
 
 ```
-ทุก 6 ชั่วโมง (Supabase pg_cron) → /api/cron/hackza → ดึง hackza.org/hackathons → คัดเฉพาะสาย startup · นวัตกรรม · workshop · ธุรกิจ
-→ event_imports (pending) → /admin/imports → อนุมัติ & เผยแพร่ / แก้ไขก่อนเผยแพร่ / ไม่เอา → นักศึกษาเห็น (+ แจ้งเตือนคนที่สนใจ)
+ทุกชั่วโมง (Supabase pg_cron `imports-sync`) → /api/cron/imports → ซิงก์แหล่งที่ถึงรอบ (แต่ละแหล่ง ~ทุก 6 ชม.)
+→ คัดเฉพาะสาย startup · นวัตกรรม · workshop · ธุรกิจ ที่นักศึกษามหาวิทยาลัยสมัครได้
+→ event_imports: pending (รอตรวจ) / duplicate (งานเดียวกันจากเว็บอื่น) / skipped (ตัวกรองข้าม)
+→ /admin/imports → อนุมัติ & เผยแพร่ / แก้ไขก่อนเผยแพร่ / ไม่เอา → นักศึกษาเห็น (+ แจ้งเตือนคนที่สนใจ)
 ```
 
-- ตรวจสอบแล้ว: Hackza **ไม่มี Public API** และ robots.txt `Disallow: /api/` จึงไม่เรียก API ภายในของเขา ใช้เฉพาะหน้า `/hackathons` (อนุญาต) ซึ่งฝังข้อมูลทุกรายการไว้ในหน้าเดียว
-- ไม่มี Cloudflare/CAPTCHA และเราไม่ bypass ระบบป้องกันใดๆ · ตรวจ robots.txt ทุกครั้งก่อนดึง · 1 request ต่อรอบ · User-Agent ระบุตัวตน · ถ้าโดน 403/429 จะหยุดรอรอบถัดไป · ปุ่ม “ซิงก์ตอนนี้” กดได้ไม่เกิน 1 ครั้ง/10 นาที
-- ตัวตั้งเวลา: Vercel แพ็กเกจ Hobby รัน cron ได้วันละครั้ง จึงใช้ **Supabase pg_cron + pg_net** เรียก endpoint ทุก 6 ชม. (job `hackza-sync`, token เก็บใน Supabase Vault ชื่อ `hackza_cron_token`) และมี Vercel cron วันละครั้งเป็นสำรอง — endpoint ข้ามการดึงถ้าเพิ่งซิงก์สำเร็จภายใน 5 ชม. · ถ้าเปลี่ยนโดเมน ให้แก้ URL ใน job (`supabase/migrations/0007_hackza_pg_cron.sql`) · ถ้าอัปเกรด Vercel Pro เปลี่ยน schedule ใน `vercel.json` เป็น `0 */6 * * *` แทนได้
-- คะแนนความเกี่ยวข้อง (`src/lib/importers/hackza.ts`): คำสำคัญ startup/ผู้ประกอบการ/ธุรกิจ/นวัตกรรม/pitch/บ่มเพาะ (ชื่อหนัก × 2) + workshop/hackathon/AI/สุขภาพ/ความยั่งยืน + ประเภทงาน, ตัดงานที่ปิดรับแล้ว, งานเฉพาะ ม.ปลาย, ประกวดภาพยนตร์/ออกแบบ/exchange — ปรับ threshold ได้ที่ `RELEVANCE_THRESHOLD`
-- งานที่อนุมัติแสดงเครดิต “ข้อมูลจาก Hackza” และใช้ลิงก์สมัครของผู้จัด · การตัดสินใจอนุมัติ/ไม่เอาจะไม่ถูกเขียนทับในรอบซิงก์ถัดไป
+| แหล่ง | ดึงอย่างไร (ตรวจ robots.txt แล้ว) | ความน่าเชื่อถือ |
+|---|---|---|
+| [Hackza](https://www.hackza.org/hackathons) | ไม่มี Public API, robots ห้าม `/api/` → อ่านหน้า `/hackathons` หน้าเดียว (ข้อมูลฝังใน RSC payload) | สูง · มีเวลาปิดรับแม่นยำ |
+| [Contester.Life](https://contester.life) | robots ห้าม `/api/` → หน้าแรก (10 งานล่าสุด ข้อมูลครบ) + `sitemap.xml` → หน้างานที่ใหม่/แก้ไข (schema.org Event) ไม่เกิน 15 หน้า/รอบ | กลาง · ชมรม/ผู้จัดโพสต์เอง บางงานรับเฉพาะนิสิตมหาลัยผู้จัด (ติดธงให้) |
+| [CAMPHUB](https://www.camphub.in.th) | WordPress REST API สาธารณะ (กรองแท็ก ปริญญาตรี/บุคคลทั่วไป ไม่เอา timeout) → เปิดหน้าโพสต์เฉพาะที่ดูเกี่ยวข้อง ไม่เกิน 12 หน้า/รอบ | สูง · ทีมงานเขียนเอง วันปิดรับ/ผู้จัด/คุณสมบัติครบ |
+| [DekPort](https://dekport.com/competitions) | robots อนุญาต `/competitions/*` → หน้าหมวด business + technology → หน้างานไม่เกิน 10 หน้า/รอบ | กลาง · เคยลงวันผิด → ติดธง “ตรวจกับประกาศทางการ” ทุกงาน |
+| [Devpost](https://devpost.com/hackathons) | JSON สาธารณะ `/api/hackathons` (robots อนุญาตทั้งหมด) · เฉพาะงานออนไลน์ มีเงินรางวัล ผู้ลงทะเบียน ≥ 500 · ถ้าหน้างานไม่อนุญาตบอทจะใช้ข้อมูลจากรายการแทน | สูง · ผู้จัดลงเอง (ระดับโลก) |
+
+- **มารยาทในการดึง** (`src/lib/importers/http.ts`): User-Agent ระบุตัวตน `MahidolStartupClubBot` + ลิงก์ติดต่อ · อ่าน robots.txt ทุกรอบ (รองรับ `*`, `$`, กลุ่ม user-agent) · ทีละ request เว้น 0.8 วินาที · โดน 403/429/503 หรือหน้า challenge → หยุด ไม่ bypass Cloudflare/CAPTCHA ใด ๆ · หน้าที่ไม่เปลี่ยน (ดูจาก lastmod/modified) ไม่ดึงซ้ำ · ปุ่มซิงก์มือ ≤ 1 ครั้ง/10 นาที/แหล่ง
+- **บั๊ก “รายละเอียดเป็น $2c”**: Next.js ย้ายข้อความยาวไปเป็น text row (`2c:T5a3,…`) แล้วเหลือ `"$2c"` ใน JSON — ตัวเก่าใช้ regex หา row จึงอ่าน id ผิดเมื่อข้อความก่อนหน้าลงท้ายด้วยตัวเลข (“…2569” + “29:T…” → `6929`) ตอนนี้ `src/lib/importers/rsc.ts` อ่าน payload ทีละ row ตามความยาว byte จริง และ `cleanValue()` ทิ้งค่าที่ยังเป็น `$xx` เสมอ
+- **คัดกรอง** (`relevance.ts`): ระดับการศึกษาจากแหล่ง (หรือเดาจากข้อความ) — ม.ปลายอย่างเดียวตัดทิ้ง · คะแนนคำสำคัญ startup/ผู้ประกอบการ/ธุรกิจ/นวัตกรรม/pitch/บ่มเพาะ (ชื่อหนัก) + workshop/hackathon/AI/สุขภาพ/ยั่งยืน · ตัดสายภาพยนตร์/ดนตรี/อาสา/ติวสอบ/open house · `RELEVANCE_THRESHOLD = 4`
+- **กันซ้ำข้ามเว็บ** (`sync.ts`): ชื่อเหมือน/ครอบกัน, คำเฉพาะตรงกัน, ตัวย่อ (GSEA ↔ Global Student Entrepreneur Awards), ลิงก์สมัครเดียวกัน, หรือหน้าเดียวกับงานที่ลงไว้แล้ว (วันปิดห่างกันไม่เกิน 45 วัน) → เป็น `duplicate` ของรายการแรก การ์ดรายการหลักจะบอก “พบในแหล่งอื่นด้วย” และเตือนถ้า **วันปิดรับไม่ตรงกัน**
+- **หน้าแอดมิน** แสดงสถานะซิงก์ของแต่ละแหล่ง + เช็กลิสต์ความน่าเชื่อถือต่อการ์ด (ลิงก์สมัครของผู้จัด / เวลาปิดชัดเจน / พบกี่แหล่ง / ธงเตือน) · แท็บ “ข้ามอัตโนมัติ” ให้กู้งานที่ตัวกรองพลาด · อนุมัติแล้วระบบคัดลอกโปสเตอร์มาเก็บใน bucket ของเรา
+- การตัดสินใจอนุมัติ/ไม่เอาจะไม่ถูกเขียนทับ (อัปเดตเฉพาะ snapshot) · งานในคิวที่เลยวันปิด → หมดเวลา · รายการที่ถูกข้ามจะถูกลบเองเมื่อแหล่งไม่แสดงแล้ว 30 วัน
+- ทดลองแบบไม่เขียนฐานข้อมูล: `npx tsx --conditions=react-server --env-file=.env.local scripts/dev/try-sources.mts [hackza contester …]` · ซิงก์จริงจากเครื่อง: `scripts/dev/sync.mts [--refresh] [แหล่ง…]`
+- ตัวตั้งเวลา: Vercel Hobby รัน cron ได้วันละครั้ง จึงใช้ Supabase pg_cron + pg_net (token ใน Vault ชื่อ `hackza_cron_token`) และมี Vercel cron วันละครั้งเป็นสำรอง · ถ้าเปลี่ยนโดเมน แก้ URL ใน job `imports-sync` (`supabase/migrations/0010_multi_source_imports.sql`)
+- เพิ่มแหล่งใหม่: เขียน adapter ใน `src/lib/importers/sources/` ให้คืน `SourceItem` แล้วใส่ใน `SOURCES` (`sync.ts`)
 
 ## รองรับผู้ใช้จำนวนมากในต้นทุนต่ำ
 

@@ -18,7 +18,7 @@ import { CATEGORIES } from '@/lib/constants'
 
 export const dynamic = 'force-dynamic'
 
-const SOURCE_NAMES: Record<string, string> = { hackza: 'Hackza', devpost: 'Devpost', dekport: 'DekPort', camphub: 'CAMPHUB', zeekr: 'เว็บไซต์ทางการ ZEEKR Design Lab', 'chula-inter': 'Chula International Affairs' }
+const SOURCE_NAMES: Record<string, string> = { hackza: 'Hackza', devpost: 'Devpost', dekport: 'DekPort', camphub: 'CAMPHUB', contester: 'Contester.Life', zeekr: 'เว็บไซต์ทางการ ZEEKR Design Lab', 'chula-inter': 'Chula International Affairs' }
 
 export async function generateMetadata({ params }: PageProps<'/opportunities/[slug]'>): Promise<Metadata> {
   const { slug } = await params

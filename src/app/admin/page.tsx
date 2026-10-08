@@ -106,9 +106,9 @@ export default async function AdminDashboard() {
             <h2 style={{ marginBottom: 8 }}>ต้องจัดการ</h2>
             {pendingImports > 0 && (
               <Link href="/admin/imports" className="todo">
-                <span className="tag tag-ok tag-sm">Hackza</span>
+                <span className="tag tag-ok tag-sm">นำเข้า</span>
                 <span className="stack" style={{ flex: 1, minWidth: 0, lineHeight: 1.4 }}>
-                  <span style={{ fontWeight: 600, fontSize: 15 }}>{pendingImports} งานจาก Hackza รอตรวจ</span>
+                  <span style={{ fontWeight: 600, fontSize: 15 }}>{pendingImports} งานที่ดึงมาจากเว็บต่าง ๆ รอตรวจ</span>
                   <span className="muted" style={{ fontSize: 13 }}>
                     อนุมัติแล้วจะเผยแพร่และแจ้งเตือนคนที่สนใจทันที
                   </span>
