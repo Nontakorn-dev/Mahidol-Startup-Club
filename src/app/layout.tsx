@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { IBM_Plex_Sans_Thai, Kanit } from 'next/font/google'
+import { Suspense } from 'react'
+import NavProgress from '@/components/NavProgress'
 import './globals.css'
 
 const kanit = Kanit({ subsets: ['thai', 'latin'], weight: ['400', '500', '600'], variable: '--font-kanit', display: 'swap' })
@@ -18,7 +20,12 @@ export const viewport: Viewport = { themeColor: '#0035AD', width: 'device-width'
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="th" className={`${kanit.variable} ${plex.variable}`}>
-      <body>{children}</body>
+      <body>
+        <Suspense fallback={null}>
+          <NavProgress />
+        </Suspense>
+        {children}
+      </body>
     </html>
   )
 }

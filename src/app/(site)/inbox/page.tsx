@@ -12,6 +12,7 @@ import { getConversation, listInbox } from '@/lib/data/inbox'
 import { markRead } from '@/lib/messaging'
 import { chatTime, dayLabel, deadlineLine } from '@/lib/format'
 import { ROLES, type Role } from '@/lib/constants'
+import SubmitButton from '@/components/SubmitButton'
 
 export const metadata: Metadata = { title: 'ข้อความ' }
 export const dynamic = 'force-dynamic'
@@ -142,12 +143,12 @@ export default async function InboxPage({ searchParams }: PageProps<'/inbox'>) {
                       {view.canRespond ? (
                         <form action={respondAction} className="row" style={{ gap: 8 }}>
                           <input type="hidden" name="conversationId" value={view.conv.id} />
-                          <button type="submit" name="accept" value="1" className="btn btn-primary" style={{ flex: 1, minHeight: 44, fontSize: 14 }}>
+                          <SubmitButton name="accept" value="1" className="btn btn-primary" style={{ flex: 1, minHeight: 44, fontSize: 14 }}>
                             {view.conv.request_kind === 'invite' ? 'ตอบรับเข้าทีม' : view.conv.request_kind === 'join' ? 'รับเข้าทีม' : 'ยอมรับ'}
-                          </button>
-                          <button type="submit" name="accept" value="0" className="btn btn-outline" style={{ flex: 1, minHeight: 44, fontSize: 14 }}>
+                          </SubmitButton>
+                          <SubmitButton name="accept" value="0" className="btn btn-outline" style={{ flex: 1, minHeight: 44, fontSize: 14 }}>
                             ยังไม่ตอนนี้
-                          </button>
+                          </SubmitButton>
                         </form>
                       ) : (
                         <span className="muted" style={{ fontSize: 13 }}>

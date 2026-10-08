@@ -9,6 +9,7 @@ import { adminClient } from '@/lib/supabase/admin'
 import { adminTime, deadlineLine, thaiDeadline, todayBangkok } from '@/lib/format'
 import { CATEGORIES, type Category } from '@/lib/constants'
 import { SOURCES, SOURCE_BY_KEY, lastRuns } from '@/lib/importers/sync'
+import SubmitButton from '@/components/SubmitButton'
 
 export const metadata: Metadata = { title: 'นำเข้างาน' }
 export const dynamic = 'force-dynamic'
@@ -173,9 +174,9 @@ export default async function ImportsPage({ searchParams }: PageProps<'/admin/im
         {tab === 'pending' && rows.length > 0 && (
           <form id="bulk" action={approveSelected} className="row" style={{ gap: 8 }}>
             <span className="muted" style={{ fontSize: 13 }}>ติ๊กเลือกแล้ว</span>
-            <button type="submit" className="btn btn-primary btn-sm">
+            <SubmitButton className="btn btn-primary btn-sm">
               อนุมัติ &amp; เผยแพร่ที่เลือก
-            </button>
+            </SubmitButton>
           </form>
         )}
       </div>
@@ -342,17 +343,17 @@ export default async function ImportsPage({ searchParams }: PageProps<'/admin/im
                     <form action={setImportStatus}>
                       <input type="hidden" name="id" value={r.id} />
                       <input type="hidden" name="status" value="rejected" />
-                      <button type="submit" className="btn btn-danger btn-sm">ไม่เอา</button>
+                      <SubmitButton className="btn btn-danger btn-sm">ไม่เอา</SubmitButton>
                     </form>
                     <form action={approveImport}>
                       <input type="hidden" name="id" value={r.id} />
                       <input type="hidden" name="mode" value="edit" />
-                      <button type="submit" className="btn btn-outline btn-sm">แก้ไขก่อนเผยแพร่</button>
+                      <SubmitButton className="btn btn-outline btn-sm">แก้ไขก่อนเผยแพร่</SubmitButton>
                     </form>
                     <form action={approveImport}>
                       <input type="hidden" name="id" value={r.id} />
                       <input type="hidden" name="mode" value="publish" />
-                      <button type="submit" className="btn btn-orange btn-sm">อนุมัติ &amp; เผยแพร่</button>
+                      <SubmitButton className="btn btn-orange btn-sm">อนุมัติ &amp; เผยแพร่</SubmitButton>
                     </form>
                   </>
                 )}
@@ -365,16 +366,16 @@ export default async function ImportsPage({ searchParams }: PageProps<'/admin/im
                   <form action={setImportStatus}>
                     <input type="hidden" name="id" value={r.id} />
                     <input type="hidden" name="status" value="pending" />
-                    <button type="submit" className="btn btn-outline btn-sm">
+                    <SubmitButton className="btn btn-outline btn-sm">
                       {tab === 'duplicate' ? 'ไม่ใช่งานเดียวกัน — ย้ายไปรอตรวจ' : 'ย้ายไปรอตรวจ'}
-                    </button>
+                    </SubmitButton>
                   </form>
                 )}
                 {(tab === 'skipped' || tab === 'duplicate') && (
                   <form action={setImportStatus}>
                     <input type="hidden" name="id" value={r.id} />
                     <input type="hidden" name="status" value="rejected" />
-                    <button type="submit" className="btn btn-ghost btn-sm">ซ่อนถาวร</button>
+                    <SubmitButton className="btn btn-ghost btn-sm">ซ่อนถาวร</SubmitButton>
                   </form>
                 )}
               </div>

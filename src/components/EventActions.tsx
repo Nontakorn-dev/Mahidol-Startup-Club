@@ -57,12 +57,19 @@ export function SaveButton({ eventId, initial, loggedIn, compact }: { eventId: s
       aria-label={saved ? 'ยกเลิกบันทึก' : 'บันทึก'}
       title={saved ? 'บันทึกแล้ว — เราจะเตือนก่อนปิดรับ 3 วัน' : 'บันทึกไว้ และรับการเตือนก่อนปิดรับ'}
       disabled={pending}
-      onClick={() =>
+      onClick={() => {
+        // Optimistic: flip now, settle on the server's answer (or roll back on failure).
+        const before = saved
+        setSaved(!before)
         start(async () => {
-          const res = await toggleSaveEvent(eventId)
-          if (typeof res.saved === 'boolean') setSaved(res.saved)
+          try {
+            const res = await toggleSaveEvent(eventId)
+            setSaved(typeof res.saved === 'boolean' ? res.saved : before)
+          } catch {
+            setSaved(before)
+          }
         })
-      }
+      }}
     >
       <IconBookmark filled={saved} />
       {!compact && (saved ? 'บันทึกแล้ว' : 'บันทึก')}

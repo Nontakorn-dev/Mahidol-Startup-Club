@@ -7,6 +7,9 @@ const supabaseHost = process.env.NEXT_PUBLIC_SUPABASE_URL
 const nextConfig: NextConfig = {
   experimental: {
     serverActions: { bodySizeLimit: '4mb' },
+    // Keep visited pages in the browser for 30 s: back/forward and re-opening a tab are instant.
+    // Server actions (save, post, approve…) still refresh what they change.
+    staleTimes: { dynamic: 30, static: 180 },
   },
   images: {
     remotePatterns: [

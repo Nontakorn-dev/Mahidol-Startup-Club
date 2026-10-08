@@ -188,7 +188,7 @@ export default function LoginForm({ next }: { next: string }) {
         </span>
         {error && <div className="alert alert-error">{error}</div>}
         <button type="submit" className="btn btn-primary" style={{ minHeight: 50, fontSize: 16 }} disabled={busy}>
-          {mode === 'email' ? (busy ? 'กำลังส่ง…' : 'รับรหัสเข้าสู่ระบบทางอีเมล') : mode === 'signin' ? 'เข้าสู่ระบบ' : 'สมัครสมาชิก'}
+          {mode === 'email' ? (busy ? 'กำลังส่ง…' : 'รับรหัสเข้าสู่ระบบทางอีเมล') : mode === 'signin' ? (busy ? 'กำลังเข้าสู่ระบบ…' : 'เข้าสู่ระบบ') : busy ? 'กำลังสมัคร…' : 'สมัครสมาชิก'}
         </button>
       </form>
       <div className="row wrap" style={{ justifyContent: 'center', gap: 12 }}>

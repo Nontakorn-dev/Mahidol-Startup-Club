@@ -7,6 +7,7 @@ import { requireAdmin } from '@/lib/auth'
 import { adminClient } from '@/lib/supabase/admin'
 import { adminTime, shortName } from '@/lib/format'
 import { ROLES, TRACK_SEEK_LABEL, type Role, type Track } from '@/lib/constants'
+import SubmitButton from '@/components/SubmitButton'
 
 export const metadata: Metadata = { title: 'ทีม & โปรไฟล์' }
 export const dynamic = 'force-dynamic'
@@ -151,9 +152,9 @@ export default async function AdminCommunityPage({ searchParams }: PageProps<'/a
                   <input type="hidden" name="type" value={tab} />
                   <input type="hidden" name="id" value={r.id} />
                   <input type="hidden" name="action" value={r.status === 'removed' ? 'restore' : 'remove'} />
-                  <button type="submit" className={r.status === 'removed' ? 'btn btn-outline btn-sm' : 'btn btn-danger btn-sm'}>
+                  <SubmitButton className={r.status === 'removed' ? 'btn btn-outline btn-sm' : 'btn btn-danger btn-sm'}>
                     {r.status === 'removed' ? 'กู้คืน' : 'ลบ'}
-                  </button>
+                  </SubmitButton>
                 </form>
               </span>
             </div>

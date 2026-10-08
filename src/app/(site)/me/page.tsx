@@ -10,6 +10,7 @@ import { adminClient } from '@/lib/supabase/admin'
 import { listPublishedEvents } from '@/lib/data/events'
 import { shortName } from '@/lib/format'
 import { ROLES, STAGES, TRACK_SEEK_LABEL, type Role, type Stage, type Track } from '@/lib/constants'
+import SubmitButton from '@/components/SubmitButton'
 
 export const metadata: Metadata = { title: 'โปรไฟล์ของฉัน' }
 export const dynamic = 'force-dynamic'
@@ -44,17 +45,17 @@ function PostRow({ type, id, title, sub, status, editHref, anonymous }: { type: 
             <input type="hidden" name="type" value={type} />
             <input type="hidden" name="id" value={id} />
             <input type="hidden" name="status" value={status === 'open' ? 'closed' : 'open'} />
-            <button type="submit" className="btn btn-outline btn-sm">
+            <SubmitButton className="btn btn-outline btn-sm">
               {status === 'open' ? 'ปิดประกาศ' : 'เปิดอีกครั้ง'}
-            </button>
+            </SubmitButton>
           </form>
           <form action={setPostStatus}>
             <input type="hidden" name="type" value={type} />
             <input type="hidden" name="id" value={id} />
             <input type="hidden" name="status" value="delete" />
-            <button type="submit" className="btn btn-danger btn-sm">
+            <SubmitButton className="btn btn-danger btn-sm">
               ลบ
-            </button>
+            </SubmitButton>
           </form>
         </span>
       )}

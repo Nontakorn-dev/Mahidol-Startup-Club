@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { unsubscribeEmail, unsubscribeUserId } from '@/lib/unsubscribe'
+import SubmitButton from '@/components/SubmitButton'
 
 export const metadata: Metadata = { title: 'ยกเลิกรับอีเมล', robots: { index: false } }
 
@@ -32,7 +33,7 @@ export default async function UnsubscribePage({ searchParams }: PageProps<'/unsu
             <h1 style={{ margin: 0, fontWeight: 600, fontSize: 28 }}>ยกเลิกรับอีเมลข่าวสาร?</h1>
             <p className="muted" style={{ margin: 0 }}>คุณจะไม่ได้รับคำชวนเข้าทีม งานแข่ง และประกาศจากชมรมทางอีเมล (ยังเข้าสู่ระบบด้วยอีเมลได้ตามปกติ)</p>
             <input type="hidden" name="t" value={t} />
-            <button type="submit" className="btn btn-primary btn-pill">ยืนยันยกเลิกรับอีเมล</button>
+            <SubmitButton className="btn btn-primary btn-pill">ยืนยันยกเลิกรับอีเมล</SubmitButton>
           </form>
         ) : (
           <>

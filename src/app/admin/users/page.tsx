@@ -5,6 +5,7 @@ import { IconLine, IconSearch, IconVerified } from '@/components/icons'
 import { requireAdmin } from '@/lib/auth'
 import { adminClient } from '@/lib/supabase/admin'
 import { adminTime, facultyLine, shortName } from '@/lib/format'
+import SubmitButton from '@/components/SubmitButton'
 
 export const metadata: Metadata = { title: 'ผู้ใช้' }
 export const dynamic = 'force-dynamic'
@@ -111,16 +112,16 @@ export default async function AdminUsersPage({ searchParams }: PageProps<'/admin
                     <form action={setUserRole}>
                       <input type="hidden" name="id" value={u.id} />
                       <input type="hidden" name="role" value={u.role === 'admin' ? 'user' : 'admin'} />
-                      <button type="submit" className="btn btn-outline btn-sm">
+                      <SubmitButton className="btn btn-outline btn-sm">
                         {u.role === 'admin' ? 'ถอดแอดมิน' : 'ตั้งเป็นแอดมิน'}
-                      </button>
+                      </SubmitButton>
                     </form>
                     <form action={setSuspended}>
                       <input type="hidden" name="id" value={u.id} />
                       <input type="hidden" name="suspended" value={u.is_suspended ? '0' : '1'} />
-                      <button type="submit" className={u.is_suspended ? 'btn btn-outline btn-sm' : 'btn btn-danger btn-sm'}>
+                      <SubmitButton className={u.is_suspended ? 'btn btn-outline btn-sm' : 'btn btn-danger btn-sm'}>
                         {u.is_suspended ? 'ยกเลิกระงับ' : 'ระงับ'}
-                      </button>
+                      </SubmitButton>
                     </form>
                   </>
                 )}
