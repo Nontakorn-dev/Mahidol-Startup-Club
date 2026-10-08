@@ -27,7 +27,8 @@ type Tab = (typeof TABS)[number]['key']
 
 const LEVEL_LABEL: Record<string, string> = { university: 'มหาวิทยาลัย', public: 'บุคคลทั่วไป', high_school: 'ม.ปลาย' }
 
-type Mapped = { summary: string | null; benefit: string | null; eligibility: string | null; overview: string | null; apply_url: string | null; location?: string | null; event_start?: string | null; event_end?: string | null }
+type Mapped = { summary: string | null; benefit: string | null; eligibility: string | null; overview: string | null; apply_url: string | null; location?: string | null; event_start?: string | null; event_end?: string | null; ai?: { f?: string[] } }
+const AI_FIELD: Record<string, string> = { organizer: 'ผู้จัด', location: 'สถานที่', event_start: 'วันเริ่มงาน', event_end: 'วันจบงาน', deadline_at: 'เวลาปิดรับ', benefit: 'รางวัล', eligibility: 'ผู้สมัครได้', format: 'รูปแบบ' }
 type ImportRow = {
   id: string
   source: string
@@ -295,6 +296,9 @@ export default async function ImportsPage({ searchParams }: PageProps<'/admin/im
                       {flags.has('needs_verification') && <Check warn>แหล่งนี้เคยลงวันที่คลาดเคลื่อน — เทียบกับประกาศทางการก่อน</Check>}
                       {internal && <Check>อาจรับเฉพาะนิสิต/นักศึกษาของมหาวิทยาลัยผู้จัด{internal.includes(':') ? ` (${internal.split(':')[1]})` : ''}</Check>}
                       {flags.has('no_description') && <Check warn>ไม่มีรายละเอียดงาน — เพิ่มเองตอน “แก้ไขก่อนเผยแพร่”</Check>}
+                      {m.ai?.f?.length ? (
+                        <Check warn>เติมจากรายละเอียดงานโดย AI (ตรวจแล้วว่ามีในข้อความ): {m.ai.f.map((f) => AI_FIELD[f] ?? f).join(', ')} — ดูให้แน่ใจก่อนเผยแพร่</Check>
+                      ) : null}
                     </div>
                   )}
 

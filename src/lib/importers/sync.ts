@@ -2,6 +2,7 @@ import 'server-only'
 import { adminClient } from '@/lib/supabase/admin'
 import { todayBangkok } from '@/lib/format'
 import { resetRobots } from './http'
+import { fillGaps, MAX_CALLS_PER_RUN, type AiFill } from './enrich'
 import { mapToEvent } from './map'
 import { scoreRelevance, skipReason } from './relevance'
 import { normalUrl, pageKey, sameOpportunity } from './text'
@@ -36,6 +37,9 @@ const HOUR = 3_600_000
 /** A source is due ~6 h after its last good run (hourly trigger, so 5.5 h keeps the rhythm). */
 const DUE_AFTER = 5.5 * HOUR
 const RETRY_AFTER_ERROR = 1 * HOUR
+/** A site that refuses us (403/429/challenge/robots) is left alone longer each time: 6 h, 12 h, then daily. */
+const BLOCKED = /responded (403|429|503)|bot challenge|robots\.txt disallows/
+const blockedWait = (times: number) => Math.min(24, 6 * 2 ** Math.max(0, times - 1)) * HOUR
 export const MANUAL_COOLDOWN_MS = 10 * 60_000
 
 type IndexEntry = { importId?: string; eventId?: string; source: string; sourceId?: string; title: string; deadline: string | null; apply: string | null; sourceUrl?: string | null }
@@ -72,10 +76,14 @@ export async function syncSource(src: Source, trigger: 'cron' | 'manual', until:
   const { data: run } = await db.from('import_runs').insert({ source: src.key, trigger }).select('id').single()
   const result: SyncResult = { source: src.key, fetched: 0, relevant: 0, inserted: 0, updated: 0, skipped: 0, duplicates: 0 }
   try {
-    const { data: existingRows } = await db.from('event_imports').select('id, source_id, status, reviewed_at, version:raw->>version').eq('source', src.key)
-    const known = new Map<string, KnownRow & { id: string; reviewed: boolean }>(
-      (existingRows || []).map((r) => [r.source_id, { id: r.id, status: r.status, reviewed: Boolean(r.reviewed_at), version: refresh ? null : ((r.version as string | null) ?? null) }]),
+    const { data: existingRows } = await db.from('event_imports').select('id, source_id, status, reviewed_at, version:raw->>version, ai:mapped->ai').eq('source', src.key)
+    const known = new Map<string, KnownRow & { id: string; reviewed: boolean; ai: AiFill | null }>(
+      (existingRows || []).map((r) => [
+        r.source_id,
+        { id: r.id, status: r.status, reviewed: Boolean(r.reviewed_at), version: refresh ? null : ((r.version as string | null) ?? null), ai: (r.ai as AiFill | null) ?? null },
+      ]),
     )
+    let aiCalls = 0
     const { items, seen, scanned } = await src.fetch({ known, until })
     result.fetched = scanned
     const index = await duplicateIndex()
@@ -87,9 +95,12 @@ export async function syncSource(src: Source, trigger: 'cron' | 'manual', until:
       const mapped = mapToEvent(src.key, it, matched, levels)
       const reason = skipReason(it, score, today)
       const closed = reason === 'เลยวันปิดรับแล้ว' || reason === 'ปิดรับสมัครแล้ว'
+      const prevRow = known.get(it.source_id)
+      // Listings headed for the queue: fill missing fields from their own text (checked, cached).
+      if (!reason && (await fillGaps(mapped, prevRow?.ai, aiCalls < MAX_CALLS_PER_RUN && Date.now() < until))) aiCalls++
       const flags = [...(it.flags ?? [])]
       if (!it.deadline) flags.push('no_deadline')
-      else if (!it.deadline_at) flags.push('date_only')
+      else if (!mapped.deadline_at) flags.push('date_only')
       if (!it.apply_url || it.apply_url === it.source_url) flags.push('no_official_link')
       if (!mapped.overview) flags.push('no_description')
 
@@ -103,7 +114,7 @@ export async function syncSource(src: Source, trigger: 'cron' | 'manual', until:
         source_type: it.source_type,
         category: mapped.category,
         deadline: it.deadline,
-        deadline_at: it.deadline_at,
+        deadline_at: mapped.deadline_at,
         mapped,
         raw: { version: it.version ?? null, data: it.raw },
         relevance: score,
@@ -183,12 +194,19 @@ export async function syncSource(src: Source, trigger: 'cron' | 'manual', until:
   return result
 }
 
-export type LastRun = { source: string; started_at: string; finished_at: string | null; error: string | null }
+export type LastRun = { source: string; started_at: string; finished_at: string | null; error: string | null; blockedRuns: number }
 
 export async function lastRuns(): Promise<Map<string, LastRun>> {
   const { data } = await adminClient().from('import_runs').select('source, started_at, finished_at, error').order('started_at', { ascending: false }).limit(200)
   const out = new Map<string, LastRun>()
-  for (const r of data || []) if (!out.has(r.source)) out.set(r.source, r)
+  const streakDone = new Set<string>()
+  for (const r of data || []) {
+    if (!out.has(r.source)) out.set(r.source, { ...r, blockedRuns: 0 })
+    // Consecutive most-recent runs that were refused by the site.
+    if (streakDone.has(r.source)) continue
+    if (r.error && BLOCKED.test(r.error)) out.get(r.source)!.blockedRuns++
+    else streakDone.add(r.source)
+  }
   return out
 }
 
@@ -210,6 +228,7 @@ export async function syncDue(trigger: 'cron' | 'manual', opts: { force?: boolea
       const r = runs.get(s.key)
       if (age(s.key) < MANUAL_COOLDOWN_MS) return false
       if (opts.force || !r) return true
+      if (r.blockedRuns) return age(s.key) > blockedWait(r.blockedRuns)
       return age(s.key) > (r.error || !r.finished_at ? RETRY_AFTER_ERROR : DUE_AFTER)
     })
     .sort((a, b) => age(b.key) - age(a.key))

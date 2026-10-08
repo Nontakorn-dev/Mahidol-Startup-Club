@@ -146,7 +146,6 @@ export function parseContesterDetail(html: string): LdEvent | null {
 
 function fromDetail(slug: string, ld: LdEvent, lastmod: string): SourceItem {
   const description = ld.description ? markdownToText(ld.description) : null
-  const mode = ld.eventAttendanceMode ?? ''
   return {
     source_id: slug,
     source_url: `${ORIGIN}/contest/${slug}`,
@@ -161,7 +160,9 @@ function fromDetail(slug: string, ld: LdEvent, lastmod: string): SourceItem {
     event_start: null,
     event_end: null,
     location: typeof ld.location?.name === 'string' ? ld.location.name : null,
-    format: /Online/.test(mode) ? 'online' : /Mixed/.test(mode) ? 'hybrid' : /Offline/.test(mode) ? 'onsite' : null,
+    // The page's JSON-LD says "Online" for every contest (even onsite ones) — not trustworthy;
+    // left empty so the description decides (enrich.ts, checked against the text).
+    format: null,
     prize: prizeText(ld.offers?.price ?? null),
     eligibility: null,
     levels: [],

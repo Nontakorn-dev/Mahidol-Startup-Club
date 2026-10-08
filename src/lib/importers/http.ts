@@ -89,7 +89,13 @@ export async function politeGet(url: string, accept = 'text/html', timeoutMs = 2
     signal: AbortSignal.timeout(timeoutMs),
   })
   if (res.status === 403 || res.status === 429 || res.status === 503) {
-    throw new SourceBlocked(`${new URL(url).hostname} responded ${res.status} — backing off until the next run`)
+    // Say *why* (Cloudflare challenge / WAF block / rate limit) so the admin page shows the real cause.
+    const mitigated = res.headers.get('cf-mitigated')
+    const retry = res.headers.get('retry-after')
+    const title = (await res.text().catch(() => '')).match(/<title[^>]*>([^<]{0,80})/i)?.[1]?.trim()
+    const why = mitigated ? `Cloudflare ${mitigated}` : res.headers.get('server')?.toLowerCase().includes('cloudflare') ? 'Cloudflare' : null
+    const detail = [why, title && `“${title}”`, retry && `retry-after ${retry}s`].filter(Boolean).join(' · ')
+    throw new SourceBlocked(`${new URL(url).hostname} responded ${res.status}${detail ? ` (${detail})` : ''} — backing off until the next run`)
   }
   if (!res.ok) throw new Error(`${new URL(url).hostname} responded ${res.status} for ${new URL(url).pathname}`)
   const body = await res.text()
