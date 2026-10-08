@@ -9,7 +9,7 @@ const plex = IBM_Plex_Sans_Thai({ subsets: ['thai', 'latin'], weight: ['400', '5
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
-  title: { default: 'Mahidol Startup Club — Hands-on. Support. Connect.', template: '%s · Mahidol Startup Club' },
+  title: { default: 'Mahidol Startup Club — Hands-on Experience. Support, Connect.', template: '%s · Mahidol Startup Club' },
   description: 'ชมรมสตาร์ตอัพมหาวิทยาลัยมหิดล หางานแข่ง ทุน ทีม และ co-founder ในที่เดียว พิมพ์สิ่งที่อยากทำ แล้วให้ AI พาไปเจอสิ่งที่ใช่',
   openGraph: { images: ['/assets/hero-connect.png'], locale: 'th_TH', type: 'website' },
   icons: { icon: '/assets/partners/msc.png' },

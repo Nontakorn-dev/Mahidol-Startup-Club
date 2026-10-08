@@ -44,8 +44,8 @@ const rocket = await sharp(logo).extract({ left: 0, top: 0, width: 262, height: 
     <rect width="${W}" height="${H}" fill="url(#g)"/>
     <circle cx="${W - 250}" cy="${H / 2}" r="250" fill="#E8EEFB"/>
     <image href="${b64(wordmark)}" x="56" y="58" width="330" height="100"/>
-    <text x="56" y="250" font-family="${FONT}" font-size="54" font-weight="600" fill="${C.navy}">Hands-on. Support.</text>
-    <text x="56" y="318" font-family="${FONT}" font-size="54" font-weight="600" fill="${C.brand}">Connect.</text>
+    <text x="56" y="250" font-family="${FONT}" font-size="46" font-weight="600" fill="${C.navy}">Hands-on Experience.</text>
+    <text x="56" y="312" font-family="${FONT}" font-size="46" font-weight="600" fill="${C.brand}">Support, Connect.</text>
     <text x="58" y="378" font-family="${FONT}" font-size="25" fill="${C.muted}">หางานแข่ง · ทุน · ทีม · co-founder ในที่เดียว</text>
     <rect x="56" y="420" width="96" height="10" rx="5" fill="${C.yellow}"/>
     <rect x="160" y="420" width="40" height="10" rx="5" fill="${C.orange}"/>
@@ -123,8 +123,8 @@ async function renderMenu(name, tilesDef) {
     <rect width="${W}" height="${H}" fill="${C.bg}"/>
     <rect width="${W}" height="${BANNER}" fill="url(#b)"/>
     <image href="${b64(wordmark)}" x="70" y="${(BANNER - 230) / 2}" height="230" width="${Math.round((900 / 272) * 230)}"/>
-    <text x="${W - 80}" y="160" font-family="${FONT}" font-size="78" font-weight="600" fill="${C.navy}" text-anchor="end">Hands-on. Support.</text>
-    <text x="${W - 80}" y="250" font-family="${FONT}" font-size="78" font-weight="600" fill="${C.brand}" text-anchor="end">Connect.</text>
+    <text x="${W - 80}" y="160" font-family="${FONT}" font-size="78" font-weight="600" fill="${C.navy}" text-anchor="end">Hands-on Experience.</text>
+    <text x="${W - 80}" y="250" font-family="${FONT}" font-size="78" font-weight="600" fill="${C.brand}" text-anchor="end">Support, Connect.</text>
     <rect x="${W - 80 - 150}" y="282" width="150" height="14" rx="7" fill="${C.yellow}"/>
     ${tiles}
   </svg>`

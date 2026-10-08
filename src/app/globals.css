@@ -675,3 +675,10 @@ dl.kv dd { margin: 0; font-weight: 600; }
   .cta-block { display: flex; justify-content: space-between; width: 100%; margin-top: 22px; min-height: 58px; font-size: 17px; }
 }
 @media (prefers-reduced-motion: reduce) { .cta-link, .cta-link .arrow { transition: none; } }
+
+/* Club mantra headline: two balanced lines, each kept on one line and sized to fit */
+h1.mantra { display: flex; flex-direction: column; align-items: flex-start; gap: 0.06em; font-size: min(56px, 8.2vw); line-height: 1.12; letter-spacing: -0.01em; }
+h1.mantra .line { white-space: nowrap; color: inherit; }
+.hero h1.mantra .accent { color: var(--brand); }
+.login-brand h1.mantra { font-size: min(46px, 7.6vw); }
+.login-brand h1.mantra .accent { color: var(--yellow); }

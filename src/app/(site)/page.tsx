@@ -48,10 +48,9 @@ export default async function HomePage() {
         <div className="inner">
           <div style={{ flex: '1 1 520px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 24 }}>
             <span className="eyebrow">สนับสนุนโดย iNT มหาวิทยาลัยมหิดล</span>
-            <h1>
-              Hands-on. Support.
-              <br />
-              <span>Connect.</span>
+            <h1 className="mantra">
+              <span className="line">Hands-on Experience.</span>
+              <span className="line accent">Support, Connect.</span>
             </h1>
             <p style={{ margin: 0, maxWidth: 560, fontSize: 17, color: 'var(--muted)' }}>
               ชมรมสตาร์ตอัพมหาวิทยาลัยมหิดล สำหรับคนที่อยากลงมือทำจริง มีคนซัพพอร์ต และได้เจอเพื่อนร่วมทาง

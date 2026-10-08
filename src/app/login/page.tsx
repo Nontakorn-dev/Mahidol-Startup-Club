@@ -38,10 +38,9 @@ export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
             height={380}
             style={{ width: '100%', maxWidth: 380, height: 'auto', alignSelf: 'center', filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.25))' }}
           />
-          <h1>
-            Hands-on. Support.
-            <br />
-            <span>Connect.</span>
+          <h1 className="mantra">
+            <span className="line">Hands-on Experience.</span>
+            <span className="line accent">Support, Connect.</span>
           </h1>
           <div className="bullets">
             {['หางานแข่ง ทุน และโครงการบ่มเพาะในที่เดียว', 'เจอทีมและ co-founder ที่สกิลเสริมกัน', 'แจ้งเตือนผ่าน LINE ทันทีเมื่อมีคนชวนเข้าทีม'].map((t) => (
