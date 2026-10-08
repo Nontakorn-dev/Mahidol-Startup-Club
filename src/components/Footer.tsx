@@ -7,22 +7,21 @@ export default function Footer() {
     <footer className="site-footer">
       <div className="inner">
         <div className="about">
-          <Link href="/" style={{ alignSelf: 'flex-start', display: 'flex' }}>
-            <Image src="/assets/logo.png" alt="Mahidol Startup Club" width={212} height={64} style={{ height: 64, width: 'auto' }} />
+          <Link href="/" className="logo-link">
+            <Image src="/assets/logo.png" alt="Mahidol Startup Club" width={212} height={64} className="logo" />
           </Link>
-          <p>
-            Hands-on. Support. Connect. ชมรมสตาร์ตอัพมหิดล สำหรับคนที่อยากลงมือทำและเจอคนที่ใช่{' '}
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginLeft: 8, fontSize: 14, whiteSpace: 'nowrap' }}>
-              <span style={{ flex: 'none', width: 10, height: 10, borderRadius: '50%', background: 'var(--yellow)' }} />
-              สนับสนุนโดย iNT มหาวิทยาลัยมหิดล
-            </span>
+          <p className="mantra-sm">
+            <span>Hands-on Experience.</span> <span className="accent">Support, Connect.</span>
           </p>
+          <p className="desc">ชมรมสตาร์ตอัพมหิดล สำหรับคนที่อยากลงมือทำและเจอคนที่ใช่</p>
+          <span className="backed">
+            <span className="dot" aria-hidden="true" />
+            สนับสนุนโดย iNT มหาวิทยาลัยมหิดล
+          </span>
         </div>
         <div className="follow">
-          <span className="head" style={{ fontWeight: 600, fontSize: 19 }}>
-            ติดตามเรา
-          </span>
-          <span style={{ display: 'flex', gap: 14 }}>
+          <span className="head">ติดตามเรา</span>
+          <span className="icons">
             <a href={SOCIAL.openChat} target="_blank" rel="noopener" aria-label="LINE OpenChat ของชมรม" title="LINE OpenChat" className="social-lg">
               <img src="/assets/line.png" alt="" />
             </a>
@@ -30,9 +29,7 @@ export default function Footer() {
               <img src="/assets/instagram.png" alt="" />
             </a>
           </span>
-          <span className="muted" style={{ fontSize: 14 }}>
-            {SOCIAL.instagramHandle}
-          </span>
+          <span className="handle">{SOCIAL.instagramHandle}</span>
         </div>
       </div>
     </footer>
