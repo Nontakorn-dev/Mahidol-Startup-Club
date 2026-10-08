@@ -1,13 +1,14 @@
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { after } from 'next/server'
+import { headers } from 'next/headers'
 import type { Metadata } from 'next'
 import Crumbs from '@/components/Crumbs'
 import SearchBox from '@/components/SearchBox'
 import { CofounderCardView, EmptyState, EventCard, SeekerCardView, TeamCardView } from '@/components/Cards'
 import { IconArrowRight, IconClose, IconPlus, IconSparkle } from '@/components/icons'
 import { getViewer } from '@/lib/auth'
-import { decodeIntent, encodeIntent, explainMatches, parseIntent, type Intent, type Target } from '@/lib/ai/intent'
+import { decodeIntent, encodeIntent, parseIntent, type Engine, type Intent, type ParseStatus, type Target } from '@/lib/ai/intent'
 import { addChipHref, intentChips, runSearch, type SearchResults } from '@/lib/search'
 import { adminClient } from '@/lib/supabase/admin'
 import { CATEGORIES, CATEGORY_KEYS, ROLES, ROLE_KEYS } from '@/lib/constants'
@@ -25,7 +26,7 @@ export default async function SearchPage({ searchParams }: PageProps<'/search'>)
     <div className="bg-soft">
       <section className="page-head">
         <div className="inner" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 18 }}>
-          <Crumbs back="/" trail={[{ label: 'หน้าแรก', href: '/' }, { label: 'ค้นหาด้วย AI' }]} />
+          <Crumbs back="/" trail={[{ label: 'หน้าแรก', href: '/' }, { label: 'ค้นหา' }]} />
           <h1>{q ? 'ผลที่ตรงกับคุณ' : 'อยากทำอะไรต่อ?'}</h1>
           <SearchBox key={q} id="q3" defaultValue={q} maxWidth={760} />
         </div>
@@ -53,7 +54,7 @@ function ResultsSkeleton() {
         <span className="spin" style={{ display: 'inline-flex' }}>
           <IconSparkle size={18} />
         </span>
-        DeepSeek กำลังแปลความต้องการของคุณเป็นตัวกรอง…
+        กำลังหาสิ่งที่ตรงกับคุณ…
       </div>
       <div className="row wrap" style={{ gap: 8 }}>
         {[120, 90, 140].map((w) => (
@@ -73,10 +74,24 @@ async function Results({ q, f, tab, scope }: { q: string; f: string | null; tab:
   const viewer = await getViewer()
   let intent: Intent | null = f ? await decodeIntent(f) : null
   let usedFallback = false
+  let engine: Engine = 'cache'
+  let status: ParseStatus = 'ok'
+  let message: string | undefined
   if (!intent) {
-    const parsed = await parseIntent(q)
+    const h = await headers()
+    const actor = viewer?.userId ?? h.get('x-real-ip') ?? h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'anon'
+    const parsed = await parseIntent(q, actor)
     intent = parsed.intent
     usedFallback = parsed.usedFallback
+    engine = parsed.engine
+    status = parsed.status
+    message = parsed.message
+  }
+  if (status !== 'ok') {
+    after(async () => {
+      await adminClient().from('search_logs').insert({ user_id: viewer?.userId ?? null, query: q.slice(0, 300), used_fallback: false, source: 'web', engine, status })
+    })
+    return <RejectedQuery message={message ?? ''} />
   }
   const results = await runSearch(intent, viewer?.userId ?? null)
   const counts = {
@@ -98,6 +113,8 @@ async function Results({ q, f, tab, scope }: { q: string; f: string | null; tab:
           used_fallback: usedFallback,
           result_counts: counts,
           source: 'web',
+          engine,
+          status,
         })
     })
   }
@@ -119,9 +136,9 @@ async function Results({ q, f, tab, scope }: { q: string; f: string | null; tab:
             <span style={{ color: 'var(--brand)', display: 'inline-flex' }}>
               <IconSparkle size={16} />
             </span>
-            {usedFallback ? 'ค้นด้วยคำสำคัญ' : 'AI เข้าใจว่า'}
+            {usedFallback ? 'ค้นจากคำสำคัญ' : 'เข้าใจว่าคุณกำลัง'}
           </span>
-          {intent.summary && !usedFallback && <b style={{ fontSize: 15 }}>“{intent.summary}”</b>}
+          {intent.summary && <b style={{ fontSize: 15 }}>{intent.summary}</b>}
         </div>
         <div className="row wrap" style={{ gap: 8 }}>
           {chips.map((c) => (
@@ -161,15 +178,13 @@ async function Results({ q, f, tab, scope }: { q: string; f: string | null; tab:
           </details>
         </div>
         <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-          แก้ชิปได้ทันที — ระบบค้นใหม่จากฐานข้อมูลโดยไม่ต้องเรียก AI ซ้ำ
+          ไม่ตรงใจ? กดลบหรือเพิ่มชิปได้เลย ผลจะเปลี่ยนตามทันที
         </p>
       </div>
 
       <Suggestion intent={intent} results={results} />
 
-      <Suspense fallback={null}>
-        <AiPicks q={q} results={results} loggedIn={loggedIn} />
-      </Suspense>
+      <TopPicks results={results} />
 
       <div role="tablist" aria-label="ผลการค้นหา" className="segmented" style={{ alignSelf: 'flex-start', flexWrap: 'wrap' }}>
         {(['events', 'teams', 'people', 'cofounder'] as Target[]).map((t) => (
@@ -280,26 +295,43 @@ function Suggestion({ intent, results }: { intent: Intent; results: SearchResult
   )
 }
 
-/** Top picks across tabs with DeepSeek-written “แนะนำเพราะ” (streams in after the main results). */
-async function AiPicks({ q, results }: { q: string; results: SearchResults; loggedIn: boolean }) {
-  const picks: { key: string; type: string; title: string; href: string; text: string; fallback: string }[] = []
-  for (const r of results.events.slice(0, 2))
-    picks.push({ key: `e${picks.length}`, type: 'งาน', title: r.item.title, href: `/opportunities/${r.item.slug}`, text: `งาน ${r.item.title} (${CATEGORIES[r.item.category]}) ${r.item.summary ?? ''}`, fallback: r.reason })
-  for (const r of results.teams.slice(0, 1))
-    picks.push({ key: `t${picks.length}`, type: 'ทีม', title: r.item.name, href: `/teams?tab=teams${r.item.event ? `&event=${r.item.event.id}` : ''}`, text: `ทีม ${r.item.name}: ${r.item.pitch} มองหา ${r.item.roles_needed.map((x) => ROLES[x]).join(', ')}`, fallback: r.reason })
-  for (const r of results.people.slice(0, 1))
-    picks.push({ key: `p${picks.length}`, type: 'คน', title: r.item.author.name, href: '/teams?tab=people', text: `คนหาทีม: ${r.item.looking_text} ทักษะ ${r.item.skills.join(', ')}`, fallback: r.reason })
-  for (const r of results.cofounders.slice(0, 1))
-    picks.push({ key: `c${picks.length}`, type: 'Co-founder', title: r.item.idea_title || r.item.author.name, href: '/cofounder', text: `co-founder ไอเดีย ${r.item.idea_title ?? ''} ${r.item.problem ?? ''}`, fallback: r.reason })
+const EXAMPLES = ['หาทีมลง hackathon ฉันทำ UX ได้ ขาด dev', 'ทุนสตาร์ตอัพที่ปิดรับเดือนนี้', 'อยากได้ technical co-founder สาย HealthTech', 'workshop ธุรกิจ ใกล้ปิดรับ']
+
+/** Input the search can't use (empty, abusive, off-topic…): explain and offer examples. */
+function RejectedQuery({ message }: { message: string }) {
+  return (
+    <section className="box" style={{ gap: 14, maxWidth: 760 }}>
+      <b style={{ fontSize: 17 }}>{message}</b>
+      <div className="row wrap" style={{ gap: 8 }}>
+        {EXAMPLES.map((ex) => (
+          <Link key={ex} href={`/search?q=${encodeURIComponent(ex)}`} className="filter-chip">
+            {ex}
+          </Link>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+/** Best match from each tab, with the rule-based “แนะนำเพราะ” (no extra model call). */
+function TopPicks({ results }: { results: SearchResults }) {
+  const picks: { key: string; type: string; title: string; href: string; reason: string }[] = []
+  for (const r of results.events.slice(0, 2).filter((r) => r.score >= 3))
+    picks.push({ key: `e${r.item.id}`, type: 'งาน', title: r.item.title, href: `/opportunities/${r.item.slug}`, reason: r.reason })
+  for (const r of results.teams.slice(0, 1).filter((r) => r.score >= 3))
+    picks.push({ key: `t${r.item.id}`, type: 'ทีม', title: r.item.name, href: `/teams?tab=teams${r.item.event ? `&event=${r.item.event.id}` : ''}`, reason: r.reason })
+  for (const r of results.people.slice(0, 1).filter((r) => r.score >= 3))
+    picks.push({ key: `p${r.item.id}`, type: 'คน', title: r.item.author.name, href: '/teams?tab=people', reason: r.reason })
+  for (const r of results.cofounders.slice(0, 1).filter((r) => r.score >= 3))
+    picks.push({ key: `c${r.item.id}`, type: 'Co-founder', title: r.item.idea_title || r.item.author.name, href: '/cofounder', reason: r.reason })
   if (picks.length < 2) return null
-  const reasons = await explainMatches(q, picks.map((p) => ({ key: p.key, text: p.text })))
   return (
     <section className="box" style={{ background: '#fff', gap: 10 }}>
       <h2 className="row" style={{ gap: 8 }}>
         <span style={{ color: 'var(--brand)', display: 'inline-flex' }}>
           <IconSparkle size={18} />
         </span>
-        AI แนะนำสำหรับคุณ
+        แนะนำสำหรับคุณ
       </h2>
       {picks.map((p) => (
         <Link key={p.key} href={p.href} className="todo" style={{ padding: '12px 4px' }}>
@@ -307,7 +339,7 @@ async function AiPicks({ q, results }: { q: string; results: SearchResults; logg
           <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.4 }}>
             <span style={{ fontWeight: 600, fontSize: 15 }}>{p.title}</span>
             <span className="muted" style={{ fontSize: 13 }}>
-              แนะนำเพราะ {reasons[p.key] || p.fallback}
+              แนะนำเพราะ {p.reason}
             </span>
           </span>
           <IconArrowRight size={16} />

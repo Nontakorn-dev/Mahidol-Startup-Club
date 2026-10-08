@@ -172,8 +172,13 @@ async function onText(e: LineEvent) {
     return replyMessage(e.replyToken, [textMessage('ดูคนที่กำลังหาทีม และทีมที่กำลังหาคน', [{ label: 'เปิดหน้าเพื่อนร่วมทีม', url: '/teams?src=line' }])])
   }
 
-  // Free text → the same DeepSeek intent pipeline as the website.
-  const { intent, usedFallback } = await parseIntent(text)
+  // Free text → the same search pipeline as the website.
+  const parsed = await parseIntent(text, profile?.id ?? uid)
+  const { intent, usedFallback } = parsed
+  if (parsed.status !== 'ok') {
+    await adminClient().from('search_logs').insert({ user_id: profile?.id ?? null, query: text.slice(0, 300), used_fallback: false, source: 'line', engine: parsed.engine, status: parsed.status })
+    return replyMessage(e.replyToken, [textMessage(parsed.message ?? '', QUICK)])
+  }
   const results = await runSearch(intent, profile?.id ?? null)
   const searchUrl = `/search?q=${encodeURIComponent(text)}&src=line`
   await adminClient()
@@ -185,6 +190,8 @@ async function onText(e: LineEvent) {
       confidence: intent.confidence,
       used_fallback: usedFallback,
       source: 'line',
+      engine: parsed.engine,
+      status: parsed.status,
       result_counts: { events: results.events.length, teams: results.teams.length, people: results.people.length, cofounder: results.cofounders.length },
     })
 

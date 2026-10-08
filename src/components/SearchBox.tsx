@@ -3,7 +3,7 @@ import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { IconArrowRight } from './icons'
 
-/** Natural-language intent box. Submits to /search, where DeepSeek parses it. */
+/** Natural-language intent box. Submits to /search (parsing: src/lib/ai/intent.ts). */
 export default function SearchBox({
   defaultValue = '',
   placeholder = 'อยากทำอะไรต่อ? เช่น หาทีมลง TED Youth',
@@ -35,7 +35,7 @@ export default function SearchBox({
       <label htmlFor={id} className="sr-only">
         {placeholder}
       </label>
-      <input id={id} type="text" value={q} onChange={(e) => setQ(e.target.value)} placeholder={placeholder} autoComplete="off" enterKeyHint="search" />
+      <input id={id} type="text" maxLength={200} value={q} onChange={(e) => setQ(e.target.value)} placeholder={placeholder} autoComplete="off" enterKeyHint="search" />
       <button type="submit" className="search-go" aria-label="ค้นหา" disabled={pending}>
         {pending ? (
           <svg className="spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden="true">

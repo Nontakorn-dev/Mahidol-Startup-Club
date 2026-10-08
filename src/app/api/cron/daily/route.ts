@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
   const digests = await sendDigests()
 
   // 3) Housekeeping.
-  await db.from('search_cache').delete().lt('created_at', new Date(Date.now() - 2 * 86_400_000).toISOString())
+  await db.from('search_cache').delete().lt('created_at', new Date(Date.now() - 7 * 86_400_000).toISOString())
 
   return NextResponse.json({ ok: true, reminded, digests })
 }

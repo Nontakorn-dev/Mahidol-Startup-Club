@@ -26,9 +26,32 @@ const roleToTrack: Record<Role, Track> = {
   domain_expert: 'domain_expert',
 }
 
+// Thai ↔ English and spelling variants, so "healthtech" also finds "สุขภาพ" / "health tech".
+const KEYWORD_FAMILIES: string[][] = [
+  ['healthtech', 'health', 'สุขภาพ', 'การแพทย์', 'medical', 'medtech'],
+  ['edtech', 'education', 'การศึกษา', 'learning'],
+  ['fintech', 'finance', 'การเงิน', 'banking', 'payment'],
+  ['agritech', 'agriculture', 'เกษตร', 'farm'],
+  ['foodtech', 'food', 'อาหาร'],
+  ['esg', 'sustainability', 'sustainable', 'ความยั่งยืน', 'climate', 'green', 'สิ่งแวดล้อม'],
+  ['ai', 'artificial intelligence', 'ปัญญาประดิษฐ์', 'machine learning', 'genai'],
+  ['startup', 'สตาร์ตอัพ', 'สตาร์ทอัพ', 'entrepreneur', 'ผู้ประกอบการ'],
+  ['innovation', 'นวัตกรรม'],
+  ['energy', 'พลังงาน'],
+  ['game', 'เกม', 'gaming'],
+]
+const squash = (s: string) => s.toLowerCase().replace(/[\s\-_./]+/g, '')
+
+function variants(k: string): string[] {
+  const key = squash(k)
+  const family = KEYWORD_FAMILIES.find((f) => f.some((w) => squash(w) === key))
+  return [...new Set([key, ...(family ?? []).map(squash)])].filter((w) => w.length > 1)
+}
+
+/** How many keywords appear in the text (any variant counts once). */
 const kwHit = (text: string, keywords: string[]) => {
-  const t = text.toLowerCase()
-  return keywords.filter((k) => t.includes(k.toLowerCase())).length
+  const t = squash(text)
+  return keywords.filter((k) => variants(k).some((v) => (v.length <= 3 ? new RegExp(`(^|[^a-z])${v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^a-z]|$)`).test(text.toLowerCase()) : t.includes(v)))).length
 }
 
 const label = (roles: string[]) => roles.map((r) => ROLES[r as Role] ?? r).join(', ')
@@ -60,7 +83,7 @@ export async function runSearch(intent: Intent, viewerId: string | null): Promis
       score += 2 * tagHits.length
       reasons.push(`ต้องการคนสาย ${label(tagHits)} แบบคุณ`)
     }
-    const kw = kwHit(`${e.title} ${e.summary ?? ''} ${e.overview ?? ''} ${e.organizer ?? ''}`, intent.keywords)
+    const kw = kwHit(`${e.title} ${e.summary ?? ''} ${e.overview ?? ''} ${e.organizer ?? ''} ${e.tags.join(' ')} ${e.location ?? ''}`, intent.keywords)
     if (kw) {
       score += kw * 2
       reasons.push('ตรงกับคำค้นของคุณ')

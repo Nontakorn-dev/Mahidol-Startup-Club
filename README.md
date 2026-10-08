@@ -44,6 +44,22 @@ LINE ไม่ใช่ช่องทางล็อกอิน — ใช้�
 
 ข้อมูลที่ตรวจสอบจากหน้าทางการแล้วอยู่ใน `scripts/data/opportunities-*.json` (มีลิงก์แหล่งที่มาทุกงาน) → `node --env-file=.env.local scripts/apply-opportunities.mjs scripts/data/opportunities-2026-10.json` — เผยแพร่ทันที (ไม่ยิงแจ้งเตือนทีละงาน), คัดลอกโปสเตอร์มาเก็บใน bucket `posters` ของเรา, รันซ้ำได้ (upsert ตาม slug)
 
+## ค้นหาด้วยประโยค (เร็ว · ประหยัด · กันข้อความไม่เหมาะสม)
+
+```
+ข้อความ → guard (ทำความสะอาด, ลบอีเมล/เบอร์/เลขบัตร/ลิงก์, บล็อกคำหยาบ/ผิดกฎหมาย/นอกเรื่อง/prompt injection) — ไม่เสีย token
+       → cache (หน่วยความจำ → ตาราง search_cache 7 วัน)
+       → กฎภาษา (คำค้นสั้น/ชัด เช่น “ทุน”, “GSEA”, “หา dev เข้าทีม”, “workshop ใกล้ปิด”) — ไม่เสีย token
+       → โมเดลภาษา เฉพาะประโยคที่ซับซ้อน: prompt คงที่ ~580 token (provider cache ได้), ตอบ JSON key สั้น ~10–50 token
+       → จับคู่ชื่องานกับงานที่เผยแพร่อยู่ “ตอนนี้” ในเครื่องเอง → ค้นใน DB
+```
+
+- **งานใหม่ match ได้ทันที**: ไม่ส่งรายชื่องานให้โมเดลอีกแล้ว (เดิมส่งแค่ 80 งานแรก) โมเดลแค่บอก “ชื่องานที่ผู้ใช้พูดถึง” แล้ว `resolveEvent()` เทียบกับงานที่เผยแพร่ล่าสุด (ชื่อ, คำเฉพาะ, ตัวย่อ เช่น GSEA) — cache เก็บผลของโมเดล ไม่ใช่ slug จึงจับคู่กับงานที่เพิ่งอนุมัติได้เสมอ
+- **ต้นทุน/ความเร็ว** (วัดจริง ต.ค. 2569): เดิม ~1,150 + 780 token/ครั้ง ~5 วินาที + เรียกซ้ำอีกครั้งเพื่อเขียน “แนะนำเพราะ” → ตอนนี้ ~580 (cache 512) + 8–50 token ~0.6–1.5 วินาที และคำค้นส่วนใหญ่ไม่เรียกโมเดลเลย · เหตุผล “แนะนำเพราะ” และสรุป “เข้าใจว่าคุณกำลัง…” สร้างจากกฎในเครื่อง
+- **เสถียร**: timeout 6 วินาที → ใช้ผลจากกฎแทนทันที · ล้ม 2 ครั้งติดหยุดเรียกโมเดล 1 นาที · จำกัด 8 ครั้ง/นาที/คน · เพดานรายวัน `AI_DAILY_LIMIT` (ค่าเริ่ม 2000 ครั้ง) เกินแล้วใช้กฎ
+- `search_logs.engine` บอกว่าแต่ละคำค้นตอบด้วยอะไร (guard/cache/rules/llm/fallback) — ดูว่าคำไหนควรเพิ่มเป็นกฎได้
+- หน้าเว็บไม่ระบุชื่อผู้ให้บริการโมเดล
+
 ## ดึงงานอัตโนมัติจากหลายแหล่ง (แอดมินตรวจก่อนเผยแพร่เสมอ)
 
 ```
@@ -152,7 +168,7 @@ src/app/admin/         หน้าแอดมิน
 src/app/actions/       Server Actions (ตรวจสิทธิ์ทุกครั้ง)
 src/app/api/           LINE link (Login consent)/webhook, cron, tracking
 src/app/line/link/     ลิงก์เฉพาะจาก OA (linkToken) → ล็อกอินอีเมล → LINE account link
-src/lib/ai/intent.ts   DeepSeek intent parser (JSON จำกัดค่า + cache + fallback)
+src/lib/ai/intent.ts   แปลงประโยคค้นหาเป็นตัวกรอง (guard → cache → rules → model) · src/lib/ai/guard.ts กรองข้อความไม่เหมาะสม
 src/lib/search.ts      query builder + จัดอันดับ + เหตุผล
 src/lib/notify.ts      dispatcher LINE → อีเมล → digest
 src/lib/line/          การเชื่อมบัญชี (link.ts), LINE Login consent, Messaging API + Flex builders
