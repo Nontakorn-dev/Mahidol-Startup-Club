@@ -650,10 +650,42 @@ dl.kv dd { margin: 0; font-weight: 600; }
 .cropper-view:focus-visible { box-shadow: 0 0 0 3px var(--brand); }
 .cropper-ring { position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 999px rgba(15, 23, 42, 0.55); border: 2px solid rgba(255, 255, 255, 0.9); pointer-events: none; }
 
-/* Home: "เปิดรับสมัครอยู่ตอนนี้" — 2×2 on desktop, 3 stacked on phones */
+/* Home: "เปิดรับสมัครอยู่ตอนนี้" — 2×2 on desktop and tablets (poster on top on tablets), 3 stacked on phones */
 .home-open-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
-@media (max-width: 1100px) { .home-open-grid { grid-template-columns: minmax(0, 1fr); } }
-@media (max-width: 900px) { .home-open-grid > :nth-child(n + 4) { display: none; } }
+@media (max-width: 1100px) {
+  .home-open-grid { gap: 20px; }
+  .home-open-grid .event-h { flex-direction: column; gap: 14px; }
+  .home-open-grid .event-h .poster { width: 100%; height: auto; aspect-ratio: 4 / 3; }
+  .home-open-grid .event-h .body { padding: 0 6px 6px; }
+  .home-open-grid .event-h .title { font-size: 20px; }
+}
+@media (max-width: 640px) {
+  .home-open-grid { grid-template-columns: minmax(0, 1fr); }
+  .home-open-grid > :nth-child(n + 4) { display: none; }
+}
+
+/* Home hero copy: left-aligned beside the artwork on desktop, centred on tablets, left on phones */
+.hero-copy { flex: 1 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 24px; }
+.hero-lead { margin: 0; max-width: 560px; font-size: 17px; color: var(--muted); }
+.hero-search { max-width: 600px; }
+@media (min-width: 641px) and (max-width: 1100px) {
+  .hero-copy { align-items: center; text-align: center; }
+  .hero-copy .eyebrow { align-self: center; }
+  .hero-copy h1.mantra { align-items: center; }
+  .hero-copy .hero-search, .hero-copy .explore { width: 100%; }
+  .hero-copy .search-box { text-align: left; }
+}
+@media (max-width: 640px) {
+  .hero-lead { font-size: 15px; line-height: 1.6; text-wrap: balance; }
+}
+
+/* Home: privacy pill + "ดูทั้งหมด" on one line under "เพื่อนที่กำลังมองหาทีม" */
+.seekers-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.seekers-bar .privacy-pill { align-self: center; white-space: nowrap; }
+@media (max-width: 640px) {
+  .seekers-bar .cta-link { min-height: 44px; gap: 8px; padding: 0 5px 0 16px; font-size: 15px; }
+  .seekers-bar .cta-link .arrow { width: 34px; height: 34px; }
+}
 
 /* Prominent "ดูทั้งหมด" call to action */
 .cta-link {
@@ -670,9 +702,10 @@ dl.kv dd { margin: 0; font-weight: 600; }
 .cta-link:hover .arrow { transform: translateX(4px); }
 .cta-link:focus-visible { outline: 3px solid #FFC726; outline-offset: 3px; }
 .cta-block { display: none; }
-@media (max-width: 900px) {
-  .hide-mobile { display: none !important; }
-  .cta-block { display: flex; justify-content: space-between; width: 100%; margin-top: 22px; min-height: 58px; font-size: 17px; }
+/* Tablets and phones: the "see all" button sits right under the section title, full width */
+@media (max-width: 1100px) {
+  .hide-tablet { display: none !important; }
+  .cta-block { display: flex; justify-content: space-between; width: 100%; margin: -14px 0 24px; min-height: 58px; font-size: 17px; }
 }
 @media (prefers-reduced-motion: reduce) { .cta-link, .cta-link .arrow { transition: none; } }
 

@@ -46,16 +46,16 @@ export default async function HomePage() {
     <>
       <section className="hero">
         <div className="inner">
-          <div style={{ flex: '1 1 520px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div className="hero-copy">
             <span className="eyebrow">สนับสนุนโดย iNT มหาวิทยาลัยมหิดล</span>
             <h1 className="mantra">
               <span className="line">Hands-on Experience.</span>
               <span className="line accent">Support, Connect.</span>
             </h1>
-            <p style={{ margin: 0, maxWidth: 560, fontSize: 17, color: 'var(--muted)' }}>
+            <p className="hero-lead">
               ชมรมสตาร์ตอัพมหาวิทยาลัยมหิดล สำหรับคนที่อยากลงมือทำจริง มีคนซัพพอร์ต และได้เจอเพื่อนร่วมทาง
             </p>
-            <div className="stack" style={{ gap: 10, maxWidth: 600 }}>
+            <div className="hero-search">
               <SearchBox />
             </div>
             <nav aria-label="Explore" className="explore">
@@ -98,7 +98,7 @@ export default async function HomePage() {
         <div className="container section">
           <div className="head-row">
             <h2 className="section-title">เปิดรับสมัครอยู่ตอนนี้</h2>
-            <Link href="/opportunities" className="cta-link hide-mobile">
+            <Link href="/opportunities" className="cta-link hide-tablet">
               ดูทั้งหมด{openCount ? ` ${openCount} งาน` : ''}
               <span className="arrow" aria-hidden="true">
                 <IconArrowRight size={18} />
@@ -107,19 +107,17 @@ export default async function HomePage() {
           </div>
           {events.length ? (
             <>
+              <Link href="/opportunities" className="cta-link cta-block">
+                ดูงานที่เปิดรับทั้งหมด{openCount ? ` ${openCount} งาน` : ''}
+                <span className="arrow" aria-hidden="true">
+                  <IconArrowRight size={18} />
+                </span>
+              </Link>
               <div className="home-open-grid">
                 {events.map((e) => (
                   <EventCardH key={e.id} e={e} />
                 ))}
               </div>
-              {openCount > 3 && (
-                <Link href="/opportunities" className="cta-link cta-block">
-                  ดูงานที่เปิดรับทั้งหมด {openCount} งาน
-                  <span className="arrow" aria-hidden="true">
-                    <IconArrowRight size={18} />
-                  </span>
-                </Link>
-              )}
             </>
           ) : (
             <EmptyState title="ยังไม่มีงานที่เปิดรับตอนนี้" body="ติดตามประกาศจากชมรมผ่าน LINE ได้เลย" />
@@ -129,22 +127,22 @@ export default async function HomePage() {
 
       <section style={{ background: 'linear-gradient(180deg, #E1E9F8 0%, #F4F7FC 45%, #FFFFFF 100%)' }}>
         <div className="container section" style={{ paddingTop: 72, paddingBottom: 96 }}>
-          <div className="head-row" style={{ marginBottom: 28 }}>
-            <div className="stack" style={{ gap: 10 }}>
-              <h2 className="section-title">เพื่อนที่กำลังมองหาทีม</h2>
+          <div className="stack" style={{ gap: 12, marginBottom: 28 }}>
+            <h2 className="section-title">เพื่อนที่กำลังมองหาทีม</h2>
+            <div className="seekers-bar">
               <span className="privacy-pill">
                 <span style={{ display: 'inline-flex', color: 'var(--navy-2)' }}>
                   <IconLock size={14} />
                 </span>
                 เลือกไม่เปิดเผยตัวตนได้
               </span>
+              <Link href="/teams" className="cta-link">
+                ดูทั้งหมด
+                <span className="arrow" aria-hidden="true">
+                  <IconArrowRight size={18} />
+                </span>
+              </Link>
             </div>
-            <Link href="/teams" className="cta-link">
-              ดูทั้งหมด
-              <span className="arrow" aria-hidden="true">
-                <IconArrowRight size={18} />
-              </span>
-            </Link>
           </div>
           {seekers.length ? (
             <div className="grid-cards">
