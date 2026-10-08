@@ -98,7 +98,7 @@ export default async function HomePage() {
       <Marquee />
 
       <section style={{ background: 'linear-gradient(180deg, #F4F7FC 0%, #E1E9F8 100%)' }}>
-        <div className="container section">
+        <div className="container section home-open">
           <div className="head-row">
             <h2 className="section-title">เปิดรับสมัครอยู่ตอนนี้</h2>
             <Link href="/opportunities" className="cta-link hide-phone">
@@ -131,7 +131,7 @@ export default async function HomePage() {
       </section>
 
       <section style={{ background: 'linear-gradient(180deg, #E1E9F8 0%, #F4F7FC 45%, #FFFFFF 100%)' }}>
-        <div className="container section" style={{ paddingTop: 72, paddingBottom: 96 }}>
+        <div className="container section home-seekers">
           <div className="stack" style={{ gap: 12, marginBottom: 28 }}>
             <h2 className="section-title">เพื่อนที่กำลังมองหาทีม</h2>
             <div className="seekers-bar">

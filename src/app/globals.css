@@ -903,3 +903,11 @@ h1.mantra .line { white-space: nowrap; color: inherit; }
 }
 @media (max-width: 400px) { .search-hero .search-lead { display: none; } .search-box.search-hero { padding-left: 16px; } }
 @media (prefers-reduced-motion: reduce) { .search-box.search-hero { transition: none; } }
+
+/* Home: "เพื่อนที่กำลังมองหาทีม" follows the open-events cards at the same rhythm as the logos → "เปิดรับสมัคร" gap */
+.section.home-open { padding-bottom: 48px; }
+.section.home-seekers { padding-top: 36px; padding-bottom: 96px; }
+@media (max-width: 900px) {
+  .section.home-open { padding-bottom: 32px; }
+  .section.home-seekers { padding-top: 24px; padding-bottom: 64px; }
+}
