@@ -10,7 +10,7 @@ const text = (t) => ev('message', { message: { type: 'text', id: '1', text: t } 
 const toggles = process.argv.includes('--toggles')
 const events = toggles ? [pb('m:t:data_ai'), pb('m:t:data_ai'), pb('m:n:off'), pb('m:n:on')] : [
   ev('follow'),
-  pb('m:open'), pb('m:closing'), pb('m:foryou'), pb('m:teams'), pb('m:join'), pb('m:account'), pb('m:interests'), pb('m:welcome'),
+  pb('m:open'), pb('m:foryou'), pb('m:teams'), pb('m:join'), pb('m:welcome'),
   text('งานแข่ง'), text('ใกล้ปิดรับ'), text('หาทีมลง hackathon ฉันทำ UX ได้'), text('งานแข่งด้านการแพทย์'), text('ช่วยเขียนเรียงความ'),
 ]
 const body = JSON.stringify({ destination: 'x', events })

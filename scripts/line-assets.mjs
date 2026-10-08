@@ -56,8 +56,8 @@ const rocket = await sharp(logo).extract({ left: 0, top: 0, width: 262, height: 
 
 // ------------------------------------------------------------------ rich menus
 // Two menus (2500×1686): "guest" for people who haven't joined yet (big sign-up button) and
-// "member" for linked accounts. Layout = 2 rows × 3 columns under the logo banner; a tile can
-// span columns. Keep in sync with scripts/setup-line-richmenu.mjs (same LAYOUTS export).
+// "member" for linked accounts. Layout = 2 rows × 2 columns under the logo banner; a tile can
+// span columns. Keep in sync with scripts/setup-line-richmenu.mjs (2 columns × 2 rows).
 const ICON = {
   trophy: 'M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0V2Z',
   clock: 'M12 21a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM12 9v4l2.5 2M5 3 2 6M22 6l-3-3',
@@ -67,21 +67,19 @@ const ICON = {
   globe: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z',
   bell: 'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0',
 }
+export const COLS = 2
 export const LAYOUTS = {
   guest: [
-    { icon: 'trophy', label: 'งานแข่ง & ทุน', sub: 'ที่เปิดรับอยู่ตอนนี้' },
-    { icon: 'clock', label: 'ใกล้ปิดรับ', sub: 'ภายใน 7 วัน', hot: true },
+    { icon: 'trophy', label: 'งานแข่ง & ทุน', sub: 'เรียงตามวันปิดรับ' },
     { icon: 'users', label: 'หาทีม', sub: 'เพื่อนร่วมทีม' },
-    { icon: 'rocket', label: 'สมัครสมาชิกฟรี', sub: 'ใช้ Google ได้ · 1 นาที · รับงานที่ตรงกับคุณ', span: 2, primary: true },
+    { icon: 'rocket', label: 'สมัครสมาชิกฟรี', sub: 'ใช้ Google ได้ · 1 นาที', primary: true },
     { icon: 'globe', label: 'เปิดเว็บไซต์', sub: 'mahidolstartup.site' },
   ],
   member: [
-    { icon: 'trophy', label: 'งานแข่ง & ทุน', sub: 'ที่เปิดรับอยู่ตอนนี้' },
-    { icon: 'clock', label: 'ใกล้ปิดรับ', sub: 'ภายใน 7 วัน', hot: true },
+    { icon: 'trophy', label: 'งานแข่ง & ทุน', sub: 'เรียงตามวันปิดรับ' },
     { icon: 'star', label: 'ตรงกับฉัน', sub: 'ตามเรื่องที่สนใจ' },
     { icon: 'users', label: 'หาทีม', sub: 'เพื่อนร่วมทีม' },
     { icon: 'globe', label: 'เปิดเว็บไซต์', sub: 'mahidolstartup.site' },
-    { icon: 'bell', label: 'บัญชี & ความสนใจ', sub: 'เลือกเรื่อง · แจ้งเตือน' },
   ],
 }
 
@@ -90,7 +88,7 @@ async function renderMenu(name, tilesDef) {
   const H = 1686
   const BANNER = 360
   const GAP = 24
-  const unit = (W - GAP * 4) / 3
+  const unit = (W - GAP * (COLS + 1)) / COLS
   const ch = (H - BANNER - GAP * 3) / 2
   const wordmark = await sharp(logo).resize({ height: 230 }).png().toBuffer()
   let col = 0
@@ -98,7 +96,7 @@ async function renderMenu(name, tilesDef) {
   const tiles = tilesDef
     .map((m, i) => {
       const span = m.span ?? 1
-      if (col + span > 3) (col = 0), row++
+      if (col + span > COLS) (col = 0), row++
       const x = GAP + col * (unit + GAP)
       const y = BANNER + GAP + row * (ch + GAP)
       const w = unit * span + GAP * (span - 1)

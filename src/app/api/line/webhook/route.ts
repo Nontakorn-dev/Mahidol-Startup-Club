@@ -3,7 +3,7 @@ import { adminClient } from '@/lib/supabase/admin'
 import { verifyPayload } from '@/lib/crypto'
 import { eventsCarousel, noticeFlex, replyMessage, textMessage, verifyLineSignature } from '@/lib/line/messaging'
 import { LINK_CODE_RE, consumeLinkCode, consumeNonce } from '@/lib/line/link'
-import { MENU_QUICK, handleMenu, linkInvite, linkedProfile, quickFor, welcome } from '@/lib/line/bot'
+import { handleMenu, linkInvite, linkedProfile, welcome } from '@/lib/line/bot'
 import { parseIntent } from '@/lib/ai/intent'
 import { runSearch } from '@/lib/search'
 import { respondToRequest } from '@/lib/messaging'
@@ -74,13 +74,13 @@ async function onPostback(e: LineEvent): Promise<Msg[]> {
   if (!data || (data.a !== 'accept' && data.a !== 'decline')) return []
   const profile = await linkedProfile(e.source.userId!)
   if (!profile || profile.id !== data.u) {
-    return [textMessage('ปุ่มนี้ใช้ได้เฉพาะบัญชีที่ได้รับคำขอ กรุณาเปิดบนเว็บแทน', [{ label: 'เปิดกล่องข้อความ', url: '/inbox?src=line' }])]
+    return [noticeFlex({ altText: 'เปิดบนเว็บแทน', title: 'ปุ่มนี้ใช้ได้เฉพาะบัญชีที่ได้รับคำขอ', subtitle: 'เปิดกล่องข้อความบนเว็บแทนได้เลย', actions: [{ type: 'uri', label: 'เปิดกล่องข้อความ', url: '/inbox?src=line' }] })]
   }
   try {
     const result = await respondToRequest(data.c, profile.id, data.a === 'accept')
-    return [textMessage(`${result} ✓${data.a === 'accept' ? '\nเริ่มคุยต่อบนเว็บได้เลย' : ''}`, [{ label: 'เปิดแชต', url: `/inbox?c=${data.c}&src=line` }])]
+    return [noticeFlex({ altText: result, title: `${result} ✓`, subtitle: data.a === 'accept' ? 'เริ่มคุยต่อบนเว็บได้เลย' : undefined, actions: [{ type: 'uri', label: 'เปิดแชต', url: `/inbox?c=${data.c}&src=line` }] })]
   } catch (err) {
-    return [textMessage((err as Error).message, MENU_QUICK)]
+    return [textMessage((err as Error).message)]
   }
 }
 
@@ -96,7 +96,7 @@ async function onText(e: LineEvent): Promise<Msg[]> {
     const profile = userId ? await linkedProfile(uid) : null
     return profile
       ? welcome(uid, profile, true)
-      : [textMessage('รหัสนี้หมดอายุหรือถูกใช้ไปแล้ว — กลับไปที่หน้าเว็บเพื่อรับรหัสใหม่ หรือแตะ “บัญชี”', [{ label: '🔗 เชื่อมบัญชีเว็บ', data: 'm:account' }])]
+      : [await linkInvite(uid, 'รหัสนี้หมดอายุหรือถูกใช้ไปแล้ว — เชื่อมใหม่ได้ที่นี่')]
   }
   for (const [re, action] of COMMANDS) if (re.test(text)) return (await handleMenu(action, uid)) ?? []
 
@@ -106,7 +106,7 @@ async function onText(e: LineEvent): Promise<Msg[]> {
   const { intent, usedFallback } = parsed
   if (parsed.status !== 'ok') {
     await adminClient().from('search_logs').insert({ user_id: profile?.id ?? null, query: text.slice(0, 300), used_fallback: false, source: 'line', engine: parsed.engine, status: parsed.status })
-    return [textMessage(parsed.message ?? '', quickFor(profile))]
+    return [textMessage(parsed.message ?? '')]
   }
   const results = await runSearch(intent, profile?.id ?? null)
   const searchUrl = `/search?q=${encodeURIComponent(text)}&src=line`
@@ -157,7 +157,6 @@ async function onText(e: LineEvent): Promise<Msg[]> {
       ),
     )
   }
-  messages.push(textMessage(profile ? 'ค้นอย่างอื่นได้เลย หรือเลือกจากเมนู 👇' : 'สมัครสมาชิกฟรี เพื่อรับงานที่ตรงกับคุณในแชตนี้ 👇', quickFor(profile)))
   return messages
 }
 
@@ -180,7 +179,7 @@ async function handle(e: LineEvent) {
     // Never leave a tap unanswered.
     if (e.replyToken) {
       await replyMessage(e.replyToken, [
-        textMessage('ขออภัย ระบบขัดข้องชั่วคราว ลองอีกครั้ง หรือเปิดดูบนเว็บได้เลย', [...MENU_QUICK.slice(0, 3), { label: '🌐 เปิดเว็บ', url: '/?src=line' }]),
+        textMessage('ขออภัย ระบบขัดข้องชั่วคราว ลองอีกครั้ง หรือเปิดดูบนเว็บ: https://mahidolstartup.site'),
       ]).catch(() => {})
     }
   }

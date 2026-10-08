@@ -6,7 +6,7 @@ import { isClosed, msLeft, thaiDeadline, timeLeftLabel, urgency } from '@/lib/fo
 import { CATEGORIES, ROLE_KEYS, type Role } from '@/lib/constants'
 import { TOPICS } from '@/lib/topics'
 import { issueLinkToken, linkPageUrl } from './link'
-import { WELCOME_IMAGE, absoluteUrl, eventsCarousel, noticeFlex, textMessage, type NoticeContent, type QuickReply } from './messaging'
+import { WELCOME_IMAGE, eventsCarousel, noticeFlex, textMessage, type NoticeContent } from './messaging'
 import type { EventRow } from '@/lib/types'
 
 // What the OA chat answers. Every menu button is a postback ("m:<action>") answered with a
@@ -25,25 +25,7 @@ export async function linkedProfile(lineUserId: string): Promise<Linked | null> 
 
 const web = (path: string) => `${path}${path.includes('?') ? '&' : '?'}src=line`
 
-const MEMBER_QUICK: QuickReply[] = [
-  { label: '🏆 งานที่เปิดรับ', data: 'm:open' },
-  { label: '⏰ ใกล้ปิดรับ', data: 'm:closing' },
-  { label: '⭐ ตรงกับฉัน', data: 'm:foryou' },
-  { label: '👥 หาทีม', data: 'm:teams' },
-  { label: '🎯 เลือกความสนใจ', url: '/settings/interests?src=line' },
-  { label: '🌐 เปิดเว็บ', url: '/?src=line' },
-]
-const GUEST_QUICK: QuickReply[] = [
-  { label: '🚀 สมัครสมาชิกฟรี', data: 'm:join' },
-  { label: '🏆 งานที่เปิดรับ', data: 'm:open' },
-  { label: '⏰ ใกล้ปิดรับ', data: 'm:closing' },
-  { label: '👥 หาทีม', data: 'm:teams' },
-  { label: '🌐 เปิดเว็บ', url: '/?src=line' },
-]
-/** Quick replies under a message: guests always see "สมัครสมาชิกฟรี" first. */
-export const quickFor = (p: Linked | null) => (p ? MEMBER_QUICK : GUEST_QUICK)
-export const MENU_QUICK = MEMBER_QUICK
-const quickMsg = (text: string, p: Linked | null) => textMessage(text, quickFor(p))
+// No quick replies: the bottom menu already has every action, so replies stay clean.
 
 // Interests use the same keys as the website profile ("สายที่สนใจ") and event tags.
 export const INTEREST_LABEL: Record<Role, string> = {
@@ -137,7 +119,6 @@ export async function welcome(lineUserId: string, profile: Linked | null, justLi
           { type: 'uri', label: 'เปิดเว็บไซต์', url: web('/') },
         ],
       }),
-      quickMsg('สมัครฟรีได้เลย หรือดูงานก่อนก็ได้ 👇', null),
     ]
   }
   // Interests are picked on the website (/settings/interests) — one card here, no picker.
@@ -215,19 +196,16 @@ export async function openEvents(closingSoon: boolean, p: Linked | null = null):
   const more = closingSoon ? '/opportunities?within=7' : '/opportunities'
   if (!events.length) {
     return [
-      textMessage(closingSoon ? 'ไม่มีงานที่ปิดรับภายใน 7 วัน 🎉 ดูงานที่เปิดรับทั้งหมดได้เลย' : 'ตอนนี้ยังไม่มีงานที่เปิดรับ — มีงานใหม่เมื่อไหร่ เราจะบอก', [
-        { label: '🏆 งานที่เปิดรับ', data: 'm:open' },
-        { label: '🌐 เปิดเว็บ', url: web('/opportunities') },
-      ]),
+      noticeFlex({
+        altText: 'ยังไม่มีงานที่เปิดรับ',
+        title: closingSoon ? 'ไม่มีงานที่ปิดรับภายใน 7 วัน 🎉' : 'ตอนนี้ยังไม่มีงานที่เปิดรับ',
+        subtitle: 'มีงานใหม่เมื่อไหร่ จะขึ้นที่นี่และบนเว็บทันที',
+        actions: [{ type: 'uri', label: 'เปิดหน้างานแข่งบนเว็บ', url: web('/opportunities') }],
+      }),
     ]
   }
   return [
     eventsCarousel(closingSoon ? 'งานที่ใกล้ปิดรับใน 7 วัน' : 'งานแข่ง & ทุนที่เปิดรับ', events.slice(0, 9).map((ev) => eventItem(ev)), web(more)),
-    quickMsg(
-      (closingSoon ? `⏰ ${events.length} งานปิดรับภายใน 7 วัน — เลื่อนดูได้เลย` : `🏆 เปิดรับอยู่ ${events.length} งาน เรียงตามวันปิดรับ — เลื่อนดู หรือเปิดดูทั้งหมดบนเว็บ`) +
-        (p ? '' : '\n\n🚀 สมัครสมาชิกฟรี เพื่อรับงานที่ตรงกับคุณและเตือนก่อนปิดรับ'),
-      p,
-    ),
   ]
 }
 
@@ -241,15 +219,19 @@ export async function forYou(lineUserId: string, p: Linked | null): Promise<Line
     .sort((a, b) => byDeadline(a.ev, b.ev))
   if (!matches.length) {
     return [
-      textMessage('ตอนนี้ยังไม่มีงานที่ตรงกับความสนใจของคุณเปิดรับอยู่ — ลองเลือกเพิ่ม หรือดูงานทั้งหมด', [
-        { label: '🎯 เลือกความสนใจ', url: web('/settings/interests') },
-        { label: '🏆 งานที่เปิดรับ', data: 'm:open' },
-      ]),
+      noticeFlex({
+        altText: 'ยังไม่มีงานที่ตรงกับความสนใจ',
+        title: 'ยังไม่มีงานที่ตรงกับความสนใจของคุณเปิดรับอยู่',
+        subtitle: 'ลองเลือกเรื่องที่สนใจเพิ่ม หรือดูงานทั้งหมด',
+        actions: [
+          { type: 'postback', label: 'ดูงานที่เปิดรับทั้งหมด', data: 'm:open', displayText: 'งานแข่ง & ทุน' },
+          { type: 'uri', label: 'เลือกเรื่องที่สนใจ', url: web('/settings/interests') },
+        ],
+      }),
     ]
   }
   return [
     eventsCarousel('งานที่ตรงกับคุณ', matches.slice(0, 9).map((m) => eventItem(m.ev, `ตรงกับ ${m.why}`)), web('/opportunities')),
-    quickMsg(`⭐ ${matches.length} งานตรงกับความสนใจของคุณ — แก้ความสนใจได้ที่ “🎯 เลือกความสนใจ” (บนเว็บ)`, p),
   ]
 }
 
@@ -301,13 +283,13 @@ export async function handleMenu(data: string, lineUserId: string): Promise<Line
               ],
             }),
           ]
-        : [await linkInvite(lineUserId, 'สมัครสมาชิก Mahidol Startup Club ฟรี 🚀'), quickMsg('หรือดูงานก่อนก็ได้ 👇', null)]
+        : [await linkInvite(lineUserId, 'สมัครสมาชิก Mahidol Startup Club ฟรี 🚀')]
     case 'foryou':
       return forYou(lineUserId, p)
     case 'teams':
       return teams(p?.id ?? null)
     case 'help':
-      return [help(), quickMsg('หรือเลือกจากเมนู 👇', p)]
+      return [help()]
     case 'account':
       return account(lineUserId, p)
     case 'welcome':
@@ -317,6 +299,6 @@ export async function handleMenu(data: string, lineUserId: string): Promise<Line
     case 'n':
       return p ? [interestsOnWeb(p)] : [await linkInvite(lineUserId, 'สมัครสมาชิกฟรี เพื่อเลือกเรื่องที่สนใจ 🎯')]
     default:
-      return [quickMsg('เลือกจากเมนูด้านล่างได้เลย 👇', p)]
+      return [textMessage('เลือกจากเมนูด้านล่างได้เลย 👇')]
   }
 }

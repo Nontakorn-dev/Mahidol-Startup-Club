@@ -30,9 +30,8 @@ const MENUS = {
     chatBarText: 'เมนู · MSC',
     tiles: [
       { action: pb('งานแข่ง & ทุน', 'm:open') },
-      { action: pb('ใกล้ปิดรับ', 'm:closing') },
       { action: pb('หาทีม', 'm:teams') },
-      { action: pb('สมัครสมาชิกฟรี', 'm:join'), span: 2 },
+      { action: pb('สมัครสมาชิกฟรี', 'm:join') },
       { action: uri('เปิดเว็บไซต์', '/') },
     ],
   },
@@ -41,24 +40,24 @@ const MENUS = {
     chatBarText: 'เมนู · MSC',
     tiles: [
       { action: pb('งานแข่ง & ทุน', 'm:open') },
-      { action: pb('ใกล้ปิดรับ', 'm:closing') },
       { action: pb('ตรงกับฉัน', 'm:foryou') },
       { action: pb('หาทีม', 'm:teams') },
       { action: uri('เปิดเว็บไซต์', '/') },
-      { action: pb('บัญชี & ความสนใจ', 'm:account') },
     ],
   },
 }
 
+const COLS = 2
+
 function areas(tiles) {
-  const cw = W / 3
+  const cw = W / COLS
   const ch = (H - BANNER) / 2
   let col = 0
   let row = 0
   const out = [{ bounds: { x: 0, y: 0, width: W, height: BANNER }, action: uri('หน้าแรก', '/') }]
   for (const t of tiles) {
     const span = t.span ?? 1
-    if (col + span > 3) (col = 0), row++
+    if (col + span > COLS) (col = 0), row++
     out.push({ bounds: { x: Math.round(col * cw), y: Math.round(BANNER + row * ch), width: Math.round(cw * span), height: Math.round(ch) }, action: t.action })
     col += span
   }
