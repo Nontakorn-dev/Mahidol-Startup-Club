@@ -33,9 +33,6 @@ export default function Footer() {
           <span className="muted" style={{ fontSize: 14 }}>
             {SOCIAL.instagramHandle}
           </span>
-          <span className="muted" style={{ fontSize: 13 }}>
-            <Link href="/terms">ข้อตกลงการใช้งาน</Link> · <Link href="/privacy">นโยบายความเป็นส่วนตัว (PDPA)</Link>
-          </span>
         </div>
       </div>
     </footer>

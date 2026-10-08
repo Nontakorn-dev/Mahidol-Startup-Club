@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import Crumbs from '@/components/Crumbs'
 import { NotificationTopics, EmailSection } from '@/components/NotificationSettings'
 import LineLinkCard from '@/components/LineLinkCard'
-import { IconChatSimple, IconLine, IconShield } from '@/components/icons'
+import { IconChatSimple, IconLine } from '@/components/icons'
 import { requireViewer } from '@/lib/auth'
 import { lineMessagingEnabled } from '@/lib/env'
 
@@ -68,37 +68,6 @@ export default async function NotificationSettingsPage({ searchParams }: PagePro
               </div>
 
               <LineLinkCard p={p} next={onboarding ? `/settings/notifications?onboarding=1&next=${encodeURIComponent(next)}` : '/settings/notifications'} />
-            </div>
-            <div className="stack" style={{ gap: 10 }}>
-              <span className="muted" style={{ fontSize: 13, fontWeight: 600 }}>
-                ตัวอย่างข้อความที่คุณจะได้รับ
-              </span>
-              <div className="line-preview">
-                <div className="row" style={{ gap: 10, alignItems: 'flex-start' }}>
-                  <span className="msc-dot">MSC</span>
-                  <div style={{ flex: 1, minWidth: 0, borderRadius: 18, background: '#fff', overflow: 'hidden', boxShadow: '0 4px 14px -6px rgba(16,35,63,0.2)' }}>
-                    <div style={{ padding: '10px 14px', background: 'var(--brand)', color: '#fff', fontSize: 13, fontWeight: 600 }}>มีคนชวนคุณเข้าทีม</div>
-                    <div className="stack" style={{ padding: 14, gap: 6 }}>
-                      <span className="head" style={{ fontWeight: 500, fontSize: 17, lineHeight: 1.3 }}>
-                        ทีม CareLoop
-                      </span>
-                      <span className="muted" style={{ fontSize: 13 }}>
-                        TED Youth Startup 2026 · อยากได้ UX/UI Designer
-                      </span>
-                      <span style={{ fontSize: 13 }}>“ชอบพอร์ต UX ของคุณมาก อยากชวนมาคุยค่ะ”</span>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderTop: '1px solid var(--border)', fontSize: 14, fontWeight: 600, textAlign: 'center' }}>
-                      <span style={{ padding: '12px 0', color: 'var(--brand)' }}>ดูคำชวน</span>
-                      <span style={{ padding: '12px 0', color: 'var(--muted)', borderLeft: '1px solid var(--border)' }}>ไว้ทีหลัง</span>
-                    </div>
-                  </div>
-                </div>
-                <span style={{ alignSelf: 'flex-end', fontSize: 11, color: 'var(--muted)' }}>10:42</span>
-              </div>
-              <span className="row muted" style={{ gap: 8, alignItems: 'flex-start', fontSize: 12, lineHeight: 1.5 }}>
-                <IconShield size={16} />
-                เราส่งเฉพาะเรื่องที่คุณเลือก ไม่เห็นแชตส่วนตัว และยกเลิกได้ทุกเมื่อ
-              </span>
             </div>
           </section>
 

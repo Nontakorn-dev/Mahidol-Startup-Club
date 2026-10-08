@@ -18,8 +18,6 @@ import { CATEGORIES } from '@/lib/constants'
 
 export const dynamic = 'force-dynamic'
 
-const SOURCE_NAMES: Record<string, string> = { hackza: 'Hackza', devpost: 'Devpost', dekport: 'DekPort', camphub: 'CAMPHUB', contester: 'Contester.Life', zeekr: 'เว็บไซต์ทางการ ZEEKR Design Lab', 'chula-inter': 'Chula International Affairs' }
-
 export async function generateMetadata({ params }: PageProps<'/opportunities/[slug]'>): Promise<Metadata> {
   const { slug } = await params
   const e = await getEventBySlug(decodeURIComponent(slug))
@@ -132,19 +130,7 @@ export default async function EventDetailPage({ params }: PageProps<'/opportunit
                   <a href={googleCalendarUrl(e)} target="_blank" rel="noopener" className="btn btn-outline btn-sm">
                     <IconCalendar size={16} /> เพิ่มวันปิดรับลง Google Calendar
                   </a>
-                  <a href={`/api/events/${e.id}/ics`} className="btn btn-outline btn-sm">
-                    ไฟล์ปฏิทิน (.ics)
-                  </a>
                 </div>
-              )}
-              {e.source && e.source_url && (
-                <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-                  ข้อมูลจาก{' '}
-                  <a href={e.source_url} target="_blank" rel="noopener">
-                    {SOURCE_NAMES[e.source] ?? new URL(e.source_url).hostname.replace(/^www\./, '')}
-                  </a>{' '}
-                  · รายละเอียดและการรับสมัครเป็นไปตามประกาศของผู้จัด กรุณาตรวจสอบกับผู้จัดก่อนสมัคร
-                </p>
               )}
               {paragraphs.length > 0 && (
                 <section className="prose-card">

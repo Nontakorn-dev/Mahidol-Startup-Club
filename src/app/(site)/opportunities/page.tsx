@@ -38,7 +38,6 @@ export default async function OpportunitiesPage({ searchParams }: PageProps<'/op
   const all = await listPublishedEvents({ category: cat })
   const now = Date.now()
   let rows = all.filter((e) => (online ? e.format === 'online' || e.format === 'hybrid' : true))
-  const closedCount = rows.filter((e) => isClosed(e, now)).length
   if (!showClosed) rows = rows.filter((e) => !isClosed(e, now))
   if (within) rows = rows.filter((e) => {
     const ms = msLeft(e, now)
@@ -60,10 +59,6 @@ export default async function OpportunitiesPage({ searchParams }: PageProps<'/op
     const s = q.toString()
     return s ? `/opportunities?${s}` : '/opportunities'
   }
-  const catFilters: { key?: Category; label: string }[] = [
-    { label: 'ทั้งหมด' },
-    ...(['grant', 'team_recruit', 'competition', 'incubation', 'workshop'] as Category[]).map((k) => ({ key: k, label: CATEGORIES[k] })),
-  ]
 
   // Calendar: group by closing month → day
   const today = todayBangkok()
@@ -128,27 +123,15 @@ export default async function OpportunitiesPage({ searchParams }: PageProps<'/op
                 {rows.length} รายการ
               </span>
             </div>
-            <div className="row wrap" style={{ gap: 8 }}>
-              {catFilters.map((f) => (
-                <Link key={f.label} href={href({ cat: f.key ?? null })} className={`filter-chip ${cat === f.key ? 'active' : ''}`} scroll={false}>
-                  {f.label}
+            {/* No filter rows any more — only the three views. Links from elsewhere (LINE, the
+                closing-soon strip, search) may still arrive filtered: show that as one clearable chip. */}
+            {(cat || within || online || showClosed) && (
+              <div className="row wrap" style={{ gap: 8 }}>
+                <Link href={href({ cat: null, within: null, online: null, closed: null })} className="filter-chip active" scroll={false}>
+                  {[cat && CATEGORIES[cat], within && `ปิดใน ${within} วัน`, online && 'ร่วมออนไลน์ได้', showClosed && 'รวมงานที่ปิดแล้ว'].filter(Boolean).join(' · ')} ✕
                 </Link>
-              ))}
-            </div>
-            <div className="row wrap" style={{ gap: 8 }}>
-              <Link href={href({ within: within === 7 ? null : '7' })} className={`filter-chip ${within === 7 ? 'active' : ''}`} scroll={false}>
-                ปิดใน 7 วัน
-              </Link>
-              <Link href={href({ within: within === 30 ? null : '30' })} className={`filter-chip ${within === 30 ? 'active' : ''}`} scroll={false}>
-                ปิดใน 30 วัน
-              </Link>
-              <Link href={href({ online: online ? null : '1' })} className={`filter-chip ${online ? 'active' : ''}`} scroll={false}>
-                ร่วมออนไลน์ได้
-              </Link>
-              <Link href={href({ closed: showClosed ? null : '1' })} className={`filter-chip ${showClosed ? 'active' : ''}`} scroll={false}>
-                {showClosed ? 'ซ่อนงานที่ปิดแล้ว' : `แสดงงานที่ปิดแล้ว (${closedCount})`}
-              </Link>
-            </div>
+              </div>
+            )}
           </div>
 
           {rows.length === 0 ? (

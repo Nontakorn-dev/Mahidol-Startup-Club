@@ -2,7 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import SearchBox from '@/components/SearchBox'
 import { EmptyState, EventCardH, SeekerCardView } from '@/components/Cards'
-import { IconArrowRight, IconLock, IconPeople, IconSparkle, IconTrophy, IconUserPlus } from '@/components/icons'
+import { IconArrowRight, IconLock, IconPeople, IconTrophy, IconUserPlus } from '@/components/icons'
 import { getViewer } from '@/lib/auth'
 import { homeFeaturedEvents } from '@/lib/data/events'
 import { listSeekers } from '@/lib/data/community'
@@ -57,12 +57,6 @@ export default async function HomePage() {
             </p>
             <div className="stack" style={{ gap: 10, maxWidth: 600 }}>
               <SearchBox />
-              <span className="ai-hint">
-                <span style={{ color: 'var(--brand)', display: 'inline-flex' }}>
-                  <IconSparkle size={15} />
-                </span>
-                พิมพ์เป็นประโยคได้เลย เช่น “หาทีมลง TED Youth ฉันทำ UX ได้ ขาด dev” — AI จะพาไปหน้าที่ใช่
-              </span>
             </div>
             <nav aria-label="Explore" className="explore">
               <Link href="/opportunities">
@@ -142,7 +136,7 @@ export default async function HomePage() {
                 <span style={{ display: 'inline-flex', color: 'var(--navy-2)' }}>
                   <IconLock size={14} />
                 </span>
-                เลือกไม่เปิดเผยตัวตนได้ — ชื่อจะแสดงเมื่อเจ้าของโปรไฟล์ตอบรับ
+                เลือกไม่เปิดเผยตัวตนได้
               </span>
             </div>
             <Link href="/teams" className="cta-link">
