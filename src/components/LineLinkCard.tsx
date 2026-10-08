@@ -78,7 +78,7 @@ export default async function LineLinkCard({ p, next = '/settings/notifications'
       <LinkStatusPoller />
       <ol className="step-list">
         <li>
-          <span>1</span>สแกน QR หรือกดปุ่ม “เชื่อมต่อ LINE”
+          <span>1</span>กดปุ่ม “เชื่อมต่อ LINE” (บนคอมสแกน QR ได้)
         </li>
         <li>
           <span>2</span>ยืนยันใน LINE และเพิ่มเพื่อน Mahidol Startup Club
@@ -87,8 +87,9 @@ export default async function LineLinkCard({ p, next = '/settings/notifications'
           <span>3</span>กลับมาที่หน้านี้ ระบบจะเชื่อมให้อัตโนมัติ
         </li>
       </ol>
-      <div className="row" style={{ gap: 20, padding: 16, borderRadius: 18, background: 'var(--bg)', alignItems: 'center' }}>
-        <div className="qr-box">
+      {/* Phones: just the buttons (scanning a QR on the same phone makes no sense). */}
+      <div className="line-connect">
+        <div className="qr-box line-connect-qr">
           {qr ? (
             <span dangerouslySetInnerHTML={{ __html: qr }} style={{ width: '100%', height: '100%', display: 'block' }} />
           ) : (
@@ -98,29 +99,29 @@ export default async function LineLinkCard({ p, next = '/settings/notifications'
             </>
           )}
         </div>
-        <div className="stack" style={{ flex: 1, minWidth: 0, gap: 10 }}>
-          <span className="stack" style={{ lineHeight: 1.45 }}>
+        <div className="line-connect-body">
+          <span className="stack line-connect-scan" style={{ lineHeight: 1.45 }}>
             <span style={{ fontWeight: 600, fontSize: 15 }}>สแกนด้วยกล้องมือถือ</span>
             <span className="muted" style={{ fontSize: 13 }}>
               แชต LINE จะเปิดพร้อมข้อความ <b style={{ color: 'var(--navy)' }}>“{message}”</b> กดส่งแล้วเสร็จ (รหัสใช้ได้ {LINK_CODE_TTL_MIN} นาที)
             </span>
           </span>
-          <span className="row wrap" style={{ gap: 8 }}>
+          <span className="line-connect-actions">
             {loginReady ? (
-              <a href={`/api/auth/line/start?next=${encodeURIComponent(next)}`} className="btn btn-line" style={{ minHeight: 50, padding: '0 24px', borderRadius: 14, fontSize: 16 }}>
+              <a href={`/api/auth/line/start?next=${encodeURIComponent(next)}`} className="btn btn-line line-connect-main">
                 <IconLine size={22} />
                 เชื่อมต่อ LINE
               </a>
             ) : (
               chatUrl && (
-                <a href={chatUrl} className="btn btn-line" style={{ minHeight: 50, padding: '0 24px', borderRadius: 14, fontSize: 16 }}>
+                <a href={chatUrl} className="btn btn-line line-connect-main">
                   <IconLine size={22} />
                   เชื่อมต่อ LINE
                 </a>
               )
             )}
             {loginReady && chatUrl && (
-              <a href={chatUrl} className="btn btn-outline btn-sm" style={{ minHeight: 50 }}>
+              <a href={chatUrl} className="btn btn-outline line-connect-alt">
                 เปิดแชตพร้อมรหัส
               </a>
             )}

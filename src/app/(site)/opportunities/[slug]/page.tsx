@@ -147,10 +147,10 @@ export default async function EventDetailPage({ params }: PageProps<'/opportunit
 
           {e.allow_teams && (
             <section id="teams" className="teams-band">
-              <div className="row wrap" style={{ justifyContent: 'space-between', alignItems: 'flex-end', gap: 16 }}>
+              <div className="band-head">
                 <div>
-                  <div className="row" style={{ gap: 10 }}>
-                    <h2 style={{ margin: 0, fontWeight: 600, fontSize: 28, lineHeight: 1.2 }}>ทีมที่กำลังมองหาคน</h2>
+                  <div className="row wrap" style={{ gap: 10 }}>
+                    <h2 className="band-title">ทีมที่กำลังมองหาคน</h2>
                     <span className="tag" style={{ background: 'var(--brand)', color: '#fff', fontSize: 14 }}>
                       {teams.length} ทีม
                     </span>
@@ -159,7 +159,7 @@ export default async function EventDetailPage({ params }: PageProps<'/opportunit
                     กดสนใจร่วมทีมได้เลย หรือชวนคนเข้าทีมของคุณเองสำหรับงานนี้
                   </p>
                 </div>
-                <span className="row" style={{ gap: 10 }}>
+                <span className="band-actions">
                   <Link href={`/teams?tab=teams&event=${e.id}`} className="btn btn-ghost">
                     ดูทั้งหมด →
                   </Link>

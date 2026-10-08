@@ -61,7 +61,7 @@ function Check({ ok, warn, children }: { ok?: boolean; warn?: boolean; children:
   return (
     <span className="row" style={{ gap: 6, fontSize: 13, color, alignItems: 'baseline' }}>
       <b style={{ width: 14, flex: 'none' }}>{ok ? '✓' : warn ? '!' : '✕'}</b>
-      <span>{children}</span>
+      <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}>{children}</span>
     </span>
   )
 }
