@@ -153,7 +153,7 @@ const ROLE_SYNONYMS: Record<Role, RegExp> = {
   marketing: /marketing|มาร์เก็ตติ้ง|การตลาด|content|คอนเทนต์|graphic|กราฟิก|social media/gi,
   data_ai: /\bdata\b|ดาต้า|\bai\b|\bml\b|machine learning|ข้อมูล|ปัญญาประดิษฐ์/gi,
   hardware: /hardware|\biot\b|ฮาร์ดแวร์|อิเล็กทรอนิกส์|อิเล็ก|robot|หุ่นยนต์/gi,
-  domain_expert: /แพทย์|หมอ|เภสัช|พยาบาล|ผู้เชี่ยวชาญ|domain expert|medical/gi,
+  domain_expert: /(?<!การ)แพทย์|หมอ|เภสัช|พยาบาล|ผู้เชี่ยวชาญ|domain expert/gi,
 }
 const CATEGORY_SYNONYMS: Record<Category, RegExp> = {
   grant: /ทุน|\bgrants?\b|\bfund(ing)?\b/gi,
@@ -162,8 +162,8 @@ const CATEGORY_SYNONYMS: Record<Category, RegExp> = {
   incubation: /บ่มเพาะ|incubat\w*|accelerat\w*/gi,
   workshop: /workshop|เวิร์[กค]ช็อป|อบรม|ค่าย|\bcamp\b|bootcamp/gi,
 }
-const TOPIC_WORDS = /healthtech|edtech|fintech|agritech|foodtech|greentech|deep ?tech|esg|sustainab\w*|ความยั่งยืน|climate|สุขภาพ|การแพทย์|การศึกษา|เกษตร|อาหาร|พลังงาน|สิ่งแวดล้อม|social impact|startup|สตาร์[ทต]อั[พป]|นวัตกรรม|innovation|blockchain|web3|game|เกม/gi
-const FILLER = /หา|อยาก|ได้|ไหม|มั้ย|มี|งาน|ขอ|ช่วย|ที่|ของ|ใน|สำหรับ|ครับ|ค่ะ|คะ|จ้า|หน่อย|บ้าง|ลง|เข้า|ร่วม|ฉัน|ผม|หนู|เรา|กำลัง|ต้องการ|แนะนำ|เกี่ยวกับ|สาย|ด้าน|แบบ|เป็น|และ|กับ|คน|ทีม|เพื่อน|ขาด|อะไร|ดี|ทำ|\b(i|im|i'm|want|find|looking|for|a|an|the|any|some|me|my|to|in|on|of|and|with|need|team|teams|people|join|show|list)\b/gi
+const TOPIC_WORDS = /healthtech|healthcare|medical|medicine|แพทย์แผนไทย|edtech|fintech|agritech|foodtech|greentech|deep ?tech|esg|sustainab\w*|ความยั่งยืน|climate|สุขภาพ|การแพทย์|การศึกษา|เกษตร|อาหาร|พลังงาน|สิ่งแวดล้อม|social impact|startup|สตาร์[ทต]อั[พป]|นวัตกรรม|innovation|blockchain|web3|game|เกม/gi
+const FILLER = /รายการ|เรื่อง|ไหน|หา|อยาก|ได้|ไหม|มั้ย|มี|งาน|ขอ|ช่วย|ที่|ของ|ใน|สำหรับ|ครับ|ค่ะ|คะ|จ้า|หน่อย|บ้าง|ลง|เข้า|ร่วม|ฉัน|ผม|หนู|เรา|กำลัง|ต้องการ|แนะนำ|เกี่ยวกับ|สาย|ด้าน|แบบ|เป็น|และ|กับ|คน|ทีม|เพื่อน|ขาด|อะไร|ดี|ทำ|\b(i|im|i'm|want|find|looking|for|a|an|the|any|some|me|my|to|in|on|of|and|with|need|team|teams|people|join|show|list)\b/gi
 
 const plusDays = (d: string, n: number) => new Date(Date.parse(`${d}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10)
 const endOfMonth = (d: string, add = 0) => {
@@ -265,7 +265,7 @@ ev: name of a specific competition/program the user mentions, copied as typed (e
 c: grant (ทุน) | team_recruit (รับสมัครทีม/core team) | competition (แข่ง/ประกวด/hackathon/pitching/case) | incubation (บ่มเพาะ/accelerator) | workshop (workshop/อบรม/ค่าย)
 s: roles the user CAN do; n: roles the user NEEDS. Values: developer (dev/โปรแกรมเมอร์/frontend/backend), ux_ui (UX/UI/designer/ออกแบบ), business (ธุรกิจ/pitch/finance/sales), marketing (การตลาด/content/graphic), data_ai (data/AI/ML), hardware (IoT/electronics/robot), domain_expert (แพทย์/เภสัช/ผู้เชี่ยวชาญ)
 cf: co-founder tracks sought: tech | business | design | marketing | domain_expert
-k: ≤4 short lowercase topic keywords not covered above (e.g. "healthtech","edtech","esg")
+k: ≤4 short lowercase topic/field keywords not covered above (e.g. "healthtech","edtech","esg"). A field such as medical/health goes in k, not s — use s/n domain_expert only for a person ("ฉันเป็นนักศึกษาแพทย์", "ขาดหมอ")
 df, dt: application-deadline range YYYY-MM-DD from time words, relative to the given today. Mahidol terms: term 1 Aug–Dec, term 2 Jan–May, summer break Jun–Jul. "ใกล้ปิด"/"closing soon" = today..today+7
 cl: true only if the user wants closed/past items
 conf: 0–1 confidence
@@ -393,6 +393,20 @@ export function summarizeIntent(i: Intent, eventTitle?: string | null): string {
   return parts.filter(Boolean).join(' · ').slice(0, 160)
 }
 
+// Subject areas people type in many ways. Whatever produced the intent (rules, model, cache),
+// make sure the field the user means is a topic filter, not just "I am a domain expert".
+const MEDICAL = /การแพทย์|สุขภาพ|แพทย์|หมอ|เภสัช|พยาบาล|ทันต|โรงพยาบาล|ชีวการแพทย์|\bmedic\w*|\bhealth\w*|clinic\w*|hospital|pharma\w*|biotech|nursing|dental|wellness/i
+const HEALTH_WORDS = /health|medic|สุขภาพ|การแพทย์|แพทย์|pharma|biotech|clinic|hospital|เภสัช|พยาบาล|dental|ทันต/
+const IS_A_PERSON = /ฉันเป็น|ผมเป็น|หนูเป็น|เป็นนักศึกษา|นักศึกษาแพทย์|นศ\.?พ|เรียน(แพทย์|เภสัช|พยาบาล|ทันต)|ขาด|หา(หมอ|แพทย์|เภสัช|พยาบาล)|ต้องการ(หมอ|แพทย์)|\bi am\b|\bi'm\b|med student|need a (doctor|pharmacist|nurse)/i
+
+function enrichTopics(intent: Intent, text: string): Intent {
+  if (!MEDICAL.test(text)) return intent
+  const next = { ...intent, keywords: [...intent.keywords], my_skills: [...intent.my_skills] }
+  if (!next.keywords.some((k) => HEALTH_WORDS.test(k))) next.keywords = ['การแพทย์', ...next.keywords].slice(0, 6)
+  if (!IS_A_PERSON.test(text)) next.my_skills = next.my_skills.filter((r) => r !== 'domain_expert')
+  return next
+}
+
 function fromCompact(c: Compact, text: string, events: EventOption[]): Intent {
   const event_slug = resolveEvent(c.ev, text, events)
   const intent: Intent = {
@@ -425,7 +439,8 @@ export async function parseIntent(query: string, actor = 'anon'): Promise<ParseR
   const text = guard.text
   const today = todayBangkok()
   const events = await eventCatalog()
-  const finish = (intent: Intent, engine: Engine, usedFallback = false): ParseResult => {
+  const finish = (raw: Intent, engine: Engine, usedFallback = false): ParseResult => {
+    const intent = enrichTopics(raw, text)
     const title = intent.event_slug ? events.find((e) => e.slug === intent.event_slug)?.title : null
     return { intent: { ...intent, summary: summarizeIntent(intent, title) }, status: 'ok', engine, usedFallback, text }
   }
@@ -434,12 +449,16 @@ export async function parseIntent(query: string, actor = 'anon'): Promise<ParseR
       ? null
       : { intent: emptyIntent(), status: c.topic === 'unsafe' ? 'blocked' : 'off_topic', message: c.topic === 'unsafe' ? GUARD_MESSAGES.blocked : GUARD_MESSAGES.off_topic, engine, usedFallback: false, text }
 
-  const key = normalizeQuery(text)
-  const hit = await cached(key, today)
-  if (hit) return rejected(hit, 'cache') ?? finish(fromCompact(hit, text, events), 'cache')
-
+  // Local rules first: free, instant, and never stale.
   const rules = ruleBasedIntent(text, events, today)
   if (rules.confident) return finish(rules.intent, 'rules')
+  // The model sometimes calls a bare topic ("healthcare") off-topic — trust our own vocabulary.
+  const understoodLocally = rules.intent.categories.length + rules.intent.keywords.length + rules.intent.my_skills.length + rules.intent.roles_needed.length > 0 || Boolean(rules.intent.event_slug)
+  const reject = (c: Compact, engine: Engine) => (understoodLocally && c.topic === 'off_topic' ? finish(rules.intent, 'rules') : rejected(c, engine))
+
+  const key = normalizeQuery(text)
+  const hit = await cached(key, today)
+  if (hit) return reject(hit, 'cache') ?? finish(fromCompact(hit, text, events), 'cache')
 
   const { openrouterKey } = serverEnv()
   if (!openrouterKey || Date.now() < pausedUntil || rateLimited(actor) || (await overDailyBudget())) {
@@ -451,7 +470,7 @@ export async function parseIntent(query: string, actor = 'anon'): Promise<ParseR
     const entry: CacheEntry = { v: 2, c, day: today }
     remember(key, entry)
     await adminClient().from('search_cache').upsert({ normalized_query: key, parsed: entry, created_at: new Date().toISOString() })
-    const no = rejected(c, 'llm')
+    const no = reject(c, 'llm')
     if (no) return no
     const intent = fromCompact(c, text, events)
     if (intent.confidence < 0.35) {

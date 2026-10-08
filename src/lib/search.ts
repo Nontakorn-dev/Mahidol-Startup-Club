@@ -28,9 +28,9 @@ const roleToTrack: Record<Role, Track> = {
 
 // Thai ↔ English and spelling variants, so "healthtech" also finds "สุขภาพ" / "health tech".
 const KEYWORD_FAMILIES: string[][] = [
-  ['healthtech', 'health', 'สุขภาพ', 'การแพทย์', 'medical', 'medtech'],
+  ['healthtech', 'health', 'healthcare', 'สุขภาพ', 'การแพทย์', 'แพทย์', 'medical', 'medicine', 'medtech', 'clinical', 'hospital', 'โรงพยาบาล', 'เภสัช', 'pharma', 'biotech', 'ชีวการแพทย์', 'พยาบาล', 'nursing', 'ทันต', 'dental', 'wellness', 'สุขภาพจิต', 'mental health'],
   ['edtech', 'education', 'การศึกษา', 'learning'],
-  ['fintech', 'finance', 'การเงิน', 'banking', 'payment'],
+  ['fintech', 'financial technology', 'ฟินเทค', 'payment', 'digital banking', 'e-wallet'],
   ['agritech', 'agriculture', 'เกษตร', 'farm'],
   ['foodtech', 'food', 'อาหาร'],
   ['esg', 'sustainability', 'sustainable', 'ความยั่งยืน', 'climate', 'green', 'สิ่งแวดล้อม'],
@@ -48,11 +48,13 @@ function variants(k: string): string[] {
   return [...new Set([key, ...(family ?? []).map(squash)])].filter((w) => w.length > 1)
 }
 
-/** How many keywords appear in the text (any variant counts once). */
-const kwHit = (text: string, keywords: string[]) => {
+/** The keywords that appear in the text (any variant of a keyword counts). */
+const kwMatches = (text: string, keywords: string[]) => {
   const t = squash(text)
-  return keywords.filter((k) => variants(k).some((v) => (v.length <= 3 ? new RegExp(`(^|[^a-z])${v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^a-z]|$)`).test(text.toLowerCase()) : t.includes(v)))).length
+  const lower = text.toLowerCase()
+  return keywords.filter((k) => variants(k).some((v) => (v.length <= 3 ? new RegExp(`(^|[^a-z])${v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^a-z]|$)`).test(lower) : t.includes(v))))
 }
+const kwHit = (text: string, keywords: string[]) => kwMatches(text, keywords).length
 
 const label = (roles: string[]) => roles.map((r) => ROLES[r as Role] ?? r).join(', ')
 
@@ -62,17 +64,27 @@ export async function runSearch(intent: Intent, viewerId: string | null): Promis
   const focusEvent = intent.event_slug ? allEvents.find((e) => e.slug === intent.event_slug) ?? null : null
 
   // ---- events
-  const events: Ranked<EventRow>[] = []
+  // A topic the user asked for ("การแพทย์", "fintech") is the main filter; type and skills only
+  // rank. Events that match the type but not the topic are kept aside and shown only when
+  // nothing on that topic is open, labelled as such.
+  const strict: Ranked<EventRow>[] = []
+  const nearby: Ranked<EventRow>[] = []
+  const wantsTopic = intent.keywords.length > 0
   for (const e of allEvents) {
     const closed = isClosed(e)
     if (closed && !intent.include_closed && e.slug !== intent.event_slug) continue
     if (intent.deadline_from && e.deadline && e.deadline < intent.deadline_from) continue
     if (intent.deadline_to && e.deadline && e.deadline > intent.deadline_to) continue
+    if (e.slug === intent.event_slug) {
+      strict.push({ item: e, score: 100, reason: 'คืองานที่คุณพูดถึง' })
+      continue
+    }
     let score = 0
     const reasons: string[] = []
-    if (e.slug === intent.event_slug) {
-      score += 10
-      reasons.push('คืองานที่คุณพูดถึง')
+    const topics = kwMatches(`${e.title} ${e.summary ?? ''} ${e.overview ?? ''} ${e.organizer ?? ''} ${e.tags.join(' ')} ${e.location ?? ''}`, intent.keywords)
+    if (topics.length) {
+      score += 4 * topics.length
+      reasons.push(`ตรงเรื่อง ${topics.join(', ')}`)
     }
     if (intent.categories.includes(e.category)) {
       score += 3
@@ -83,17 +95,22 @@ export async function runSearch(intent: Intent, viewerId: string | null): Promis
       score += 2 * tagHits.length
       reasons.push(`ต้องการคนสาย ${label(tagHits)} แบบคุณ`)
     }
-    const kw = kwHit(`${e.title} ${e.summary ?? ''} ${e.overview ?? ''} ${e.organizer ?? ''} ${e.tags.join(' ')} ${e.location ?? ''}`, intent.keywords)
-    if (kw) {
-      score += kw * 2
-      reasons.push('ตรงกับคำค้นของคุณ')
-    }
-    const filtered = Boolean(intent.event_slug || intent.categories.length || intent.keywords.length || tagHits.length)
-    if (filtered && score === 0) continue
+    const matchedSomething = score > 0
     if (!closed) score += 1
     if (e.is_club) score += 0.5
-    events.push({ item: e, score, reason: reasons[0] ?? (closed ? 'ปิดรับแล้ว — ดูไว้เป็นข้อมูล' : 'เปิดรับสมัครอยู่ตอนนี้') })
+    const ranked = { item: e, score, reason: reasons.slice(0, 2).join(' · ') || (closed ? 'ปิดรับแล้ว — ดูไว้เป็นข้อมูล' : 'เปิดรับสมัครอยู่ตอนนี้') }
+    if (wantsTopic && !topics.length) {
+      if (matchedSomething) nearby.push(ranked)
+      continue
+    }
+    const filtered = Boolean(intent.categories.length || wantsTopic || tagHits.length)
+    if (filtered && !matchedSomething) continue
+    strict.push(ranked)
   }
+  const events =
+    strict.some((r) => r.item.slug !== intent.event_slug) || !nearby.length
+      ? strict
+      : [...strict, ...nearby.map((r) => ({ ...r, reason: `ยังไม่มีงานเรื่อง ${intent.keywords.join(', ')} ที่เปิดอยู่ — ${r.reason}` }))]
   events.sort((a, b) => b.score - a.score)
 
   // ---- teams looking for people (I want to join)
