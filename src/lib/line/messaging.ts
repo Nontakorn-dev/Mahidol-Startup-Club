@@ -72,46 +72,116 @@ const httpsOnly = (u?: string) => (u && u.startsWith('https://') ? u : undefined
 export type Action =
   | { type: 'uri'; label: string; url: string }
   | { type: 'postback'; label: string; data: string; displayText?: string }
+  | { type: 'message'; label: string; text: string }
 
 export type NoticeContent = {
   altText: string
-  headerBar?: string // blue strip at the top ("มีคนชวนคุณเข้าทีม")
-  badge?: string // yellow pill ("ตรงกับสกิลของคุณ")
+  headerBar?: string // label next to the club logo ("มีคนชวนคุณเข้าทีม")
+  badge?: string // pill above the title ("ตรงกับสกิลของคุณ")
+  badgeTone?: 'yellow' | 'orange' | 'red' | 'blue' | 'grey'
   person?: { name: string; sub?: string; anonymous?: boolean }
   title: string
   subtitle?: string
   quote?: string
+  facts?: { label: string; value: string }[]
+  bullets?: string[]
   imageUrl?: string | null
+  imageAspect?: string // e.g. "20:13"
   actions: Action[] // first is primary
+  size?: 'kilo' | 'mega'
+}
+
+const LOGO_ICON = () => absoluteUrl('/assets/line/icon.png')
+export const WELCOME_IMAGE = () => absoluteUrl('/assets/line/welcome.png')
+
+const TONES: Record<NonNullable<NoticeContent['badgeTone']>, { bg: string; fg: string }> = {
+  yellow: { bg: YELLOW, fg: NAVY },
+  orange: { bg: '#FFEDD5', fg: '#C2410C' },
+  red: { bg: '#FEE2E2', fg: '#B91C1C' },
+  blue: { bg: '#E8EEFB', fg: BRAND },
+  grey: { bg: '#F1F5F9', fg: MUTED },
 }
 
 function toLineAction(a: Action) {
-  if (a.type === 'uri') return { type: 'uri', label: a.label.slice(0, 20), uri: absoluteUrl(a.url) }
-  return { type: 'postback', label: a.label.slice(0, 20), data: a.data, displayText: a.displayText ?? a.label }
+  const label = a.label.slice(0, 20)
+  if (a.type === 'uri') return { type: 'uri', label, uri: absoluteUrl(a.url) }
+  if (a.type === 'message') return { type: 'message', label, text: a.text.slice(0, 300) }
+  return { type: 'postback', label, data: a.data, displayText: a.displayText ?? a.label }
 }
 
-export function noticeFlex(c: NoticeContent): LineMessage {
-  const body: LineMessage[] = []
-  if (c.badge) {
-    body.push({
+const pill = (text: string, tone: NonNullable<NoticeContent['badgeTone']> = 'yellow') => ({
+  type: 'box',
+  layout: 'horizontal',
+  contents: [
+    {
       type: 'box',
-      layout: 'horizontal',
-      contents: [
-        {
-          type: 'box',
-          layout: 'vertical',
-          backgroundColor: YELLOW,
-          cornerRadius: '999px',
-          paddingStart: '10px',
-          paddingEnd: '10px',
-          paddingTop: '2px',
-          paddingBottom: '2px',
-          flex: 0,
-          contents: [{ type: 'text', text: c.badge, size: 'xxs', weight: 'bold', color: NAVY }],
-        },
-      ],
-    })
+      layout: 'vertical',
+      backgroundColor: TONES[tone].bg,
+      cornerRadius: '999px',
+      paddingStart: '10px',
+      paddingEnd: '10px',
+      paddingTop: '3px',
+      paddingBottom: '3px',
+      flex: 0,
+      contents: [{ type: 'text', text, size: 'xxs', weight: 'bold', color: TONES[tone].fg }],
+    },
+  ],
+})
+
+/** Club logo + name strip at the top of every card (with an optional label on the right). */
+function brandHeader(label?: string): LineMessage {
+  return {
+    type: 'box',
+    layout: 'horizontal',
+    alignItems: 'center',
+    spacing: 'sm',
+    paddingTop: '12px',
+    paddingBottom: '10px',
+    paddingStart: '16px',
+    paddingEnd: '16px',
+    backgroundColor: '#FFFFFF',
+    contents: [
+      { type: 'image', url: LOGO_ICON(), size: '28px', aspectRatio: '1:1', aspectMode: 'fit', flex: 0 },
+      { type: 'text', text: 'Mahidol Startup Club', size: 'xs', weight: 'bold', color: NAVY, flex: 1, gravity: 'center' },
+      ...(label
+        ? [
+            {
+              type: 'box',
+              layout: 'vertical',
+              flex: 0,
+              backgroundColor: BRAND,
+              cornerRadius: '999px',
+              paddingStart: '10px',
+              paddingEnd: '10px',
+              paddingTop: '3px',
+              paddingBottom: '3px',
+              contents: [{ type: 'text', text: label.slice(0, 24), size: 'xxs', color: '#FFFFFF', weight: 'bold' }],
+            },
+          ]
+        : []),
+    ],
   }
+}
+
+function footerButtons(actions: Action[]): LineMessage | undefined {
+  if (!actions.length) return undefined
+  const [primary, ...rest] = actions.slice(0, 4)
+  return {
+    type: 'box',
+    layout: 'vertical',
+    spacing: 'sm',
+    paddingAll: '14px',
+    paddingTop: '4px',
+    contents: [
+      { type: 'button', style: 'primary', color: BRAND, height: 'md', action: toLineAction(primary) },
+      ...rest.map((a) => ({ type: 'button', style: 'secondary', color: '#EEF2FA', height: 'sm', action: toLineAction(a) })),
+    ],
+  }
+}
+
+export function noticeBubble(c: NoticeContent): LineMessage {
+  const body: LineMessage[] = []
+  if (c.badge) body.push(pill(c.badge, c.badgeTone))
   if (c.person) {
     body.push({
       type: 'box',
@@ -122,10 +192,10 @@ export function noticeFlex(c: NoticeContent): LineMessage {
         {
           type: 'box',
           layout: 'vertical',
-          width: '36px',
-          height: '36px',
-          cornerRadius: '18px',
-          backgroundColor: c.person.anonymous ? '#E2E8F0' : '#0A2558',
+          width: '40px',
+          height: '40px',
+          cornerRadius: '20px',
+          backgroundColor: c.person.anonymous ? '#E2E8F0' : NAVY,
           justifyContent: 'center',
           alignItems: 'center',
           contents: [
@@ -133,7 +203,7 @@ export function noticeFlex(c: NoticeContent): LineMessage {
               type: 'text',
               text: c.person.anonymous ? '?' : Array.from(c.person.name)[0] || '?',
               color: c.person.anonymous ? MUTED : '#FFFFFF',
-              size: 'sm',
+              size: 'md',
               weight: 'bold',
               align: 'center',
             },
@@ -150,80 +220,101 @@ export function noticeFlex(c: NoticeContent): LineMessage {
       ],
     })
   }
-  body.push({ type: 'text', text: c.title, weight: 'bold', size: 'md', color: NAVY, wrap: true })
-  if (c.subtitle) body.push({ type: 'text', text: c.subtitle, size: 'xs', color: MUTED, wrap: true })
-  if (c.quote) body.push({ type: 'text', text: `“${c.quote}”`, size: 'xs', color: NAVY, wrap: true })
-
-  const [primary, ...rest] = c.actions
-  const footer = c.actions.length
-    ? {
+  body.push({ type: 'text', text: c.title, weight: 'bold', size: 'lg', color: NAVY, wrap: true, maxLines: 4 })
+  if (c.subtitle) body.push({ type: 'text', text: c.subtitle, size: 'sm', color: MUTED, wrap: true })
+  if (c.facts?.length) {
+    body.push({
+      type: 'box',
+      layout: 'vertical',
+      spacing: 'xs',
+      margin: 'md',
+      contents: c.facts.slice(0, 5).map((f) => ({
         type: 'box',
-        layout: rest.length ? 'horizontal' : 'vertical',
+        layout: 'baseline',
         spacing: 'sm',
         contents: [
-          { type: 'button', style: 'primary', color: BRAND, height: 'sm', action: toLineAction(primary) },
-          ...rest.map((a) => ({ type: 'button', style: 'link', color: MUTED, height: 'sm', action: toLineAction(a) })),
+          { type: 'text', text: f.label, size: 'xs', color: MUTED, flex: 2 },
+          { type: 'text', text: f.value, size: 'xs', color: NAVY, weight: 'bold', flex: 5, wrap: true },
         ],
-      }
-    : undefined
+      })),
+    })
+  }
+  if (c.bullets?.length) {
+    body.push({
+      type: 'box',
+      layout: 'vertical',
+      spacing: 'sm',
+      margin: 'md',
+      contents: c.bullets.slice(0, 5).map((t) => ({ type: 'text', text: t, size: 'sm', color: NAVY, wrap: true })),
+    })
+  }
+  if (c.quote) {
+    body.push({
+      type: 'box',
+      layout: 'vertical',
+      backgroundColor: '#F3F6FC',
+      cornerRadius: '10px',
+      paddingAll: '10px',
+      margin: 'md',
+      contents: [{ type: 'text', text: `“${c.quote}”`, size: 'sm', color: NAVY, wrap: true }],
+    })
+  }
 
   const hero = httpsOnly(absoluteUrl(c.imageUrl))
-  const bubble: LineMessage = {
+  const footer = footerButtons(c.actions)
+  return {
     type: 'bubble',
-    size: 'kilo',
-    ...(c.headerBar
-      ? {
-          header: {
-            type: 'box',
-            layout: 'vertical',
-            backgroundColor: BRAND,
-            paddingAll: '12px',
-            contents: [{ type: 'text', text: c.headerBar, color: '#FFFFFF', size: 'sm', weight: 'bold' }],
-          },
-        }
-      : {}),
-    ...(hero ? { hero: { type: 'image', url: hero, size: 'full', aspectRatio: '20:13', aspectMode: 'cover' } } : {}),
-    body: { type: 'box', layout: 'vertical', spacing: 'sm', paddingAll: '14px', contents: body },
+    size: c.size ?? 'mega',
+    header: brandHeader(c.headerBar),
+    ...(hero ? { hero: { type: 'image', url: hero, size: 'full', aspectRatio: c.imageAspect ?? '20:13', aspectMode: 'cover' } } : {}),
+    body: { type: 'box', layout: 'vertical', spacing: 'sm', paddingAll: '16px', paddingTop: hero ? '14px' : '4px', contents: body },
     ...(footer ? { footer } : {}),
+    styles: { header: { separator: !hero, separatorColor: '#E5EAF3' } },
   }
-  return { type: 'flex', altText: c.altText.slice(0, 400), contents: bubble }
 }
 
-/** Carousel of event cards for AI search replies inside LINE. */
+export function noticeFlex(c: NoticeContent): LineMessage {
+  return { type: 'flex', altText: c.altText.slice(0, 400), contents: noticeBubble(c) }
+}
+
+/** Carousel of event cards (search replies, "งานแข่ง"). */
 export function eventsCarousel(
   altText: string,
-  items: { title: string; subtitle: string; imageUrl?: string | null; url: string; badge?: string }[],
+  items: { title: string; subtitle: string; imageUrl?: string | null; url: string; badge?: string; badgeTone?: NoticeContent['badgeTone']; category?: string }[],
   moreUrl?: string,
 ): LineMessage {
   const bubbles = items.slice(0, 9).map((it) =>
-    (noticeFlex({
+    noticeBubble({
       altText,
+      size: 'kilo',
+      headerBar: it.category,
       badge: it.badge,
+      badgeTone: it.badgeTone,
       title: it.title,
       subtitle: it.subtitle,
       imageUrl: it.imageUrl,
-      actions: [{ type: 'uri', label: 'ดูรายละเอียด', url: it.url }],
-    }).contents) as LineMessage,
+      imageAspect: '4:3',
+      actions: [{ type: 'uri', label: 'ดูรายละเอียด & สมัคร', url: it.url }],
+    }),
   )
   if (moreUrl) {
     bubbles.push({
       type: 'bubble',
       size: 'kilo',
+      header: brandHeader(),
       body: {
         type: 'box',
         layout: 'vertical',
         justifyContent: 'center',
+        spacing: 'sm',
         paddingAll: '20px',
         contents: [
-          { type: 'text', text: 'ดูผลทั้งหมดบนเว็บ', weight: 'bold', color: NAVY, align: 'center', wrap: true },
-          { type: 'text', text: 'งานแข่ง · ทีม · คน', size: 'xs', color: MUTED, align: 'center' },
+          { type: 'text', text: '🔎', size: '3xl', align: 'center' },
+          { type: 'text', text: 'ดูทั้งหมดบนเว็บ', weight: 'bold', size: 'lg', color: NAVY, align: 'center', wrap: true },
+          { type: 'text', text: 'กรองตามประเภท วันปิดรับ และดูทีมที่กำลังหาคน', size: 'xs', color: MUTED, align: 'center', wrap: true },
         ],
       },
-      footer: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [{ type: 'button', style: 'primary', color: BRAND, height: 'sm', action: { type: 'uri', label: 'เปิดเว็บ', uri: absoluteUrl(moreUrl) } }],
-      },
+      footer: footerButtons([{ type: 'uri', label: 'เปิดเว็บ', url: moreUrl }]),
     })
   }
   return { type: 'flex', altText: altText.slice(0, 400), contents: { type: 'carousel', contents: bubbles } }
