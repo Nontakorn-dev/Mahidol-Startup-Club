@@ -267,8 +267,9 @@ h1, h2, h3 { font-family: var(--font-head); }
   text-decoration: none; color: var(--navy);
 }
 .event-h:hover { color: var(--navy); box-shadow: 0 20px 48px -16px rgba(0, 53, 173, 0.35); }
-/* Poster stretches to the card's height so there is never empty space under it */
-.event-h .poster { flex: none; align-self: stretch; width: 210px; height: auto; min-height: 262px; border-radius: 16px; object-fit: cover; object-position: top; }
+/* Poster frame stretches to the card's height (never empty space under it); the image fills the frame */
+.event-h .poster { position: relative; flex: none; align-self: stretch; width: 210px; min-height: 262px; border-radius: 16px; overflow: hidden; background: var(--bg-4); }
+.event-h .poster img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
 .event-h .body { flex: 1; min-width: 0; padding: 10px 10px 6px 0; display: flex; flex-direction: column; gap: 10px; }
 .event-h .title { font-family: var(--font-head); font-weight: 600; font-size: 23px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .event-h .facts { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: var(--muted); }
@@ -304,8 +305,9 @@ h1, h2, h3 { font-family: var(--font-head); }
   .event-card .info { display: contents; }
   .event-card .cat, .event-card .d-only, .event-card .media .badge-pos { display: none; }
   .event-card .m-tags { display: flex; grid-area: tags; gap: 6px; margin-bottom: 6px; }
-  .event-card .media { grid-area: poster; align-self: stretch; border-radius: 12px; overflow: hidden; }
-  .event-card .media img, .event-card .media .placeholder { width: 100%; height: 100%; min-height: 0; aspect-ratio: 4 / 5; font-size: 12px; text-align: center; }
+  .event-card .media { grid-area: poster; align-self: stretch; min-width: 0; border-radius: 12px; overflow: hidden; background: var(--bg-4); }
+  .event-card .media::before { content: ''; display: block; padding-top: 125%; }
+  .event-card .media img, .event-card .media .placeholder { position: absolute; inset: 0; width: 100%; height: 100%; font-size: 12px; text-align: center; }
   .event-card .title {
     grid-area: title; font-weight: 600; font-size: 17px; line-height: 1.32;
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
@@ -745,7 +747,9 @@ dl.kv dd { margin: 0; font-weight: 600; }
   }
   .home-open-grid .event-h .body { display: contents; }
   .home-open-grid .event-h .tags { grid-area: tags; gap: 6px; margin-bottom: 6px; }
-  .home-open-grid .event-h .poster { grid-area: poster; align-self: stretch; width: 100%; height: 100%; min-height: 0; aspect-ratio: 4 / 5; border-radius: 12px; }
+  /* Frame: at least 4:5 tall (padding trick — aspect-ratio would change its width in Safari), taller if the text is */
+  .home-open-grid .event-h .poster { grid-area: poster; align-self: stretch; width: 100%; height: auto; min-height: 0; aspect-ratio: auto; border-radius: 12px; }
+  .home-open-grid .event-h .poster::before { content: ''; display: block; padding-top: 125%; }
   .home-open-grid .event-h .title {
     grid-area: title; font-size: 17px; line-height: 1.32;
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;

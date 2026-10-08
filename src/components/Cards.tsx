@@ -21,11 +21,10 @@ export function ClubTag({ small }: { small?: boolean }) {
 export function EventCardH({ e }: { e: EventRow }) {
   return (
     <Link href={`/opportunities/${e.slug}`} className="event-h">
-      {e.poster_url ? (
-        <Image src={e.poster_url} alt={`โปสเตอร์ ${e.title}`} width={420} height={524} className="poster" />
-      ) : (
-        <span className="poster" style={{ background: 'var(--bg-4)' }} />
-      )}
+      {/* The frame takes the card's height; the image fills it (absolute), so it can never push past the card. */}
+      <span className="poster">
+        {e.poster_url && <Image src={e.poster_url} alt={`โปสเตอร์ ${e.title}`} width={420} height={524} />}
+      </span>
       <div className="body">
         <span className="row wrap tags">
           {e.is_club && <ClubTag />}
