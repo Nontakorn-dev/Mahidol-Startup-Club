@@ -4,7 +4,7 @@ import { randomInt } from 'node:crypto'
 import { adminClient } from '@/lib/supabase/admin'
 import { env, serverEnv } from '@/lib/env'
 import { randomToken, signPayload, verifyPayload } from '@/lib/crypto'
-import { getLineProfile } from '@/lib/line/messaging'
+import { getLineProfile, isOaFriend } from '@/lib/line/messaging'
 
 // Accounts are always email accounts. LINE is only *linked* to them so the OA can
 // push notifications. Three ways to link, all ending in linkLineToUser():
@@ -35,6 +35,8 @@ export async function linkLineToUser(
     displayName = p?.displayName ?? null
     picture = p?.pictureUrl ?? null
   }
+  // The OA's own answer is the reliable one (LINE Login's friendship API needs a linked OA).
+  const friend = extra.friend === true ? true : ((await isOaFriend(lineUserId)) ?? extra.friend ?? null)
   const { data: me } = await db.from('profiles').select('avatar_url').eq('id', userId).single()
   await db
     .from('profiles')
@@ -43,7 +45,7 @@ export async function linkLineToUser(
       line_display_name: displayName,
       line_picture_url: picture ?? null,
       line_linked_at: new Date().toISOString(),
-      ...(extra.friend === null || extra.friend === undefined ? {} : { line_is_friend: extra.friend }),
+      ...(friend === null ? {} : { line_is_friend: friend }),
       ...(me?.avatar_url || !picture ? {} : { avatar_url: picture }),
     })
     .eq('id', userId)

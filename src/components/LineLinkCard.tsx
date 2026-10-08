@@ -4,6 +4,8 @@ import { UnlinkLineButton } from './NotificationSettings'
 import LinkStatusPoller from './LinkStatusPoller'
 import { getOrCreateLinkCode, LINK_CODE_TTL_MIN, oaMessageUrl } from '@/lib/line/link'
 import { lineAddFriendUrl, lineLoginEnabled } from '@/lib/env'
+import { isOaFriend } from '@/lib/line/messaging'
+import { adminClient } from '@/lib/supabase/admin'
 import type { Profile } from '@/lib/types'
 
 /**
@@ -13,6 +15,11 @@ import type { Profile } from '@/lib/types'
  */
 export default async function LineLinkCard({ p, next = '/settings/notifications', compact }: { p: Profile; next?: string; compact?: boolean }) {
   const addFriend = lineAddFriendUrl()
+  if (p.line_user_id && !p.line_is_friend && (await isOaFriend(p.line_user_id))) {
+    // Added the OA some other way (QR, search, before linking) — remember it.
+    await adminClient().from('profiles').update({ line_is_friend: true }).eq('id', p.id)
+    p = { ...p, line_is_friend: true }
+  }
   if (p.line_user_id) {
     const qr = !p.line_is_friend && addFriend ? await QRCode.toString(addFriend, { type: 'svg', margin: 1, color: { dark: '#10233F', light: '#FFFFFF' } }) : null
     return (

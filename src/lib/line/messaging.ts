@@ -58,6 +58,23 @@ export async function getLineProfile(userId: string) {
   return (await res.json()) as { displayName: string; pictureUrl?: string }
 }
 
+/**
+ * Whether this LINE user has added our OA (and not blocked it): the Messaging API only returns
+ * profiles of current friends. true / false, or null when LINE couldn't be asked.
+ */
+export async function isOaFriend(userId: string): Promise<boolean | null> {
+  const token = serverEnv().lineMessagingToken
+  if (!token) return null
+  try {
+    const res = await fetch(`${API}/profile/${encodeURIComponent(userId)}`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(5000) })
+    if (res.ok) return true
+    if (res.status === 404) return false
+    return null
+  } catch {
+    return null
+  }
+}
+
 /** Make site-relative URLs absolute (LINE requires https URLs). */
 export function absoluteUrl(url: string | null | undefined): string | undefined {
   if (!url) return undefined
