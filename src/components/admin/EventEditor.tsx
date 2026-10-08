@@ -141,6 +141,7 @@ export default function EventEditor({ e, editor, saved }: { e?: EventRow; editor
                   คำอธิบายสั้นบนการ์ด <span className="opt">(ไม่บังคับ)</span>
                 </label>
                 <input id="sm" name="summary" className="input" value={f.summary} onChange={set('summary')} maxLength={120} placeholder="เช่น ทุนพัฒนาไอเดียและต้นแบบสูงสุด 1.5 ล้านบาท" />
+                <p className="help" style={{ fontSize: 12 }}>เว้นว่างได้ — การ์ดจะใช้ประโยคแรกของรายละเอียดงานแทน</p>
               </div>
               <div className="grid-2" style={{ gap: 14 }}>
                 <div className="field">

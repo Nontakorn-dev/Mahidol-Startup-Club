@@ -5,7 +5,7 @@ import ContactButton from './ContactButton'
 import { IconCalendar, IconHome, IconLock, IconPin, IconVerified } from './icons'
 import { CATEGORIES, ROLES, STAGES, TRACK_SEEK_LABEL, type Role } from '@/lib/constants'
 import DeadlineBadge from './DeadlineBadge'
-import { closesAt, isClosed, thaiDeadline } from '@/lib/format'
+import { closesAt, eventBlurb, isClosed, thaiDeadline } from '@/lib/format'
 import type { CofounderCard, EventRow, SeekerCard, TeamCard } from '@/lib/types'
 
 export function ClubTag({ small }: { small?: boolean }) {
@@ -19,6 +19,7 @@ export function ClubTag({ small }: { small?: boolean }) {
 
 /** Horizontal poster card used on the home page. */
 export function EventCardH({ e }: { e: EventRow }) {
+  const blurb = eventBlurb(e)
   return (
     <Link href={`/opportunities/${e.slug}`} className="event-h">
       {/* The frame takes the card's height; the image fills it (absolute), so it can never push past the card. */}
@@ -32,7 +33,7 @@ export function EventCardH({ e }: { e: EventRow }) {
           {e.deadline && <DeadlineBadge closesAt={closesAt(e)?.toISOString() ?? null} size="sm" />}
         </span>
         <span className="title">{e.title}</span>
-        {e.summary && <span className="summary">{e.summary}</span>}
+        {blurb && <span className="summary">{blurb}</span>}
         <span className="facts">
           <span>
             <span style={{ display: 'inline-flex', color: 'var(--gold)' }}>
@@ -58,6 +59,7 @@ export function EventCardH({ e }: { e: EventRow }) {
 /** Vertical poster card used on the opportunities grid and search results. */
 export function EventCard({ e, reason }: { e: EventRow; reason?: string }) {
   const closed = isClosed(e)
+  const blurb = eventBlurb(e)
   return (
     <Link href={`/opportunities/${e.slug}`} className={`event-card ${closed ? 'closed' : ''}`}>
       <div className="media">
@@ -85,7 +87,7 @@ export function EventCard({ e, reason }: { e: EventRow; reason?: string }) {
           {!closed && <DeadlineBadge closesAt={closesAt(e)?.toISOString() ?? null} openNote={e.open_note} size="sm" />}
         </span>
         <span className="title">{e.title}</span>
-        {e.summary && <span className="m-summary">{e.summary}</span>}
+        {blurb && <span className="m-summary">{blurb}</span>}
         <span className="d-only row wrap" style={{ gap: 8, marginTop: 2 }}>
           <DeadlineBadge closesAt={closesAt(e)?.toISOString() ?? null} openNote={e.open_note} size="sm" />
           {e.deadline && !closed && <span style={{ fontSize: 13, color: 'var(--muted)' }}>{thaiDeadline(e)}</span>}

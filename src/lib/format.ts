@@ -190,3 +190,26 @@ export function hostOf(url?: string | null): string {
 export function formatNumber(n: number): string {
   return n.toLocaleString('en-US')
 }
+
+/**
+ * One-line blurb for event cards: the short summary, or — when an admin left it empty — the first
+ * real sentence of the overview with Markdown stripped. Cards clamp it to 2 lines visually.
+ */
+export function eventBlurb(e: { summary?: string | null; overview?: string | null }): string | null {
+  const summary = e.summary?.trim()
+  if (summary) return summary
+  const lines = (e.overview ?? '')
+    .split('\n')
+    .map((l) =>
+      l
+        .replace(/^\s*(#{1,6}\s+|[-*•–]\s+|>\s*|\d+[.)]\s+)/, '')
+        .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+        .replace(/\*\*|__|`/g, '')
+        .replace(/\s+/g, ' ')
+        .trim(),
+    )
+    .filter(Boolean)
+  const first = lines.find((l) => l.length > 15) ?? lines[0]
+  if (!first) return null
+  return first.length > 180 ? `${first.slice(0, 177).trimEnd()}…` : first
+}
