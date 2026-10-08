@@ -28,7 +28,9 @@ export default function AuthCompleter({ next, code, tokenHash, type, providerErr
         setError(/verifier|both auth code/i.test(error.message) ? 'ลิงก์นี้ต้องเปิดในเบราว์เซอร์เดียวกับที่ขอ — หรือกรอกรหัส 6 หลักจากอีเมลแทน' : 'ลิงก์หมดอายุหรือถูกใช้ไปแล้ว กรุณาขอใหม่')
         return
       }
-      window.location.replace(`/auth/after?next=${encodeURIComponent(next)}`)
+      // "Reset password" email button: signed in — now pick the new password.
+      const dest = type === 'recovery' ? `/settings/password?reset=1&next=${encodeURIComponent(next)}` : next
+      window.location.replace(`/auth/after?next=${encodeURIComponent(dest)}`)
     })()
   }, [code, tokenHash, type, next, providerError])
   if (error) {

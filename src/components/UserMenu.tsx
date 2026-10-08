@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import Avatar from './Avatar'
 import { NAV } from './NavLinks'
-import { IconBell, IconChevronDown, IconDashboard, IconLine, IconLogout, IconUser } from './icons'
+import { IconBell, IconChevronDown, IconDashboard, IconLine, IconLock, IconLogout, IconUser } from './icons'
 
 export default function UserMenu({
   name,
@@ -63,6 +63,9 @@ export default function UserMenu({
               <IconLine size={18} />
             </span>
             {lineLinked ? 'LINE เชื่อมแล้ว' : 'เชื่อม LINE'}
+          </Link>
+          <Link href="/settings/password" role="menuitem">
+            <IconLock size={18} /> ตั้งรหัสผ่าน
           </Link>
           {isAdmin && (
             <Link href="/admin" role="menuitem">

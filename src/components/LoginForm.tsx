@@ -1,23 +1,24 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { AuthError } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import { IconInfo } from './icons'
+import PasswordInput from './PasswordInput'
 
 // All sign-in calls run in the browser: Supabase Auth rate-limits per IP, so each visitor
 // spends their own quota instead of everyone sharing the Vercel server's IP.
 
-type Mode = 'email' | 'signin' | 'signup'
+type Mode = 'signin' | 'signup' | 'reset'
 
 function message(err: AuthError | Error): string {
   const code = (err as AuthError).code
   if (code === 'over_email_send_rate_limit' || code === 'over_request_rate_limit' || /rate limit|seconds/i.test(err.message))
     return 'มีการขอถี่เกินไป กรุณารอ 1 นาทีแล้วลองใหม่'
-  if (code === 'invalid_credentials') return 'อีเมลหรือรหัสผ่านไม่ถูกต้อง — ถ้าเคยเข้าด้วย Google หรือรหัสทางอีเมล ให้ใช้วิธีเดิม'
+  if (code === 'invalid_credentials') return 'อีเมลหรือรหัสผ่านไม่ถูกต้อง — ถ้ายังไม่เคยตั้งรหัสผ่าน (เคยเข้าด้วย Google หรือรหัสทางอีเมล) กด “ลืมรหัสผ่าน?” เพื่อตั้งรหัส'
   if (code === 'user_already_exists') return 'อีเมลนี้มีบัญชีแล้ว ลองเข้าสู่ระบบแทน'
-  if (code === 'email_not_confirmed') return 'ยังไม่ได้ยืนยันอีเมล — ใช้ “เข้าด้วยรหัสทางอีเมล” เพื่อยืนยันและเข้าสู่ระบบ'
   if (code === 'otp_expired' || /expired|invalid/i.test(err.message)) return 'รหัสไม่ถูกต้องหรือหมดอายุ'
   if (code === 'weak_password') return 'รหัสผ่านง่ายเกินไป ลองใช้รหัสที่ยาวขึ้น'
+  if (code === 'same_password') return 'รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสเดิม'
   return err.message
 }
 
@@ -75,55 +76,30 @@ export function GoogleButton({ next, label = 'Continue with Google' }: { next: s
   )
 }
 
-function EyeIcon({ off }: { off: boolean }) {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
-      <circle cx="12" cy="12" r="3" />
-      {off && <path d="M4 4l16 16" />}
-    </svg>
-  )
-}
-
-/** Password input with a show/hide toggle. */
-function PasswordField({ value, onChange, autoComplete }: { value: string; onChange: (v: string) => void; autoComplete: string }) {
-  const [show, setShow] = useState(false)
-  return (
-    <div className="pw-field">
-      <input
-        id="pw"
-        type={show ? 'text' : 'password'}
-        required
-        minLength={8}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        autoComplete={autoComplete}
-        className="input"
-        placeholder={autoComplete === 'new-password' ? 'อย่างน้อย 8 ตัวอักษร' : 'รหัสผ่านของคุณ'}
-      />
-      <button type="button" className="pw-toggle" onClick={() => setShow((v) => !v)} aria-label={show ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'} aria-pressed={show}>
-        <EyeIcon off={show} />
-      </button>
-    </div>
-  )
-}
-
 const HEADINGS: Record<Mode, [string, string]> = {
   signin: ['ยินดีต้อนรับกลับมา', 'เข้าสู่ระบบเพื่อไปต่อ'],
   signup: ['สร้างบัญชีใหม่', 'ฟรี ใช้เวลาไม่ถึง 1 นาที'],
-  email: ['เข้าสู่ระบบด้วยรหัสทางอีเมล', 'ไม่ต้องใช้รหัสผ่าน — เราจะส่งรหัส 6 หลักไปที่อีเมลของคุณ'],
+  reset: ['ลืมรหัสผ่าน', 'กรอกอีเมลของบัญชี เราจะส่งรหัส 6 หลักไปให้ตั้งรหัสผ่านใหม่'],
 }
+const RESEND_AFTER = 60 // seconds
 
 export default function LoginForm({ next, google, initialMode = 'signin' }: { next: string; google: boolean; initialMode?: 'signin' | 'signup' }) {
   const [mode, setMode] = useState<Mode>(initialMode)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [code, setCode] = useState('')
-  const [codeSentTo, setCodeSentTo] = useState<string | null>(null)
+  const [sent, setSent] = useState<{ to: string; kind: 'signup' | 'reset' } | null>(null)
+  const [cooldown, setCooldown] = useState(0)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const redirectTo = () => `${window.location.origin}/login?next=${encodeURIComponent(next)}`
   const switchTo = (m: Mode) => (setMode(m), setError(null))
+
+  useEffect(() => {
+    if (cooldown <= 0) return
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000)
+    return () => clearTimeout(t)
+  }, [cooldown])
 
   const run = async (fn: () => Promise<void>) => {
     setBusy(true)
@@ -137,47 +113,70 @@ export default function LoginForm({ next, google, initialMode = 'signin' }: { ne
     }
   }
 
+  /** Sends (or re-sends) the 6-digit code and shows the code screen. */
+  const sendCode = async (to: string, kind: 'signup' | 'reset') => {
+    const sb = createClient()
+    const { error } =
+      kind === 'signup' ? await sb.auth.resend({ type: 'signup', email: to, options: { emailRedirectTo: redirectTo() } }) : await sb.auth.resetPasswordForEmail(to, { redirectTo: redirectTo() })
+    if (error) throw error
+    setSent({ to, kind })
+    setCode('')
+    setPassword('')
+    setCooldown(RESEND_AFTER)
+  }
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
     const addr = email.trim().toLowerCase()
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(addr)) return setError('อีเมลไม่ถูกต้อง')
-    if (mode !== 'email' && password.length < 8) return setError('รหัสผ่านอย่างน้อย 8 ตัวอักษร')
+    if (mode !== 'reset' && password.length < 8) return setError('รหัสผ่านอย่างน้อย 8 ตัวอักษร')
     const sb = createClient()
     run(async () => {
-      if (mode === 'email') {
-        const { error } = await sb.auth.signInWithOtp({ email: addr, options: { emailRedirectTo: redirectTo(), shouldCreateUser: true } })
-        if (error) throw error
-        setCodeSentTo(addr)
-      } else if (mode === 'signin') {
+      if (mode === 'reset') return sendCode(addr, 'reset')
+      if (mode === 'signin') {
         const { error } = await sb.auth.signInWithPassword({ email: addr, password })
+        // Signed up earlier but never entered the code: send a fresh one.
+        if (error && (error as AuthError).code === 'email_not_confirmed') return sendCode(addr, 'signup')
         if (error) throw error
-        done(next)
-      } else {
-        const { data, error } = await sb.auth.signUp({ email: addr, password, options: { emailRedirectTo: redirectTo() } })
-        if (error) throw error
-        if (data.session) done(next)
-        else setCodeSentTo(addr) // confirmation email carries the same 6-digit code
+        return done(next)
       }
+      const { data, error } = await sb.auth.signUp({ email: addr, password, options: { emailRedirectTo: redirectTo() } })
+      if (error) throw error
+      // With email confirmation on, an existing account comes back with no identities and no email is sent.
+      if (data.user && !data.user.identities?.length) throw new Error('อีเมลนี้มีบัญชีอยู่แล้ว — เข้าสู่ระบบ หรือกด “ลืมรหัสผ่าน?” เพื่อตั้งรหัสใหม่')
+      if (data.session) return done(next)
+      setSent({ to: addr, kind: 'signup' })
+      setCode('')
+      setPassword('')
+      setCooldown(RESEND_AFTER)
     })
   }
 
   const verify = (e: React.FormEvent) => {
     e.preventDefault()
+    if (!sent) return
     if (!/^\d{6,8}$/.test(code.trim())) return setError('รหัสต้องเป็นตัวเลข 6 หลัก')
+    if (sent.kind === 'reset' && password.length < 8) return setError('รหัสผ่านใหม่อย่างน้อย 8 ตัวอักษร')
     run(async () => {
-      const { error } = await createClient().auth.verifyOtp({ email: codeSentTo!, token: code.trim(), type: 'email' })
+      const sb = createClient()
+      const { error } = await sb.auth.verifyOtp({ email: sent.to, token: code.trim(), type: sent.kind === 'reset' ? 'recovery' : 'email' })
       if (error) throw error
+      if (sent.kind === 'reset') {
+        const { error: pwError } = await sb.auth.updateUser({ password })
+        if (pwError) throw pwError
+      }
       done(next)
     })
   }
 
-  if (codeSentTo) {
+  if (sent) {
+    const reset = sent.kind === 'reset'
     return (
       <form onSubmit={verify} className="auth-form">
         <div className="auth-head">
-          <h1>เช็กอีเมลของคุณ</h1>
+          <h1>{reset ? 'ตั้งรหัสผ่านใหม่' : 'ยืนยันอีเมล'}</h1>
           <p>
-            ส่งรหัส 6 หลักไปที่ <b>{codeSentTo}</b> แล้ว — กรอกรหัส หรือกดปุ่มในอีเมล (ดูในโฟลเดอร์ Spam/Promotions ด้วย)
+            ส่งรหัส 6 หลักไปที่ <b>{sent.to}</b> แล้ว — ดูในโฟลเดอร์ Spam/Promotions ด้วย
           </p>
         </div>
         <div className="auth-field">
@@ -194,13 +193,26 @@ export default function LoginForm({ next, google, initialMode = 'signin' }: { ne
             placeholder="••••••"
           />
         </div>
+        {reset && (
+          <div className="auth-field">
+            <label htmlFor="pw">รหัสผ่านใหม่</label>
+            <PasswordInput id="pw" value={password} onChange={setPassword} autoComplete="new-password" />
+          </div>
+        )}
         {error && <div className="alert alert-error">{error}</div>}
         <button type="submit" className="btn btn-primary auth-submit" disabled={busy}>
-          {busy ? 'กำลังตรวจสอบ…' : 'ยืนยันรหัส'}
+          {busy ? 'กำลังตรวจสอบ…' : reset ? 'ตั้งรหัสผ่านและเข้าสู่ระบบ' : 'ยืนยันและเข้าสู่ระบบ'}
         </button>
-        <button type="button" className="auth-link" onClick={() => (setCodeSentTo(null), setCode(''), setError(null))}>
-          ใช้อีเมลอื่น / ส่งรหัสใหม่
-        </button>
+        <p className="auth-switch">
+          ไม่ได้รับรหัส?{' '}
+          <button type="button" className="auth-link" disabled={busy || cooldown > 0} onClick={() => run(() => sendCode(sent.to, sent.kind))}>
+            {cooldown > 0 ? `ส่งใหม่ได้ใน ${cooldown} วิ` : 'ส่งรหัสอีกครั้ง'}
+          </button>
+          {' · '}
+          <button type="button" className="auth-link" onClick={() => (setSent(null), setCode(''), setError(null))}>
+            เปลี่ยนอีเมล
+          </button>
+        </p>
       </form>
     )
   }
@@ -208,7 +220,7 @@ export default function LoginForm({ next, google, initialMode = 'signin' }: { ne
   const [title, sub] = HEADINGS[mode]
   return (
     <div className="auth-form">
-      {mode !== 'email' && (
+      {mode !== 'reset' && (
         <div className="segmented auth-tabs" role="tablist" aria-label="เข้าสู่ระบบหรือสมัครสมาชิก">
           <button type="button" role="tab" aria-selected={mode === 'signin'} onClick={() => switchTo('signin')}>
             เข้าสู่ระบบ
@@ -222,7 +234,7 @@ export default function LoginForm({ next, google, initialMode = 'signin' }: { ne
         <h1>{title}</h1>
         <p>{sub}</p>
       </div>
-      {google && mode !== 'email' && (
+      {google && mode !== 'reset' && (
         <>
           <GoogleButton next={next} label={mode === 'signup' ? 'สมัครด้วย Google' : 'เข้าสู่ระบบด้วย Google'} />
           <div className="divider">หรือใช้อีเมล</div>
@@ -239,27 +251,27 @@ export default function LoginForm({ next, google, initialMode = 'signin' }: { ne
             </span>
           )}
         </div>
-        {mode !== 'email' && (
+        {mode !== 'reset' && (
           <div className="auth-field">
             <div className="auth-label-row">
               <label htmlFor="pw">รหัสผ่าน</label>
               {mode === 'signin' && (
-                <button type="button" className="auth-link" onClick={() => switchTo('email')}>
+                <button type="button" className="auth-link" onClick={() => switchTo('reset')}>
                   ลืมรหัสผ่าน?
                 </button>
               )}
             </div>
-            <PasswordField value={password} onChange={setPassword} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} />
+            <PasswordInput id="pw" value={password} onChange={setPassword} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} />
           </div>
         )}
         {error && <div className="alert alert-error">{error}</div>}
         <button type="submit" className="btn btn-primary auth-submit" disabled={busy}>
-          {mode === 'email' ? (busy ? 'กำลังส่ง…' : 'ส่งรหัสไปที่อีเมล') : mode === 'signin' ? (busy ? 'กำลังเข้าสู่ระบบ…' : 'เข้าสู่ระบบ') : busy ? 'กำลังสมัคร…' : 'สมัครสมาชิก'}
+          {mode === 'reset' ? (busy ? 'กำลังส่ง…' : 'ส่งรหัสไปที่อีเมล') : mode === 'signin' ? (busy ? 'กำลังเข้าสู่ระบบ…' : 'เข้าสู่ระบบ') : busy ? 'กำลังสมัคร…' : 'สมัครสมาชิก'}
         </button>
       </form>
-      {mode === 'email' ? (
+      {mode === 'reset' ? (
         <button type="button" className="auth-link center" onClick={() => switchTo('signin')}>
-          ← กลับไปเข้าสู่ระบบด้วยรหัสผ่าน
+          ← กลับไปเข้าสู่ระบบ
         </button>
       ) : (
         <p className="auth-switch">
@@ -267,14 +279,6 @@ export default function LoginForm({ next, google, initialMode = 'signin' }: { ne
           <button type="button" className="auth-link" onClick={() => switchTo(mode === 'signin' ? 'signup' : 'signin')}>
             {mode === 'signin' ? 'สมัครสมาชิก' : 'เข้าสู่ระบบ'}
           </button>
-          {mode === 'signin' && (
-            <>
-              {' · '}
-              <button type="button" className="auth-link" onClick={() => switchTo('email')}>
-                เข้าด้วยรหัสทางอีเมล
-              </button>
-            </>
-          )}
         </p>
       )}
     </div>

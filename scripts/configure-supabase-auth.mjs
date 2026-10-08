@@ -33,7 +33,7 @@ const config = {
   mailer_templates_confirmation_content: tpl('confirmation'),
   mailer_subjects_email_change: 'ยืนยันอีเมลใหม่ — Mahidol Startup Club',
   mailer_templates_email_change_content: tpl('email_change'),
-  mailer_subjects_recovery: 'รหัสเข้าสู่ระบบ Mahidol Startup Club: {{ .Token }}',
+  mailer_subjects_recovery: 'รหัสตั้งรหัสผ่านใหม่ Mahidol Startup Club: {{ .Token }}',
   mailer_templates_recovery_content: tpl('recovery'),
 }
 
