@@ -27,14 +27,47 @@ async function call(path: string, body: unknown) {
   return res
 }
 
+// ----------------------------------------------------------------- monthly push quota
+
+let quotaCache: { at: number; remaining: number } | null = null
+
+/**
+ * Push messages left this month (Infinity on unlimited plans, null if LINE can't be asked).
+ * Replies are free and never counted; one push = one message per recipient, however many bubbles.
+ */
+export async function lineQuotaRemaining(fresh = false): Promise<number | null> {
+  if (!fresh && quotaCache && Date.now() - quotaCache.at < 60_000) return quotaCache.remaining
+  const token = serverEnv().lineMessagingToken
+  if (!token) return null
+  try {
+    const h = { Authorization: `Bearer ${token}` }
+    const [q, u] = await Promise.all([
+      fetch(`${API}/message/quota`, { headers: h, signal: AbortSignal.timeout(5000) }).then((r) => r.json() as Promise<{ type: string; value?: number }>),
+      fetch(`${API}/message/quota/consumption`, { headers: h, signal: AbortSignal.timeout(5000) }).then((r) => r.json() as Promise<{ totalUsage: number }>),
+    ])
+    const remaining = q.type === 'none' ? Infinity : Math.max(0, (q.value ?? 0) - (u.totalUsage ?? 0))
+    quotaCache = { at: Date.now(), remaining }
+    return remaining
+  } catch {
+    return null
+  }
+}
+
+/** Record pushes we just made so the next check in this instance doesn't over-spend. */
+export function spendQuota(n: number) {
+  if (quotaCache && Number.isFinite(quotaCache.remaining)) quotaCache.remaining = Math.max(0, quotaCache.remaining - n)
+}
+
 export async function pushMessage(to: string, messages: LineMessage[]) {
   await call('/message/push', { to, messages: messages.slice(0, 5) })
+  spendQuota(1)
 }
 
 /** Multicast in chunks of 500 (LINE limit). Returns number of recipients attempted. */
 export async function multicast(to: string[], messages: LineMessage[]) {
   for (let i = 0; i < to.length; i += 500) {
     await call('/message/multicast', { to: to.slice(i, i + 500), messages: messages.slice(0, 5) })
+    spendQuota(Math.min(500, to.length - i))
   }
   return to.length
 }
@@ -78,8 +111,14 @@ export async function isOaFriend(userId: string): Promise<boolean | null> {
 /** Make site-relative URLs absolute (LINE requires https URLs). */
 export function absoluteUrl(url: string | null | undefined): string | undefined {
   if (!url) return undefined
-  if (/^https?:\/\//.test(url)) return url
-  return `${env.siteUrl}${url.startsWith('/') ? '' : '/'}${url}`
+  // new URL() percent-encodes Thai slugs and spaces — LINE rejects the whole message
+  // ("Invalid action URI") when any URI contains raw non-ASCII characters.
+  try {
+    const u = new URL(url, `${env.siteUrl}/`)
+    return u.protocol === 'https:' || u.protocol === 'http:' ? u.href : undefined
+  } catch {
+    return undefined
+  }
 }
 
 const httpsOnly = (u?: string) => (u && u.startsWith('https://') ? u : undefined)
@@ -88,7 +127,7 @@ const httpsOnly = (u?: string) => (u && u.startsWith('https://') ? u : undefined
 
 export type Action =
   | { type: 'uri'; label: string; url: string }
-  | { type: 'postback'; label: string; data: string; displayText?: string }
+  | { type: 'postback'; label: string; data: string; displayText?: string | null }
   | { type: 'message'; label: string; text: string }
 
 export type NoticeContent = {
@@ -121,9 +160,10 @@ const TONES: Record<NonNullable<NoticeContent['badgeTone']>, { bg: string; fg: s
 
 function toLineAction(a: Action) {
   const label = a.label.slice(0, 20)
-  if (a.type === 'uri') return { type: 'uri', label, uri: absoluteUrl(a.url) }
+  if (a.type === 'uri') return { type: 'uri', label, uri: absoluteUrl(a.url) ?? `${env.siteUrl}/` }
   if (a.type === 'message') return { type: 'message', label, text: a.text.slice(0, 300) }
-  return { type: 'postback', label, data: a.data, displayText: a.displayText ?? a.label }
+  // displayText: null → silent tap (e.g. ticking an interest); undefined → echo the label.
+  return { type: 'postback', label, data: a.data.slice(0, 300), ...(a.displayText === null ? {} : { displayText: (a.displayText ?? a.label).slice(0, 300) }) }
 }
 
 const pill = (text: string, tone: NonNullable<NoticeContent['badgeTone']> = 'yellow') => ({
@@ -337,7 +377,9 @@ export function eventsCarousel(
   return { type: 'flex', altText: altText.slice(0, 400), contents: { type: 'carousel', contents: bubbles } }
 }
 
-export function textMessage(text: string, quickReplies?: { label: string; text?: string; url?: string }[]): LineMessage {
+export type QuickReply = { label: string; text?: string; url?: string; data?: string }
+
+export function textMessage(text: string, quickReplies?: QuickReply[]): LineMessage {
   return {
     type: 'text',
     text: text.slice(0, 5000),
@@ -346,9 +388,11 @@ export function textMessage(text: string, quickReplies?: { label: string; text?:
           quickReply: {
             items: quickReplies.slice(0, 13).map((q) => ({
               type: 'action',
-              action: q.url
-                ? { type: 'uri', label: q.label.slice(0, 20), uri: absoluteUrl(q.url) }
-                : { type: 'message', label: q.label.slice(0, 20), text: q.text ?? q.label },
+              action: q.data
+                ? { type: 'postback', label: q.label.slice(0, 20), data: q.data, displayText: q.label }
+                : q.url
+                  ? { type: 'uri', label: q.label.slice(0, 20), uri: absoluteUrl(q.url) ?? `${env.siteUrl}/` }
+                  : { type: 'message', label: q.label.slice(0, 20), text: q.text ?? q.label },
             })),
           },
         }

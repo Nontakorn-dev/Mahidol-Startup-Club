@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { adminClient } from '@/lib/supabase/admin'
 import { serverEnv } from '@/lib/env'
 import { safeEqual } from '@/lib/crypto'
-import { notifyUsers, sendDigests } from '@/lib/notify'
+import { notifyUsers, sendDigests, sendWeeklyLineDigest } from '@/lib/notify'
 import { thaiDate, todayBangkok } from '@/lib/format'
 
 export const maxDuration = 300
@@ -43,8 +43,12 @@ export async function GET(request: NextRequest) {
   // 2) Daily digests for users who chose "สรุปวันละครั้ง".
   const digests = await sendDigests()
 
-  // 3) Housekeeping.
+  // 3) Mondays: weekly "งานที่ตรงกับคุณ" digest (LINE quota-friendly).
+  const isMonday = new Date(`${todayBangkok()}T00:00:00Z`).getUTCDay() === 1
+  const weekly = isMonday ? await sendWeeklyLineDigest() : null
+
+  // 4) Housekeeping.
   await db.from('search_cache').delete().lt('created_at', new Date(Date.now() - 7 * 86_400_000).toISOString())
 
-  return NextResponse.json({ ok: true, reminded, digests })
+  return NextResponse.json({ ok: true, reminded, digests, weekly })
 }

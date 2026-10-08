@@ -21,16 +21,17 @@ const BANNER = 360
 const cw = W / 3
 const ch = (H - BANNER) / 2
 const uri = (label, path) => ({ type: 'uri', label, uri: `${site}${path}${path.includes('?') ? '&' : '?'}src=line` })
-// "message" buttons let the bot answer per person (linked or not) — and replies are free.
-const msg = (label, text) => ({ type: 'message', label, text })
+// Postbacks: the bot answers in the chat (results + a link to the website). Replies are free,
+// so tapping the menu never uses the monthly push quota. Handled in src/lib/line/bot.ts.
+const pb = (label, data) => ({ type: 'postback', label, data, displayText: label })
 
 const tiles = [
-  uri('งานแข่ง & ทุน', '/opportunities'),
-  uri('ใกล้ปิดรับ', '/opportunities?within=7'),
-  uri('หาทีม', '/teams'),
-  uri('Co-founder', '/cofounder'),
-  msg('ค้นหาด้วยประโยค', 'วิธีค้นหา'),
-  msg('บัญชี & แจ้งเตือน', 'ตั้งค่าแจ้งเตือน'),
+  pb('งานแข่ง & ทุน', 'm:open'),
+  pb('ใกล้ปิดรับ', 'm:closing'),
+  pb('ตรงกับฉัน', 'm:foryou'),
+  pb('หาทีม', 'm:teams'),
+  pb('ค้นหาด้วยประโยค', 'm:help'),
+  pb('บัญชี & ความสนใจ', 'm:account'),
 ]
 const areas = [
   { bounds: { x: 0, y: 0, width: W, height: BANNER }, action: uri('หน้าแรก', '/') },

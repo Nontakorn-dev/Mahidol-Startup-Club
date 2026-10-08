@@ -1,7 +1,7 @@
 import 'server-only'
 import { adminClient } from '@/lib/supabase/admin'
 import { emailEnabled, lineMessagingEnabled } from '@/lib/env'
-import { multicast, noticeFlex, pushMessage, type NoticeContent } from '@/lib/line/messaging'
+import { eventsCarousel, lineQuotaRemaining, multicast, noticeFlex, pushMessage, textMessage, type NoticeContent } from '@/lib/line/messaging'
 import { processOutbox } from '@/lib/outbox'
 
 export type Topic = 'invites' | 'matches' | 'reminders' | 'announcements' | 'system'
@@ -25,6 +25,13 @@ const RECIPIENT_COLS =
   'id, email, email_is_placeholder, email_notifications, line_user_id, line_is_friend, notify_invites, notify_matches, notify_reminders, notify_announcements, notify_frequency, is_suspended'
 
 export type DispatchStats = { line: number; email: number; digest: number; skipped: number; failed: number }
+
+/**
+ * Pushes kept back each month for what people must not miss (team invites, deadline reminders).
+ * Announcements / digests stop using LINE (→ email) once the remaining quota reaches this.
+ */
+export const LINE_RESERVE = 30
+const URGENT: Topic[] = ['invites', 'reminders']
 
 function wantsTopic(r: Recipient, topic: Topic) {
   if (topic === 'system') return true
@@ -86,6 +93,12 @@ export async function notifyUsers(
       rows.push({ ...base, status: 'skipped' })
       continue
     }
+    // "งานที่ตรงกับคุณ" on LINE → one weekly digest instead of a push per event (quota).
+    if (channel === 'line' && topic === 'matches' && !opts.ignorePrefs) {
+      stats.digest++
+      rows.push({ ...base, status: 'weekly', channel })
+      continue
+    }
     if (r.notify_frequency === 'daily' && topic !== 'system' && !opts.ignorePrefs) {
       stats.digest++
       rows.push({ ...base, status: 'digest', channel })
@@ -101,14 +114,8 @@ export async function notifyUsers(
   }
 
   if (lineTargets.length) {
-    const message = noticeFlex(content)
-    try {
-      if (lineTargets.length === 1) await pushMessage(lineTargets[0].line_user_id!, [message])
-      else await multicast(lineTargets.map((r) => r.line_user_id!), [message])
-      stats.line += lineTargets.length
-    } catch (err) {
-      console.error('LINE send failed', err)
-      // Fall back to email for those who have one.
+    // Fall back to email for those who have one.
+    const toEmail = (reason: string) => {
       const rowByUser = new Map(rows.map((x) => [x.user_id as string, x]))
       for (const r of lineTargets) {
         const row = rowByUser.get(r.id)!
@@ -117,9 +124,24 @@ export async function notifyUsers(
           emailTargets.push(r)
         } else {
           row.status = 'failed'
-          row.error = String(err).slice(0, 300)
+          row.error = reason.slice(0, 300)
           stats.failed++
         }
+      }
+    }
+    const remaining = await lineQuotaRemaining()
+    const budget = remaining === null ? Infinity : remaining - (URGENT.includes(topic) ? 0 : LINE_RESERVE)
+    if (lineTargets.length > budget) {
+      toEmail(`LINE monthly quota: ${remaining} left`)
+    } else {
+      const message = noticeFlex(content)
+      try {
+        if (lineTargets.length === 1) await pushMessage(lineTargets[0].line_user_id!, [message])
+        else await multicast(lineTargets.map((r) => r.line_user_id!), [message])
+        stats.line += lineTargets.length
+      } catch (err) {
+        console.error('LINE send failed', err)
+        toEmail(String(err))
       }
     }
   }
@@ -164,8 +186,9 @@ export async function sendDigests(): Promise<number> {
       actions: [{ type: 'uri', label: 'ดูบนเว็บ', url: '/inbox' }],
     }
     try {
-      if (p.line_user_id && p.line_is_friend && lineMessagingEnabled()) {
-        await pushMessage(p.line_user_id, [noticeFlex(content)])
+      const lineOk = p.line_user_id && p.line_is_friend && lineMessagingEnabled() && ((await lineQuotaRemaining()) ?? Infinity) > LINE_RESERVE
+      if (lineOk) {
+        await pushMessage(p.line_user_id!, [noticeFlex(content)])
       } else if (p.email && !p.email_is_placeholder) {
         queued.push({ user_id: p.id, topic: 'system', title: content.title, url: '/inbox', status: 'queued', channel: 'email', payload: content })
       }
@@ -182,4 +205,72 @@ export async function sendDigests(): Promise<number> {
     .update({ status: 'sent', sent_at: new Date().toISOString() })
     .in('id', pending.map((n) => n.id))
   return count
+}
+
+/**
+ * Monday 08:00: one LINE message per person with the week's "งานที่ตรงกับคุณ" (carousel of
+ * events still open). One push per person per week keeps a free OA (300/month) workable for
+ * ~60 active members. People without LINE (or when the quota is low) get it by email.
+ */
+export async function sendWeeklyLineDigest(): Promise<{ line: number; email: number; rows: number }> {
+  const db = adminClient()
+  const { data: pending } = await db.from('notifications').select('id, user_id, title, url, image_url').eq('status', 'weekly').order('created_at').limit(10000)
+  if (!pending?.length) return { line: 0, email: 0, rows: 0 }
+  const byUser = new Map<string, typeof pending>()
+  for (const n of pending) byUser.set(n.user_id, [...(byUser.get(n.user_id) || []), n])
+
+  const { listPublishedEvents } = await import('@/lib/data/events')
+  const { isClosed, thaiDeadline, msLeft, timeLeftLabel } = await import('@/lib/format')
+  const events = new Map((await listPublishedEvents()).map((e) => [`/opportunities/${e.slug}`, e]))
+  const { data: profiles } = await db.from('profiles').select('id, first_name, email, email_is_placeholder, email_notifications, line_user_id, line_is_friend').in('id', [...byUser.keys()])
+
+  let line = 0
+  let email = 0
+  const emails: Record<string, unknown>[] = []
+  for (const p of profiles || []) {
+    const items = (byUser.get(p.id) || [])
+      .map((n) => ({ n, e: events.get((n.url || '').split('?')[0]) }))
+      .filter((x) => x.e && !isClosed(x.e))
+    if (!items.length) continue
+    const title = `งานใหม่ที่ตรงกับคุณสัปดาห์นี้ ${items.length} งาน`
+    const lineOk = p.line_user_id && p.line_is_friend && lineMessagingEnabled() && ((await lineQuotaRemaining()) ?? Infinity) > LINE_RESERVE
+    if (lineOk) {
+      try {
+        await pushMessage(p.line_user_id!, [
+          eventsCarousel(
+            title,
+            items.slice(0, 9).map(({ e }) => ({
+              title: e!.title,
+              subtitle: e!.deadline ? `ปิดรับ ${thaiDeadline(e!)}` : 'เปิดรับสมัครอยู่',
+              imageUrl: e!.poster_url,
+              url: `/opportunities/${e!.slug}?src=line`,
+              badge: msLeft(e!) !== null ? timeLeftLabel(msLeft(e!)) : undefined,
+              badgeTone: 'blue' as const,
+            })),
+            '/opportunities?src=line',
+          ),
+          textMessage(`⭐ ${title}${p.first_name ? ` คุณ${p.first_name}` : ''} — แก้เรื่องที่สนใจได้ที่เมนู “บัญชี & ความสนใจ”`),
+        ])
+        line++
+        continue
+      } catch (err) {
+        console.error('weekly LINE digest', p.id, err)
+      }
+    }
+    if (p.email && !p.email_is_placeholder && p.email_notifications) {
+      const content: NoticeContent = {
+        altText: title,
+        headerBar: 'สรุปประจำสัปดาห์',
+        title,
+        subtitle: items.slice(0, 8).map(({ e }) => `• ${e!.title}`).join('\n'),
+        actions: [{ type: 'uri', label: 'ดูทั้งหมดบนเว็บ', url: '/opportunities' }],
+      }
+      emails.push({ user_id: p.id, topic: 'matches', title, url: '/opportunities', status: 'queued', channel: 'email', payload: content })
+      email++
+    }
+  }
+  for (let i = 0; i < emails.length; i += 500) await db.from('notifications').insert(emails.slice(i, i + 500))
+  await db.from('notifications').update({ status: 'sent', sent_at: new Date().toISOString() }).in('id', pending.map((n) => n.id))
+  if (emails.length) await processOutbox({ budgetMs: 8_000 }).catch((err) => console.error('outbox', err))
+  return { line, email, rows: pending.length }
 }

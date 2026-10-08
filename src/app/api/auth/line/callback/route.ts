@@ -5,7 +5,8 @@ import { env } from '@/lib/env'
 import { exchangeLineCode, lineFriendshipStatus } from '@/lib/line/login'
 import { linkLineToUser } from '@/lib/line/link'
 import { getViewer } from '@/lib/auth'
-import { notifyUsers } from '@/lib/notify'
+import { isOaFriend, pushMessage } from '@/lib/line/messaging'
+import { linkedProfile, welcome } from '@/lib/line/bot'
 
 const LINE_COOKIE = 'msc_line_oauth'
 type Flow = { state: string; nonce: string; next: string; uid: string }
@@ -31,21 +32,13 @@ export async function GET(request: NextRequest) {
     const identity = await exchangeLineCode(code, `${env.siteUrl}/api/auth/line/callback`, flow.nonce)
     const friend = await lineFriendshipStatus(identity.accessToken).catch(() => null)
     await linkLineToUser(viewer.userId, identity.sub, { displayName: identity.name, picture: identity.picture, friend })
-    // Just added as a friend on the consent screen → the follow event already greets them.
+    // Just added as a friend on the consent screen → the follow event greets them (free reply).
+    // Already a friend → one push: welcome + "pick your interests" (one push = one message).
     const justAdded = sp.get('friendship_status_changed') === 'true'
-    if (friend && !justAdded) {
-      await notifyUsers(
-        [viewer.userId],
-        'system',
-        {
-          altText: 'เชื่อมบัญชี LINE กับ Mahidol Startup Club แล้ว',
-          headerBar: 'เชื่อม LINE สำเร็จ',
-          title: 'ข่าวสารจากเว็บจะส่งมาที่ LINE นี้',
-          subtitle: 'เลือกเรื่องที่อยากรู้ได้ในหน้าตั้งค่า · พิมพ์สิ่งที่อยากทำในแชตนี้ได้เลย เช่น “หาทีมลง TED Youth”',
-          actions: [{ type: 'uri', label: 'ตั้งค่าแจ้งเตือน', url: '/settings/notifications' }],
-        },
-        { allowEmail: false },
-      ).catch(console.error)
+    const isFriend = friend ?? (await isOaFriend(identity.sub))
+    if (isFriend && !justAdded) {
+      const profile = await linkedProfile(identity.sub)
+      await pushMessage(identity.sub, await welcome(identity.sub, profile, true)).catch((err) => console.error('LINE welcome push', err))
     }
   } catch (err) {
     console.error(err)

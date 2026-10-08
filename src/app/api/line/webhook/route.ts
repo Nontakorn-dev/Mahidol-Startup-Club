@@ -1,14 +1,13 @@
 import { NextResponse, after } from 'next/server'
 import { adminClient } from '@/lib/supabase/admin'
 import { verifyPayload } from '@/lib/crypto'
-import { WELCOME_IMAGE, eventsCarousel, noticeFlex, replyMessage, textMessage, verifyLineSignature, type NoticeContent } from '@/lib/line/messaging'
-import { LINK_CODE_RE, consumeLinkCode, consumeNonce, issueLinkToken, linkPageUrl } from '@/lib/line/link'
+import { eventsCarousel, noticeFlex, replyMessage, textMessage, verifyLineSignature } from '@/lib/line/messaging'
+import { LINK_CODE_RE, consumeLinkCode, consumeNonce } from '@/lib/line/link'
+import { MENU_QUICK, handleMenu, help, linkInvite, linkedProfile, welcome } from '@/lib/line/bot'
 import { parseIntent } from '@/lib/ai/intent'
 import { runSearch } from '@/lib/search'
 import { respondToRequest } from '@/lib/messaging'
-import { listPublishedEvents } from '@/lib/data/events'
-import { deadlineLine, isClosed, thaiDeadline, timeLeftLabel, msLeft, urgency } from '@/lib/format'
-import type { EventRow } from '@/lib/types'
+import { msLeft, thaiDeadline, timeLeftLabel, urgency } from '@/lib/format'
 import { CATEGORIES } from '@/lib/constants'
 
 export const maxDuration = 30
@@ -21,145 +20,33 @@ type LineEvent = {
   postback?: { data: string }
   link?: { result: 'ok' | 'failed'; nonce: string }
 }
+type Msg = Record<string, unknown>
 
-type Linked = { id: string; first_name: string; onboarded: boolean }
-
-const QUICK = [
-  { label: '🏆 งานแข่งที่เปิดอยู่', text: 'งานแข่ง' },
-  { label: '⏰ ใกล้ปิดรับ', text: 'ใกล้ปิดรับ' },
-  { label: '👥 หาทีม', text: 'หาทีม' },
-  { label: '💡 วิธีค้นหา', text: 'วิธีค้นหา' },
-  { label: '🔔 ตั้งค่าแจ้งเตือน', text: 'ตั้งค่าแจ้งเตือน' },
+// Typed words that mean a menu button.
+const COMMANDS: [RegExp, string][] = [
+  [/^(งานแข่ง|ทุน|งาน|events?|งานที่เปิดรับ|งานแข่งที่เปิดอยู่)$/i, 'm:open'],
+  [/^(ใกล้ปิด|ใกล้ปิดรับ|ปิดเร็วๆนี้|ด่วน)$/i, 'm:closing'],
+  [/^(ตรงกับฉัน|งานที่ตรงกับฉัน|for you|แนะนำ)$/i, 'm:foryou'],
+  [/^(ทีม|หาทีม|เพื่อนร่วมทีม)$/i, 'm:teams'],
+  [/^(วิธีค้นหา|วิธีใช้|ช่วยเหลือ|help|\?)$/i, 'm:help'],
+  [/^(ความสนใจ|เลือกความสนใจ|เลือกเรื่องที่สนใจ|สนใจ)$/i, 'm:interests'],
+  [/^(เชื่อมบัญชี|เชื่อม line|ผูกบัญชี|บัญชี|ตั้งค่า|ตั้งค่าแจ้งเตือน|แจ้งเตือน|settings?)$/i, 'm:account'],
+  [/^(เมนู|menu|start|เริ่ม|สวัสดี.*|หวัดดี.*|hi|hello)$/i, 'm:welcome'],
 ]
-const EXAMPLES = ['หาทีมลง hackathon ฉันทำ UX ได้', 'ทุนสตาร์ตอัพที่ปิดรับเดือนนี้', 'งานแข่งด้านการแพทย์', 'อยากได้ co-founder สาย tech']
-const LINK_QUICK = { label: 'เชื่อมบัญชีเว็บ', text: 'เชื่อมบัญชี' }
-
-async function linkedProfile(lineUserId: string): Promise<Linked | null> {
-  const { data } = await adminClient().from('profiles').select('id, first_name, onboarded').eq('line_user_id', lineUserId).maybeSingle()
-  return data
-}
-
-/** Personal link for an unlinked LINE user: website → email sign-up/in → LINE account-link dialog. */
-async function linkInvite(lineUserId: string, intro: string) {
-  const linkToken = await issueLinkToken(lineUserId)
-  return noticeFlex({
-    altText: 'เชื่อมบัญชีเว็บ Mahidol Startup Club กับ LINE',
-    headerBar: 'เชื่อมบัญชี',
-    title: intro,
-    subtitle: 'ใช้เวลาไม่ถึง 1 นาที (ลิงก์ใช้ได้ 10 นาที)',
-    bullets: ['1️⃣  แตะ “เชื่อมบัญชีเลย”', '2️⃣  สมัครหรือเข้าสู่ระบบ (Google / อีเมล)', '3️⃣  กดยืนยันกับ LINE — เสร็จ!'],
-    quote: 'หลังเชื่อมแล้ว คำชวนเข้าทีม งานแข่งที่ตรงกับคุณ และการเตือนก่อนปิดรับ จะส่งมาที่แชตนี้',
-    actions: [
-      { type: 'uri', label: 'เชื่อมบัญชีเลย', url: linkPageUrl(linkToken) },
-      { type: 'message', label: 'ดูงานแข่งก่อน', text: 'งานแข่ง' },
-    ],
-  })
-}
-
-function linkedDone(p: Linked) {
-  return noticeFlex({
-    altText: 'เชื่อมบัญชีสำเร็จ',
-    headerBar: 'สำเร็จ 🎉',
-    badge: 'เชื่อมบัญชีแล้ว',
-    badgeTone: 'blue',
-    title: `บัญชีเว็บของ${p.first_name ? ` ${p.first_name}` : 'คุณ'}เชื่อมกับ LINE นี้แล้ว`,
-    subtitle: p.onboarded
-      ? 'ข่าวสารและแจ้งเตือนจากเว็บจะส่งมาที่แชตนี้ เลือกเรื่องที่อยากรู้ได้ในหน้าตั้งค่า'
-      : 'ข่าวสารจะส่งมาที่แชตนี้ — กรอกโปรไฟล์ต่ออีกนิด เพื่อให้เราแนะนำงานแข่งและทีมที่ตรงกับคุณ',
-    actions: [
-      p.onboarded
-        ? { type: 'uri', label: 'ตั้งค่าแจ้งเตือน', url: '/settings/notifications?src=line' }
-        : { type: 'uri', label: 'กรอกโปรไฟล์ต่อ', url: '/onboarding?src=line' },
-      { type: 'message', label: 'ดูงานแข่งที่เปิดอยู่', text: 'งานแข่ง' },
-      { type: 'message', label: 'วิธีค้นหา', text: 'วิธีค้นหา' },
-    ],
-  })
-}
-
-/** First card after adding the OA (also "เมนู"/"สวัสดี"). */
-async function welcomeCard(uid: string, profile: Linked | null) {
-  const base: Omit<NoticeContent, 'actions'> = {
-    altText: 'ยินดีต้อนรับสู่ Mahidol Startup Club',
-    imageUrl: WELCOME_IMAGE(),
-    imageAspect: '52:27',
-    title: profile ? `ยินดีต้อนรับกลับ${profile.first_name ? ` ${profile.first_name}` : ''} 👋` : 'ยินดีต้อนรับสู่ Mahidol Startup Club 👋',
-    subtitle: 'ชมรมสตาร์ตอัพมหิดล — ที่รวมงานแข่ง ทุน ทีม และ co-founder',
-    bullets: ['🏆  งานแข่ง & ทุน อัปเดตทุกวัน พร้อมเตือนก่อนปิดรับ', '👥  หาทีม หรือชวนคนที่ใช่เข้าทีม', '💬  พิมพ์สิ่งที่อยากทำในแชตนี้ได้เลย เราหาให้'],
-  }
-  if (profile) {
-    return noticeFlex({
-      ...base,
-      actions: [
-        { type: 'message', label: 'ดูงานแข่งที่เปิดอยู่', text: 'งานแข่ง' },
-        { type: 'message', label: 'วิธีค้นหา', text: 'วิธีค้นหา' },
-        { type: 'uri', label: 'ตั้งค่าแจ้งเตือน', url: '/settings/notifications?src=line' },
-      ],
-    })
-  }
-  const linkToken = await issueLinkToken(uid)
-  return noticeFlex({
-    ...base,
-    quote: 'เชื่อมบัญชีเว็บกับ LINE เพื่อรับคำชวนเข้าทีมและงานที่ตรงกับคุณที่นี่',
-    actions: [
-      { type: 'uri', label: 'เชื่อมบัญชีเว็บ', url: linkPageUrl(linkToken) },
-      { type: 'message', label: 'ดูงานแข่งที่เปิดอยู่', text: 'งานแข่ง' },
-      { type: 'message', label: 'วิธีค้นหา', text: 'วิธีค้นหา' },
-    ],
-  })
-}
-
-/** "วิธีค้นหา" — examples the user can tap. */
-function helpCard() {
-  return noticeFlex({
-    altText: 'พิมพ์สิ่งที่อยากทำได้เลย',
-    headerBar: 'วิธีค้นหา',
-    title: 'พิมพ์สิ่งที่อยากทำเป็นประโยคได้เลย 💬',
-    subtitle: 'บอกงานที่สนใจ สิ่งที่คุณทำได้ หรือคนที่ทีมขาด แล้วเราจะหางาน ทีม และคนที่ตรงที่สุดให้ — หรือแตะตัวอย่างด้านล่าง',
-    actions: EXAMPLES.map((t) => ({ type: 'message' as const, label: t.length > 20 ? `${t.slice(0, 18)}…` : t, text: t })),
-  })
-}
-
-function teamsCard() {
-  return noticeFlex({
-    altText: 'หาทีม / หาคนเข้าทีม',
-    headerBar: 'เพื่อนร่วมทีม',
-    title: 'อยากหาทีม หรือหาคนเข้าทีม?',
-    subtitle: 'ดูคนที่กำลังหาทีม และทีมที่ขาดตำแหน่งที่คุณทำได้ — หรือประกาศของคุณเองให้คนที่ใช่ทักมา',
-    actions: [
-      { type: 'uri', label: 'ดูทีม & คนหาทีม', url: '/teams?src=line' },
-      { type: 'uri', label: 'ประกาศหาทีม', url: '/teams/looking/new?src=line' },
-      { type: 'uri', label: 'ชวนคนเข้าทีม', url: '/teams/new?src=line' },
-    ],
-  })
-}
 
 const TONE = { closed: 'grey', today: 'red', soon: 'red', week: 'orange', normal: 'blue', none: 'blue' } as const
 
-function eventItem(ev: EventRow, reason?: string) {
-  const ms = msLeft(ev)
-  return {
-    title: ev.title,
-    category: CATEGORIES[ev.category],
-    subtitle: reason ? `แนะนำเพราะ ${reason}` : ev.deadline ? `ปิดรับ ${thaiDeadline(ev)}` : ev.open_note || 'เปิดรับสมัครอยู่',
-    imageUrl: ev.poster_url,
-    url: `/opportunities/${ev.slug}?src=line`,
-    badge: ev.is_club ? 'จากชมรม' : ms !== null ? timeLeftLabel(ms) : undefined,
-    badgeTone: ev.is_club ? ('yellow' as const) : TONE[urgency(ev)],
-  }
-}
-
-async function onFollow(e: LineEvent) {
+async function onFollow(e: LineEvent): Promise<Msg[]> {
   const uid = e.source.userId!
   let profile = await linkedProfile(uid)
-  // Added as a friend from the LINE Login consent screen: the follow event arrives a moment
+  // Added as a friend on the LINE Login consent screen: the follow event arrives a moment
   // before the website finishes linking — wait briefly so we greet them as linked.
   if (!profile) {
     await new Promise((r) => setTimeout(r, 4000))
     profile = await linkedProfile(uid)
   }
   if (profile) await adminClient().from('profiles').update({ line_is_friend: true }).eq('id', profile.id)
-  if (!e.replyToken) return
-  await replyMessage(e.replyToken, [await welcomeCard(uid, profile), textMessage('แตะเมนูด้านล่าง หรือพิมพ์สิ่งที่อยากทำได้เลย 👇', QUICK)])
+  return welcome(uid, profile, Boolean(profile))
 }
 
 async function onUnfollow(e: LineEvent) {
@@ -168,103 +55,58 @@ async function onUnfollow(e: LineEvent) {
 }
 
 /** LINE account-link result (after the user confirmed on access.line.me/dialog/bot/accountLink). */
-async function onAccountLink(e: LineEvent) {
+async function onAccountLink(e: LineEvent): Promise<Msg[]> {
   const uid = e.source.userId!
   if (e.link?.result === 'ok' && e.link.nonce) {
     const userId = await consumeNonce(e.link.nonce, uid)
     const profile = userId ? await linkedProfile(uid) : null
-    if (e.replyToken) {
-      await replyMessage(e.replyToken, [profile ? linkedDone(profile) : await linkInvite(uid, 'ลิงก์หมดอายุ — แตะเพื่อเชื่อมบัญชีอีกครั้ง')])
-    }
-  } else if (e.replyToken) {
-    await replyMessage(e.replyToken, [await linkInvite(uid, 'เชื่อมบัญชีไม่สำเร็จ — ลองอีกครั้งได้เลย')])
+    return profile ? welcome(uid, profile, true) : [await linkInvite(uid, 'ลิงก์หมดอายุ — แตะเพื่อเชื่อมบัญชีอีกครั้ง')]
   }
+  return [await linkInvite(uid, 'เชื่อมบัญชีไม่สำเร็จ — ลองอีกครั้งได้เลย')]
 }
 
-async function onPostback(e: LineEvent) {
-  const data = verifyPayload<{ a: string; c: string; u: string }>(e.postback?.data)
-  if (!data || !e.replyToken) return
+async function onPostback(e: LineEvent): Promise<Msg[]> {
+  const raw = e.postback?.data || ''
+  const menu = await handleMenu(raw, e.source.userId!)
+  if (menu) return menu
+  // Signed accept/decline buttons on "invited to a team" notices.
+  const data = verifyPayload<{ a: string; c: string; u: string }>(raw)
+  if (!data || (data.a !== 'accept' && data.a !== 'decline')) return []
   const profile = await linkedProfile(e.source.userId!)
   if (!profile || profile.id !== data.u) {
-    await replyMessage(e.replyToken, [textMessage('ปุ่มนี้ใช้ได้เฉพาะบัญชีที่ได้รับคำขอ กรุณาเปิดบนเว็บแทน', [{ label: 'เปิดกล่องข้อความ', url: '/inbox' }])])
-    return
+    return [textMessage('ปุ่มนี้ใช้ได้เฉพาะบัญชีที่ได้รับคำขอ กรุณาเปิดบนเว็บแทน', [{ label: 'เปิดกล่องข้อความ', url: '/inbox?src=line' }])]
   }
-  if (data.a !== 'accept' && data.a !== 'decline') return
   try {
     const result = await respondToRequest(data.c, profile.id, data.a === 'accept')
-    await replyMessage(e.replyToken, [
-      textMessage(`${result} ✓${data.a === 'accept' ? '\nเริ่มคุยต่อบนเว็บได้เลย' : ''}`, [{ label: 'เปิดแชต', url: `/inbox?c=${data.c}&src=line` }]),
-    ])
+    return [textMessage(`${result} ✓${data.a === 'accept' ? '\nเริ่มคุยต่อบนเว็บได้เลย' : ''}`, [{ label: 'เปิดแชต', url: `/inbox?c=${data.c}&src=line` }])]
   } catch (err) {
-    await replyMessage(e.replyToken, [textMessage((err as Error).message)])
+    return [textMessage((err as Error).message, MENU_QUICK)]
   }
 }
 
-async function replyOpenEvents(replyToken: string, closingSoon = false) {
-  const week = 7 * 86_400_000
-  const events = (await listPublishedEvents())
-    .filter((ev) => !isClosed(ev) && (!closingSoon || ((msLeft(ev) ?? Infinity) <= week)))
-    .sort((a, b) => (msLeft(a) ?? Infinity) - (msLeft(b) ?? Infinity))
-    .slice(0, 8)
-  if (!events.length) {
-    await replyMessage(replyToken, [textMessage(closingSoon ? 'ไม่มีงานที่ปิดรับภายใน 7 วัน 🎉 ดูงานทั้งหมดได้เลย' : 'ตอนนี้ยังไม่มีงานที่เปิดรับ — เราจะแจ้งทันทีที่มีงานใหม่', QUICK)])
-    return
-  }
-  await replyMessage(replyToken, [
-    eventsCarousel(closingSoon ? 'งานที่ใกล้ปิดรับใน 7 วัน' : 'งานแข่ง & ทุนที่เปิดรับอยู่', events.map((ev) => eventItem(ev)), closingSoon ? '/opportunities?within=7&src=line' : '/opportunities?src=line'),
-    textMessage(closingSoon ? `⏰ ${events.length} งานใกล้ปิดรับ — เลื่อนดูได้เลย` : `🏆 งานที่เปิดรับ เรียงตามวันปิดรับ — เลื่อนดูได้เลย`, QUICK),
-  ])
-}
-
-async function onText(e: LineEvent) {
+async function onText(e: LineEvent): Promise<Msg[]> {
   const uid = e.source.userId!
   const text = (e.message?.text || '').trim()
-  if (!e.replyToken || !text) return
+  if (!text) return []
 
   // "เชื่อมบัญชี ABC123" — code shown on the website's "เชื่อมต่อ LINE" screen
   const code = text.match(LINK_CODE_RE)?.[1]
   if (code) {
     const userId = await consumeLinkCode(code, uid)
     const profile = userId ? await linkedProfile(uid) : null
-    await replyMessage(e.replyToken, [
-      profile ? linkedDone(profile) : textMessage('รหัสนี้หมดอายุหรือถูกใช้ไปแล้ว — กลับไปที่หน้าเว็บเพื่อรับรหัสใหม่ หรือแตะ “เชื่อมบัญชีเว็บ”', [LINK_QUICK]),
-    ])
-    return
+    return profile
+      ? welcome(uid, profile, true)
+      : [textMessage('รหัสนี้หมดอายุหรือถูกใช้ไปแล้ว — กลับไปที่หน้าเว็บเพื่อรับรหัสใหม่ หรือแตะ “บัญชี”', [{ label: '🔗 เชื่อมบัญชีเว็บ', data: 'm:account' }])]
   }
-
-  const profile = await linkedProfile(uid)
-  if (/^(เชื่อมบัญชี|เชื่อม line|ผูกบัญชี|ตั้งค่า|ตั้งค่าแจ้งเตือน|แจ้งเตือน|settings?)$/i.test(text)) {
-    if (profile) {
-      return replyMessage(e.replyToken, [
-        noticeFlex({
-          altText: 'บัญชีและการแจ้งเตือน',
-          headerBar: 'บัญชีของคุณ',
-          badge: 'เชื่อมกับ LINE แล้ว ✓',
-          badgeTone: 'blue',
-          title: `สวัสดี${profile.first_name ? ` ${profile.first_name}` : ''} 👋`,
-          subtitle: 'เลือกเรื่องที่อยากให้แจ้งเตือนผ่าน LINE หรือแก้ไขโปรไฟล์เพื่อให้เราแนะนำงานและทีมได้ตรงขึ้น',
-          actions: [
-            { type: 'uri', label: 'ตั้งค่าแจ้งเตือน', url: '/settings/notifications?src=line' },
-            { type: 'uri', label: 'โปรไฟล์ของฉัน', url: '/me?src=line' },
-            { type: 'uri', label: 'กล่องข้อความ', url: '/inbox?src=line' },
-          ],
-        }),
-      ])
-    }
-    return replyMessage(e.replyToken, [await linkInvite(uid, 'เชื่อมบัญชีเว็บกับ LINE นี้')])
-  }
-  if (/^(งานแข่ง|ทุน|งาน|events?|งานแข่งที่เปิดอยู่)$/i.test(text)) return replyOpenEvents(e.replyToken)
-  if (/^(ใกล้ปิด|ใกล้ปิดรับ|ปิดเร็วๆนี้)$/i.test(text)) return replyOpenEvents(e.replyToken, true)
-  if (/^(ทีม|หาทีม|เพื่อนร่วมทีม)$/i.test(text)) return replyMessage(e.replyToken, [teamsCard()])
-  if (/^(วิธีค้นหา|วิธีใช้|ช่วยเหลือ|help|\?)$/i.test(text)) return replyMessage(e.replyToken, [helpCard(), textMessage('หรือเลือกจากเมนูด้านล่าง 👇', QUICK)])
-  if (/^(เมนู|menu|สวัสดี.*|หวัดดี.*|hi|hello|start)$/i.test(text)) return replyMessage(e.replyToken, [await welcomeCard(uid, profile), textMessage('เลือกได้เลย 👇', QUICK)])
+  for (const [re, action] of COMMANDS) if (re.test(text)) return (await handleMenu(action, uid)) ?? []
 
   // Free text → the same search pipeline as the website.
+  const profile = await linkedProfile(uid)
   const parsed = await parseIntent(text, profile?.id ?? uid)
   const { intent, usedFallback } = parsed
   if (parsed.status !== 'ok') {
     await adminClient().from('search_logs').insert({ user_id: profile?.id ?? null, query: text.slice(0, 300), used_fallback: false, source: 'line', engine: parsed.engine, status: parsed.status })
-    return replyMessage(e.replyToken, [textMessage(parsed.message ?? '', QUICK), helpCard()])
+    return [textMessage(parsed.message ?? '', MENU_QUICK), help()]
   }
   const results = await runSearch(intent, profile?.id ?? null)
   const searchUrl = `/search?q=${encodeURIComponent(text)}&src=line`
@@ -282,43 +124,89 @@ async function onText(e: LineEvent) {
       result_counts: { events: results.events.length, teams: results.teams.length, people: results.people.length, cofounder: results.cofounders.length },
     })
 
-  const counts = [
-    `งาน ${results.events.length}`,
-    `ทีม ${results.teams.length}`,
-    `คนหาทีม ${results.people.length}`,
-    `co-founder ${results.cofounders.length}`,
-  ].join(' · ')
-  const messages = [
+  const messages: Msg[] = [
     noticeFlex({
       altText: `ผลการค้นหา: ${intent.summary || text}`,
       headerBar: 'ผลการค้นหา',
       title: intent.summary || text,
-      subtitle: `เจอ ${counts}`,
+      subtitle: `เจอ งาน ${results.events.length} · ทีม ${results.teams.length} · คนหาทีม ${results.people.length} · co-founder ${results.cofounders.length}`,
       actions: [
         { type: 'uri', label: 'ดูผลทั้งหมดบนเว็บ', url: searchUrl },
         ...(results.teams.length || results.people.length ? [{ type: 'uri' as const, label: 'ดูทีม & คน', url: `${searchUrl}&tab=${results.teams.length ? 'teams' : 'people'}` }] : []),
-        ...(profile ? [] : [{ type: 'message' as const, label: 'เชื่อมบัญชีเว็บ', text: 'เชื่อมบัญชี' }]),
+        ...(profile ? [] : [{ type: 'postback' as const, label: 'เชื่อมบัญชีเว็บ', data: 'm:account', displayText: 'เชื่อมบัญชี' }]),
       ],
     }),
   ]
   if (results.events.length) {
-    messages.push(eventsCarousel('งานที่ตรงกับคุณ', results.events.slice(0, 6).map((r) => eventItem(r.item, r.reason)), searchUrl))
+    messages.push(
+      eventsCarousel(
+        'งานที่ตรงกับคุณ',
+        results.events.slice(0, 9).map((r) => {
+          const ms = msLeft(r.item)
+          return {
+            title: r.item.title,
+            category: CATEGORIES[r.item.category],
+            subtitle: `แนะนำเพราะ ${r.reason}`,
+            imageUrl: r.item.poster_url,
+            url: `/opportunities/${r.item.slug}?src=line`,
+            badge: r.item.deadline ? (ms !== null ? timeLeftLabel(ms) : thaiDeadline(r.item)) : undefined,
+            badgeTone: TONE[urgency(r.item)],
+          }
+        }),
+        searchUrl,
+      ),
+    )
   }
-  messages.push(textMessage('ค้นอย่างอื่นได้เลย หรือเลือกจากเมนู 👇', QUICK))
-  await replyMessage(e.replyToken, messages)
+  messages.push(textMessage('ค้นอย่างอื่นได้เลย หรือเลือกจากเมนู 👇', MENU_QUICK))
+  return messages
+}
+
+async function answer(e: LineEvent): Promise<Msg[]> {
+  if (e.type === 'follow') return onFollow(e)
+  if (e.type === 'unfollow') return (await onUnfollow(e), [])
+  if (e.type === 'accountLink') return onAccountLink(e)
+  if (e.type === 'postback') return onPostback(e)
+  if (e.type === 'message' && e.message?.type === 'text') return onText(e)
+  return []
 }
 
 async function handle(e: LineEvent) {
   if (!e.source.userId) return
   try {
-    if (e.type === 'follow') await onFollow(e)
-    else if (e.type === 'unfollow') await onUnfollow(e)
-    else if (e.type === 'accountLink') await onAccountLink(e)
-    else if (e.type === 'postback') await onPostback(e)
-    else if (e.type === 'message' && e.message?.type === 'text') await onText(e)
+    const messages = await answer(e)
+    if (messages.length && e.replyToken) await replyMessage(e.replyToken, messages)
   } catch (err) {
-    console.error('LINE webhook event failed', e.type, err)
+    console.error('LINE webhook event failed', e.type, e.postback?.data ?? e.message?.text?.slice(0, 40), err)
+    // Never leave a tap unanswered.
+    if (e.replyToken) {
+      await replyMessage(e.replyToken, [
+        textMessage('ขออภัย ระบบขัดข้องชั่วคราว ลองอีกครั้ง หรือเปิดดูบนเว็บได้เลย', [...MENU_QUICK.slice(0, 3), { label: '🌐 เปิดเว็บ', url: '/?src=line' }]),
+      ]).catch(() => {})
+    }
   }
+}
+
+/** Dry run (signed requests only): build the replies and let LINE validate them — nothing is sent. */
+async function dryRun(events: LineEvent[]) {
+  const token = process.env.LINE_MESSAGING_ACCESS_TOKEN
+  const out = []
+  for (const e of events) {
+    const label = e.postback?.data ?? e.message?.text ?? e.type
+    try {
+      // Skip the follow event's 4 s wait and DB writes: render the same welcome as "เมนู".
+      const probe = e.type === 'follow' ? { ...e, type: 'message', message: { type: 'text', text: 'เมนู' } } : e
+      const messages = (await answer(probe)).slice(0, 5)
+      const res = await fetch('https://api.line.me/v2/bot/message/validate/reply', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages }),
+      })
+      out.push({ event: label, messages: messages.length, valid: res.ok, ...(res.ok ? {} : { error: (await res.text()).slice(0, 300) }) })
+    } catch (err) {
+      out.push({ event: label, valid: false, error: String(err).slice(0, 300) })
+    }
+  }
+  return out
 }
 
 export async function POST(request: Request) {
@@ -327,6 +215,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false }, { status: 401 })
   }
   const body = JSON.parse(raw) as { events: LineEvent[] }
+  if (request.headers.get('x-msc-dryrun') === '1') return NextResponse.json({ results: await dryRun(body.events || []) })
   // Acknowledge immediately; reply tokens stay valid long enough for processing.
   after(async () => {
     await Promise.all((body.events || []).map(handle))
