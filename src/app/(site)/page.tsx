@@ -48,6 +48,7 @@ export default async function HomePage() {
       <section className="hero">
         <div className="inner">
           <div className="hero-copy">
+            <ConnectMap />
             <span className="eyebrow">สนับสนุนโดย iNT มหาวิทยาลัยมหิดล</span>
             <h1 className="mantra">
               <span className="line">Hands-on Experience.</span>
@@ -79,7 +80,6 @@ export default async function HomePage() {
                 Co-founder
               </Link>
             </nav>
-            <ConnectMap />
           </div>
           <div className="art" style={{ flex: '1 1 420px', minWidth: 0, justifyContent: 'center' }}>
             <Image

@@ -664,11 +664,11 @@ dl.kv dd { margin: 0; font-weight: 600; }
   .home-open-grid > :nth-child(n + 4) { display: none; }
 }
 
-/* Home hero copy: left-aligned beside the artwork on desktop, centred on tablets, left on phones */
+/* Home hero copy: left-aligned beside the artwork on desktop, centred under the map on tablets and phones */
 .hero-copy { flex: 1 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 24px; }
 .hero-lead { margin: 0; max-width: 560px; font-size: 17px; color: var(--muted); }
 .hero-search { max-width: 600px; }
-@media (min-width: 641px) and (max-width: 1100px) {
+@media (max-width: 1100px) {
   .hero-copy { align-items: center; text-align: center; }
   .hero-copy .eyebrow { align-self: center; }
   .hero-copy h1.mantra { align-items: center; }
@@ -750,10 +750,20 @@ h1.mantra .line { white-space: nowrap; color: inherit; }
 }
 .cm-badge svg { width: calc(11 * var(--u)); height: calc(11 * var(--u)); }
 @media (prefers-reduced-motion: reduce) { .cm-pulse { animation: none; opacity: 0; } }
+/* Phones and tablets: the map leads the hero (above the headline), centred */
 @media (max-width: 1100px) {
   .hero .art { display: none; }
-  .connect-map { display: block; }
+  .connect-map { display: block; align-self: center; }
 }
 @media (min-width: 641px) and (max-width: 1100px) {
-  .hero-copy .connect-map { max-width: 540px; margin-top: 18px; }
+  .hero-copy .connect-map { max-width: 500px; margin-bottom: 4px; }
+}
+@media (max-width: 640px) {
+  .hero .inner { padding-top: 20px; }
+  .hero-copy .connect-map { max-width: 330px; margin-bottom: -4px; }
+}
+/* Short phones (iPhone SE): smaller map so the search box stays on the first screen */
+@media (max-width: 640px) and (max-height: 620px) {
+  .hero-copy .connect-map { max-width: 260px; }
+  .hero-copy { gap: 18px; }
 }
