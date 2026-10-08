@@ -32,7 +32,8 @@
 }
 
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
+/* The canvas behind the page (seen when scrolling past the end on iPad/iPhone) matches the footer */
+html { -webkit-text-size-adjust: 100%; background: #E6EDF9; }
 body {
   margin: 0;
   background: var(--white);
@@ -56,7 +57,8 @@ h1, h2, h3 { font-family: var(--font-head); }
 .wrap { flex-wrap: wrap; }
 .stack { display: flex; flex-direction: column; }
 .spacer { flex: 1; }
-.page { min-height: 100vh; display: flex; flex-direction: column; }
+.page { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; background: var(--white); }
+.page > main { flex: 1 0 auto; }
 .page > main { flex: 1; }
 .bg-soft { background: var(--bg); }
 
@@ -471,7 +473,6 @@ dl.kv dd { margin: 0; font-weight: 600; }
 .site-footer .logo { height: 64px; width: auto; }
 .site-footer .mantra-sm { margin: 0; font-family: var(--font-head); font-weight: 600; font-size: 19px; line-height: 1.4; color: var(--navy); }
 .site-footer .mantra-sm .accent { color: var(--brand); }
-.site-footer .desc { margin: 0; font-size: 16px; line-height: 1.7; color: var(--muted); }
 .site-footer .backed {
   display: inline-flex; align-items: center; gap: 8px; margin-top: 4px; padding: 6px 14px; border-radius: 999px;
   background: #fff; color: var(--navy-2); font-size: 13px; font-weight: 500; white-space: nowrap;
@@ -487,11 +488,11 @@ dl.kv dd { margin: 0; font-weight: 600; }
   .site-footer .about { max-width: none; }
   .site-footer .follow { align-items: flex-end; text-align: right; }
 }
-/* Phones: logo + mantra left, "ติดตามเรา" right; the description and iNT line are left out */
+/* Phones: logo + mantra left, "ติดตามเรา" right; the iNT line is left out */
 @media (max-width: 640px) {
   .site-footer .inner { gap: 16px; padding: 28px 20px 32px; align-items: center; }
   .site-footer .about { gap: 8px; }
-  .site-footer .desc, .site-footer .backed { display: none; }
+  .site-footer .backed { display: none; }
   .site-footer .logo-link { margin-bottom: 2px; }
   .site-footer .logo { height: 42px; }
   .site-footer .mantra-sm { font-size: 14.5px; line-height: 1.35; }

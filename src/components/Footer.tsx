@@ -13,7 +13,6 @@ export default function Footer() {
           <p className="mantra-sm">
             <span>Hands-on Experience.</span> <span className="accent">Support, Connect.</span>
           </p>
-          <p className="desc">ชมรมสตาร์ตอัพมหิดล สำหรับคนที่อยากลงมือทำและเจอคนที่ใช่</p>
           <span className="backed">
             <span className="dot" aria-hidden="true" />
             สนับสนุนโดย iNT มหาวิทยาลัยมหิดล
