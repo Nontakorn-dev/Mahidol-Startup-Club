@@ -1,7 +1,7 @@
 'use client'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
-import { IconArrowRight } from './icons'
+import { IconArrowRight, IconSearch } from './icons'
 
 /** Natural-language intent box. Submits to /search (parsing: src/lib/ai/intent.ts). */
 export default function SearchBox({
@@ -10,19 +10,22 @@ export default function SearchBox({
   maxWidth = 600,
   id = 'intent',
   scope,
+  variant,
 }: {
   defaultValue?: string
   placeholder?: string
   maxWidth?: number
   id?: string
   scope?: 'teams' | 'cofounder' | 'events'
+  /** 'hero': the larger, highlighted box on the home page */
+  variant?: 'hero'
 }) {
   const router = useRouter()
   const [q, setQ] = useState(defaultValue)
   const [pending, start] = useTransition()
   return (
     <form
-      className="search-box"
+      className={variant ? `search-box search-${variant}` : 'search-box'}
       style={{ maxWidth }}
       role="search"
       onSubmit={(e) => {
@@ -35,6 +38,11 @@ export default function SearchBox({
       <label htmlFor={id} className="sr-only">
         {placeholder}
       </label>
+      {variant === 'hero' && (
+        <span className="search-lead" aria-hidden="true">
+          <IconSearch size={20} />
+        </span>
+      )}
       <input id={id} type="text" maxLength={200} value={q} onChange={(e) => setQ(e.target.value)} placeholder={placeholder} autoComplete="off" enterKeyHint="search" />
       <button type="submit" className="search-go" aria-label="ค้นหา" disabled={pending}>
         {pending ? (

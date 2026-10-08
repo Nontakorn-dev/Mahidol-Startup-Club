@@ -58,7 +58,7 @@ export default async function HomePage() {
               ชมรมสตาร์ตอัพมหาวิทยาลัยมหิดล สำหรับคนที่อยากลงมือทำจริง มีคนซัพพอร์ต และได้เจอเพื่อนร่วมทาง
             </p>
             <div className="hero-search">
-              <SearchBox />
+              <SearchBox variant="hero" />
             </div>
             <nav aria-label="Explore" className="explore">
               <Link href="/opportunities">
