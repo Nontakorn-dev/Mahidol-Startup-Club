@@ -463,7 +463,8 @@ dl.kv dd { margin: 0; font-weight: 600; }
 .modal h2 { margin: 0; font-weight: 600; font-size: 24px; }
 
 /* ------------------------------------------------------------ footer */
-.site-footer { background: #fff; border-top: 1px solid var(--border); }
+.site-footer { background: linear-gradient(180deg, #F3F6FC 0%, #E6EDF9 100%); border-top: 1px solid #D9E3F5; }
+.site-footer .social-lg { background: #fff; }
 .site-footer .inner { max-width: 1200px; margin: 0 auto; padding: 48px 32px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 40px; }
 .site-footer .about { flex: 1 1 480px; max-width: 640px; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
 .site-footer .logo-link { display: flex; margin-bottom: 6px; }
@@ -473,7 +474,7 @@ dl.kv dd { margin: 0; font-weight: 600; }
 .site-footer .desc { margin: 0; font-size: 16px; line-height: 1.7; color: var(--muted); }
 .site-footer .backed {
   display: inline-flex; align-items: center; gap: 8px; margin-top: 4px; padding: 6px 14px; border-radius: 999px;
-  background: var(--bg); color: var(--navy-2); font-size: 13px; font-weight: 500; white-space: nowrap;
+  background: #fff; color: var(--navy-2); font-size: 13px; font-weight: 500; white-space: nowrap;
 }
 .site-footer .backed .dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--yellow); }
 .site-footer .follow { flex: 0 0 auto; display: flex; flex-direction: column; gap: 14px; }
@@ -486,16 +487,21 @@ dl.kv dd { margin: 0; font-weight: 600; }
   .site-footer .about { max-width: none; }
   .site-footer .follow { align-items: flex-end; text-align: right; }
 }
-/* Phones: one centred column, follow block under a divider */
+/* Phones: logo + mantra left, "ติดตามเรา" right; the description and iNT line are left out */
 @media (max-width: 640px) {
-  .site-footer .inner { grid-template-columns: minmax(0, 1fr); gap: 24px; padding: 36px 20px 40px; justify-items: center; text-align: center; }
-  .site-footer .about { align-items: center; gap: 10px; }
-  .site-footer .logo { height: 52px; }
-  .site-footer .mantra-sm { font-size: 17px; }
+  .site-footer .inner { gap: 16px; padding: 28px 20px 32px; align-items: center; }
+  .site-footer .about { gap: 8px; }
+  .site-footer .desc, .site-footer .backed { display: none; }
+  .site-footer .logo-link { margin-bottom: 2px; }
+  .site-footer .logo { height: 42px; }
+  .site-footer .mantra-sm { font-size: 14.5px; line-height: 1.35; }
   .site-footer .mantra-sm span { display: block; }
-  .site-footer .desc { font-size: 15px; line-height: 1.65; max-width: 300px; text-wrap: balance; }
-  .site-footer .follow { width: 100%; align-items: center; text-align: center; gap: 12px; padding-top: 24px; border-top: 1px solid var(--border); }
-  .site-footer .follow .head { font-size: 17px; }
+  .site-footer .follow { gap: 8px; }
+  .site-footer .follow .head { font-size: 15px; }
+  .site-footer .follow .icons { gap: 10px; }
+  .site-footer .social-lg { width: 44px; height: 44px; border-radius: 13px; }
+  .site-footer .social-lg img { width: 24px; height: 24px; }
+  .site-footer .follow .handle { font-size: 11.5px; }
 }
 .social-lg { width: 56px; height: 56px; border-radius: 16px; border: 1px solid var(--border-4); background: var(--bg); display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px -4px rgba(16, 35, 63, 0.12); }
 .social-lg img { width: 30px; height: 30px; }
