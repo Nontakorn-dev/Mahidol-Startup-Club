@@ -99,4 +99,5 @@ export const SOCIAL = {
   instagramHandle: '@mahidolstartup_official',
 }
 
-export const HOME_FEATURED_LIMIT = 2
+// Home "เปิดรับสมัครอยู่ตอนนี้": 4 cards on desktop (2×2), the first 3 on phones.
+export const HOME_FEATURED_LIMIT = 4

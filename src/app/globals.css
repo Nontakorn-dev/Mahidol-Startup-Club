@@ -649,3 +649,29 @@ dl.kv dd { margin: 0; font-weight: 600; }
 .cropper-view:active { cursor: grabbing; }
 .cropper-view:focus-visible { box-shadow: 0 0 0 3px var(--brand); }
 .cropper-ring { position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 999px rgba(15, 23, 42, 0.55); border: 2px solid rgba(255, 255, 255, 0.9); pointer-events: none; }
+
+/* Home: "เปิดรับสมัครอยู่ตอนนี้" — 2×2 on desktop, 3 stacked on phones */
+.home-open-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
+@media (max-width: 1100px) { .home-open-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 900px) { .home-open-grid > :nth-child(n + 4) { display: none; } }
+
+/* Prominent "ดูทั้งหมด" call to action */
+.cta-link {
+  display: inline-flex; align-items: center; gap: 12px; min-height: 52px; padding: 0 8px 0 24px; border-radius: 999px;
+  background: linear-gradient(120deg, #0A2558 0%, var(--brand) 100%); color: #fff; text-decoration: none;
+  font-weight: 600; font-size: 16px; white-space: nowrap;
+  box-shadow: 0 14px 30px -12px rgba(0, 53, 173, 0.65); transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.cta-link .arrow {
+  display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 50%;
+  background: var(--yellow, #FFC726); color: #0A2558; transition: transform 0.2s ease;
+}
+.cta-link:hover { color: #fff; transform: translateY(-2px); box-shadow: 0 18px 36px -12px rgba(0, 53, 173, 0.75); }
+.cta-link:hover .arrow { transform: translateX(4px); }
+.cta-link:focus-visible { outline: 3px solid #FFC726; outline-offset: 3px; }
+.cta-block { display: none; }
+@media (max-width: 900px) {
+  .hide-mobile { display: none !important; }
+  .cta-block { display: flex; justify-content: space-between; width: 100%; margin-top: 22px; min-height: 58px; font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) { .cta-link, .cta-link .arrow { transition: none; } }

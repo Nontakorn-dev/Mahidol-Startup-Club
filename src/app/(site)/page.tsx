@@ -2,7 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import SearchBox from '@/components/SearchBox'
 import { EmptyState, EventCardH, SeekerCardView } from '@/components/Cards'
-import { IconLock, IconPeople, IconSparkle, IconTrophy, IconUserPlus } from '@/components/icons'
+import { IconArrowRight, IconLock, IconPeople, IconSparkle, IconTrophy, IconUserPlus } from '@/components/icons'
 import { getViewer } from '@/lib/auth'
 import { homeFeaturedEvents } from '@/lib/data/events'
 import { listSeekers } from '@/lib/data/community'
@@ -37,7 +37,7 @@ function Marquee() {
 
 export default async function HomePage() {
   const viewer = await getViewer()
-  const [events, seekers] = await Promise.all([
+  const [{ events, openCount }, seekers] = await Promise.all([
     homeFeaturedEvents(),
     listSeekers(viewer?.userId ?? null, { limit: 4 }),
   ])
@@ -105,16 +105,29 @@ export default async function HomePage() {
         <div className="container section">
           <div className="head-row">
             <h2 className="section-title">เปิดรับสมัครอยู่ตอนนี้</h2>
-            <Link href="/opportunities" className="pill-link">
-              ดูทั้งหมด →
+            <Link href="/opportunities" className="cta-link hide-mobile">
+              ดูทั้งหมด{openCount ? ` ${openCount} งาน` : ''}
+              <span className="arrow" aria-hidden="true">
+                <IconArrowRight size={18} />
+              </span>
             </Link>
           </div>
           {events.length ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(480px, 100%), 1fr))', gap: 28 }}>
-              {events.map((e) => (
-                <EventCardH key={e.id} e={e} />
-              ))}
-            </div>
+            <>
+              <div className="home-open-grid">
+                {events.map((e) => (
+                  <EventCardH key={e.id} e={e} />
+                ))}
+              </div>
+              {openCount > 3 && (
+                <Link href="/opportunities" className="cta-link cta-block">
+                  ดูงานที่เปิดรับทั้งหมด {openCount} งาน
+                  <span className="arrow" aria-hidden="true">
+                    <IconArrowRight size={18} />
+                  </span>
+                </Link>
+              )}
+            </>
           ) : (
             <EmptyState title="ยังไม่มีงานที่เปิดรับตอนนี้" body="ติดตามประกาศจากชมรมผ่าน LINE ได้เลย" />
           )}
@@ -133,8 +146,11 @@ export default async function HomePage() {
                 เลือกไม่เปิดเผยตัวตนได้ — ชื่อจะแสดงเมื่อเจ้าของโปรไฟล์ตอบรับ
               </span>
             </div>
-            <Link href="/teams" className="pill-link">
-              ดูทั้งหมด →
+            <Link href="/teams" className="cta-link">
+              ดูทั้งหมด
+              <span className="arrow" aria-hidden="true">
+                <IconArrowRight size={18} />
+              </span>
             </Link>
           </div>
           {seekers.length ? (

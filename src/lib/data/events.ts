@@ -52,11 +52,11 @@ export async function getEventBySlug(slug: string, includeDraft = false): Promis
 }
 
 /** Up to two open events for the home page "เปิดรับสมัครอยู่ตอนนี้". */
-export async function homeFeaturedEvents(): Promise<EventRow[]> {
+export async function homeFeaturedEvents(): Promise<{ events: EventRow[]; openCount: number }> {
   const all = (await listPublishedEvents()).filter((e) => !isClosed(e))
   const featured = all.filter((e) => e.featured)
   const rest = all.filter((e) => !e.featured)
-  return [...featured, ...rest].slice(0, HOME_FEATURED_LIMIT)
+  return { events: [...featured, ...rest].slice(0, HOME_FEATURED_LIMIT), openCount: all.length }
 }
 
 export async function openEventOptions() {
