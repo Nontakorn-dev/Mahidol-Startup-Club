@@ -1,28 +1,24 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { getViewer } from '@/lib/auth'
 import { env, lineLoginEnabled } from '@/lib/env'
-import { randomToken, signPayload } from '@/lib/crypto'
+import { randomToken } from '@/lib/crypto'
+import { adminClient } from '@/lib/supabase/admin'
 import { lineAuthorizeUrl } from '@/lib/line/login'
 
-const LINE_COOKIE = 'msc_line_oauth'
-
-// "🔗 เชื่อมต่อ LINE" — LINE confirms the account, we store its User ID on the signed-in email account.
-// LINE is never used to sign in.
+// "🔗 เชื่อมต่อ LINE" — LINE confirms the account, we store its User ID on the signed-in account.
+// LINE is never used to sign in. The flow state lives in the database (not a cookie): on phones
+// LINE often comes back inside its own in-app browser, which has none of this site's cookies.
 export async function GET(request: NextRequest) {
   const rawNext = request.nextUrl.searchParams.get('next') || '/settings/notifications'
   const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/settings/notifications'
   const viewer = await getViewer()
   if (!viewer) return NextResponse.redirect(new URL(`/login?next=${encodeURIComponent(next)}`, request.url))
   if (!lineLoginEnabled()) return NextResponse.redirect(new URL('/settings/notifications#line', request.url))
-  const state = randomToken(16)
+  const state = randomToken(24)
   const nonce = randomToken(16)
-  const res = NextResponse.redirect(lineAuthorizeUrl({ state, nonce, redirectUri: `${env.siteUrl}/api/auth/line/callback` }))
-  res.cookies.set(LINE_COOKIE, signPayload({ state, nonce, next, uid: viewer.userId }, 600), {
-    httpOnly: true,
-    secure: env.siteUrl.startsWith('https'),
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 600,
-  })
-  return res
+  const db = adminClient()
+  await db.from('line_login_states').delete().lt('created_at', new Date(Date.now() - 24 * 3_600_000).toISOString())
+  const { error } = await db.from('line_login_states').insert({ state, user_id: viewer.userId, nonce, next })
+  if (error) return NextResponse.redirect(new URL(`${next}${next.includes('?') ? '&' : '?'}line_error=${encodeURIComponent('เริ่มเชื่อม LINE ไม่สำเร็จ กรุณาลองใหม่')}`, request.url))
+  return NextResponse.redirect(lineAuthorizeUrl({ state, nonce, redirectUri: `${env.siteUrl}/api/auth/line/callback` }))
 }
