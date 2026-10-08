@@ -12,6 +12,7 @@ import { decodeIntent, encodeIntent, parseIntent, type Engine, type Intent, type
 import { addChipHref, intentChips, runSearch, type SearchResults } from '@/lib/search'
 import { adminClient } from '@/lib/supabase/admin'
 import { CATEGORIES, CATEGORY_KEYS, ROLES, ROLE_KEYS } from '@/lib/constants'
+import { ATTR_LABEL, ATTRS } from '@/lib/topics'
 
 export const metadata: Metadata = { title: 'ผลการค้นหา' }
 export const dynamic = 'force-dynamic'
@@ -171,6 +172,12 @@ async function Results({ q, f, tab, scope }: { q: string; f: string | null; tab:
               {ROLE_KEYS.filter((r) => !intent.roles_needed.includes(r)).map((r) => (
                 <Link key={`n${r}`} href={addChipHref(intent, q, { roles_needed: [...intent.roles_needed, r] })}>
                   {ROLES[r]}
+                </Link>
+              ))}
+              <span className="muted" style={{ fontSize: 12, padding: '4px 12px' }}>เงื่อนไข</span>
+              {ATTRS.filter((a) => !intent.attrs.includes(a)).map((a) => (
+                <Link key={`a${a}`} href={addChipHref(intent, q, { attrs: [...intent.attrs, a] })}>
+                  {ATTR_LABEL[a]}
                 </Link>
               ))}
               {!intent.include_closed && <Link href={addChipHref(intent, q, { include_closed: true })}>รวมงานที่ปิดรับแล้ว</Link>}

@@ -4,6 +4,7 @@ import { listPublishedEvents } from '@/lib/data/events'
 import { isClosed } from '@/lib/format'
 import { CATEGORIES, ROLES, TRACKS, type Role, type Track } from '@/lib/constants'
 import { encodeIntent, type Intent } from '@/lib/ai/intent'
+import { ATTR_LABEL, ATTRS, hasAttr, prizeBaht, topicOf } from '@/lib/topics'
 import type { CofounderCard, EventRow, SeekerCard, TeamCard } from '@/lib/types'
 
 export type Ranked<T> = { item: T; score: number; reason: string }
@@ -26,33 +27,31 @@ const roleToTrack: Record<Role, Track> = {
   domain_expert: 'domain_expert',
 }
 
-// Thai ↔ English and spelling variants, so "healthtech" also finds "สุขภาพ" / "health tech".
-const KEYWORD_FAMILIES: string[][] = [
-  ['healthtech', 'health', 'healthcare', 'สุขภาพ', 'การแพทย์', 'แพทย์', 'medical', 'medicine', 'medtech', 'clinical', 'hospital', 'โรงพยาบาล', 'เภสัช', 'pharma', 'biotech', 'ชีวการแพทย์', 'พยาบาล', 'nursing', 'ทันต', 'dental', 'wellness', 'สุขภาพจิต', 'mental health'],
-  ['edtech', 'education', 'การศึกษา', 'learning'],
-  ['fintech', 'financial technology', 'ฟินเทค', 'payment', 'digital banking', 'e-wallet'],
-  ['agritech', 'agriculture', 'เกษตร', 'farm'],
-  ['foodtech', 'food', 'อาหาร'],
-  ['esg', 'sustainability', 'sustainable', 'ความยั่งยืน', 'climate', 'green', 'สิ่งแวดล้อม'],
-  ['ai', 'artificial intelligence', 'ปัญญาประดิษฐ์', 'machine learning', 'genai'],
-  ['startup', 'สตาร์ตอัพ', 'สตาร์ทอัพ', 'entrepreneur', 'ผู้ประกอบการ'],
-  ['innovation', 'นวัตกรรม'],
-  ['energy', 'พลังงาน'],
-  ['game', 'เกม', 'gaming'],
-]
 const squash = (s: string) => s.toLowerCase().replace(/[\s\-_./]+/g, '')
 
+/** Words that count as a hit for a keyword: the topic's match words when it is a known topic
+ *  (not its label — "เมือง" alone is too common in Thai), else the keyword itself. */
 function variants(k: string): string[] {
-  const key = squash(k)
-  const family = KEYWORD_FAMILIES.find((f) => f.some((w) => squash(w) === key))
-  return [...new Set([key, ...(family ?? []).map(squash)])].filter((w) => w.length > 1)
+  const topic = topicOf(k)
+  return [...new Set(topic ? topic.match : [k])].filter((w) => w.length > 1)
 }
 
-/** The keywords that appear in the text (any variant of a keyword counts). */
+const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+/** The keywords that appear in the text (any variant of a keyword counts). Latin words must
+ *  start a word ("city" must not hit "capacity"); Thai has no spaces, so it matches anywhere —
+ *  Thai match words in src/lib/topics.ts are therefore kept specific ("การพัฒนาเมือง", not "เมือง"). */
 const kwMatches = (text: string, keywords: string[]) => {
-  const t = squash(text)
   const lower = text.toLowerCase()
-  return keywords.filter((k) => variants(k).some((v) => (v.length <= 3 ? new RegExp(`(^|[^a-z])${v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^a-z]|$)`).test(lower) : t.includes(v))))
+  const t = squash(text)
+  return keywords.filter((k) =>
+    variants(k).some((v) =>
+      /^[a-z0-9]/.test(v)
+        ? // short words ("app", "web", "ai") must be whole words; longer ones may be a prefix ("sustainab…")
+          new RegExp(`(^|[^a-z0-9])${esc(v)}${v.length <= 4 ? '([^a-z]|$)' : ''}`).test(lower) || (v.length > 6 && t.includes(v))
+        : t.includes(v),
+    ),
+  )
 }
 const kwHit = (text: string, keywords: string[]) => kwMatches(text, keywords).length
 
@@ -79,9 +78,18 @@ export async function runSearch(intent: Intent, viewerId: string | null): Promis
       strict.push({ item: e, score: 100, reason: 'คืองานที่คุณพูดถึง' })
       continue
     }
+    // Attributes the user asked for (ออนไลน์, ฟรี, ต่างประเทศ…) are hard requirements.
+    if (!intent.attrs.every((a) => hasAttr(e, a))) continue
     let score = 0
     const reasons: string[] = []
-    const topics = kwMatches(`${e.title} ${e.summary ?? ''} ${e.overview ?? ''} ${e.organizer ?? ''} ${e.tags.join(' ')} ${e.location ?? ''}`, intent.keywords)
+    const prize = intent.attrs.includes('prize') ? prizeBaht(e) : 0
+    if (prize) {
+      score += Math.min(6, Math.log10(prize))
+      reasons.push(`รางวัลรวม ~${prize >= 1_000_000 ? `${+(prize / 1_000_000).toFixed(1)} ล้านบาท` : `${Math.round(prize).toLocaleString('en-US')} บาท`}`)
+    }
+    for (const a of intent.attrs) if (a !== 'prize') reasons.push(ATTR_LABEL[a])
+    // Tags are auto-derived guesses, so topics match only the event's own text.
+    const topics = kwMatches(`${e.title} ${e.summary ?? ''} ${e.overview ?? ''} ${e.organizer ?? ''} ${e.location ?? ''}`, intent.keywords)
     if (topics.length) {
       score += 4 * topics.length
       reasons.push(`ตรงเรื่อง ${topics.join(', ')}`)
@@ -95,23 +103,45 @@ export async function runSearch(intent: Intent, viewerId: string | null): Promis
       score += 2 * tagHits.length
       reasons.push(`ต้องการคนสาย ${label(tagHits)} แบบคุณ`)
     }
-    const matchedSomething = score > 0
+    // Most specific reason first: the topic, then the prize, then attributes / type / skills.
+    const rank = (r: string) => (r.startsWith('ตรงเรื่อง') ? 0 : r.startsWith('รางวัลรวม') ? 1 : r.startsWith('ตรงประเภท') ? 3 : 2)
+    reasons.sort((x, y) => rank(x) - rank(y))
+    const matchedSomething = score > 0 || intent.attrs.length > 0
     if (!closed) score += 1
     if (e.is_club) score += 0.5
     const ranked = { item: e, score, reason: reasons.slice(0, 2).join(' · ') || (closed ? 'ปิดรับแล้ว — ดูไว้เป็นข้อมูล' : 'เปิดรับสมัครอยู่ตอนนี้') }
-    if (wantsTopic && !topics.length) {
-      if (matchedSomething) nearby.push(ranked)
+    // Topic and type the user asked for must both match ("ทุน" + "AI" = AI grants). Events that
+    // match only one wait in `nearby`, shown (labelled) when nothing matches both.
+    const typeOk = !intent.categories.length || intent.categories.includes(e.category)
+    const topicOk = !wantsTopic || topics.length > 0
+    if (!typeOk || !topicOk) {
+      if (topics.length || (typeOk && !wantsTopic) || (typeOk && intent.categories.length)) nearby.push({ ...ranked, missing: !topicOk ? 'topic' : 'type' } as Ranked<EventRow>)
       continue
     }
-    const filtered = Boolean(intent.categories.length || wantsTopic || tagHits.length)
+    const filtered = Boolean(intent.categories.length || wantsTopic || tagHits.length || intent.attrs.length)
     if (filtered && !matchedSomething) continue
-    strict.push(ranked)
+    strict.push({ ...ranked, prize } as Ranked<EventRow> & { prize: number })
   }
+  const typeText = intent.categories.map((c) => CATEGORIES[c]).join('/')
+  const topicText = intent.keywords.join(', ')
+  // Prefer the closer misses: right topic but other type, before right type but other topic.
+  nearby.sort((a, b) => Number((a as { missing?: string }).missing === 'topic') - Number((b as { missing?: string }).missing === 'topic') || b.score - a.score)
   const events =
     strict.some((r) => r.item.slug !== intent.event_slug) || !nearby.length
       ? strict
-      : [...strict, ...nearby.map((r) => ({ ...r, reason: `ยังไม่มีงานเรื่อง ${intent.keywords.join(', ')} ที่เปิดอยู่ — ${r.reason}` }))]
-  events.sort((a, b) => b.score - a.score)
+      : [
+          ...strict,
+          ...nearby.map((r) => ({
+            ...r,
+            reason:
+              (r as { missing?: string }).missing === 'type'
+                ? `ยังไม่มี${typeText}เรื่อง ${topicText} ที่เปิดอยู่ — ${r.reason}`
+                : `ยังไม่มีงานเรื่อง ${topicText} ที่เปิดอยู่ — ${r.reason}`,
+          })),
+        ]
+  // "รางวัลเยอะ": biggest prize first.
+  if (intent.attrs.includes('prize')) events.sort((a, b) => ((b as { prize?: number }).prize ?? 0) - ((a as { prize?: number }).prize ?? 0) || b.score - a.score)
+  else events.sort((a, b) => b.score - a.score)
 
   // ---- teams looking for people (I want to join)
   const teamPool = await listTeams(viewerId, { limit: 100 })
@@ -225,6 +255,8 @@ export function intentChips(intent: Intent, q: string, eventTitle?: string | nul
       label: [intent.deadline_from, intent.deadline_to].filter(Boolean).join(' → '),
       removeHref: href({ ...intent, deadline_from: null, deadline_to: null }),
     })
+  for (const a of intent.attrs)
+    chips.push({ key: `attr-${a}`, kind: 'เงื่อนไข', label: ATTR_LABEL[a], removeHref: href({ ...intent, attrs: intent.attrs.filter((x) => x !== a) }) })
   if (intent.include_closed)
     chips.push({ key: 'closed', kind: 'รวม', label: 'งานที่ปิดรับแล้ว', removeHref: href({ ...intent, include_closed: false }) })
   return chips
