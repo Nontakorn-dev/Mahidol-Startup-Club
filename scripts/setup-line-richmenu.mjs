@@ -49,7 +49,7 @@ async function api(path, init = {}) {
 const { richMenuId } = await api('/richmenu', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ size: { width: W, height: H }, selected: true, name: NAME, chatBarText: 'เมนู Mahidol Startup Club', areas }),
+  body: JSON.stringify({ size: { width: W, height: H }, selected: true, name: NAME, chatBarText: 'เมนู · MSC', areas }),
 })
 
 const image = readFileSync(new URL('../public/assets/line/richmenu.png', import.meta.url))
