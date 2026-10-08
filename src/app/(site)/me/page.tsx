@@ -9,6 +9,7 @@ import { requireViewer } from '@/lib/auth'
 import { adminClient } from '@/lib/supabase/admin'
 import { listPublishedEvents } from '@/lib/data/events'
 import { shortName } from '@/lib/format'
+import { isOaFriend } from '@/lib/line/messaging'
 import { ROLES, STAGES, TRACK_SEEK_LABEL, type Role, type Stage, type Track } from '@/lib/constants'
 import SubmitButton from '@/components/SubmitButton'
 
@@ -78,16 +79,25 @@ export default async function MePage({ searchParams }: PageProps<'/me'>) {
 
   let body: React.ReactNode = null
   if (tab === 'profile') {
-    body = (
-      <div className="stack" style={{ gap: 20 }}>
-        <section id="line" className="card stack" style={{ padding: 24, gap: 14 }}>
-          <h2 style={{ margin: 0, fontWeight: 500, fontSize: 20 }}>🔗 เชื่อมต่อ LINE</h2>
+    // LINE fully set up (linked + OA added) → the card moves to the bottom; anything still to do
+    // (not linked, or linked but not a friend yet) keeps it at the top.
+    const lineDone = Boolean(p.line_user_id && (p.line_is_friend || (await isOaFriend(p.line_user_id))))
+    const lineCard = (
+      <section id="line" className="card stack" style={{ padding: 24, gap: 14 }}>
+        <h2 style={{ margin: 0, fontWeight: 500, fontSize: 20 }}>🔗 เชื่อมต่อ LINE</h2>
+        {!lineDone && (
           <p className="muted" style={{ margin: 0, fontSize: 14 }}>
             ผูกบัญชีอีเมลนี้กับ LINE เพื่อรับข่าวสาร คำชวนเข้าทีม และงานแข่งที่ตรงกับคุณผ่าน LINE OA — ถ้าไม่เชื่อมจะได้รับทางอีเมลแทน
           </p>
-          <LineLinkCard p={p} next="/me" compact />
-        </section>
+        )}
+        <LineLinkCard p={p} next="/me" compact />
+      </section>
+    )
+    body = (
+      <div className="stack" style={{ gap: 20 }}>
+        {!lineDone && lineCard}
         <ProfileForm p={p} />
+        {lineDone && lineCard}
       </div>
     )
   } else if (tab === 'posts') {
