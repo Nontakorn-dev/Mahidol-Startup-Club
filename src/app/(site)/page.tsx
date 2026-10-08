@@ -100,8 +100,10 @@ export default async function HomePage() {
         <div className="container section">
           <div className="head-row">
             <h2 className="section-title">เปิดรับสมัครอยู่ตอนนี้</h2>
-            <Link href="/opportunities" className="cta-link hide-tablet">
-              ดูทั้งหมด{openCount ? ` ${openCount} งาน` : ''}
+            <Link href="/opportunities" className="cta-link hide-phone">
+              <span>
+                ดู<span className="only-tablet">งานที่เปิดรับ</span>ทั้งหมด{openCount ? ` ${openCount} งาน` : ''}
+              </span>
               <span className="arrow" aria-hidden="true">
                 <IconArrowRight size={18} />
               </span>

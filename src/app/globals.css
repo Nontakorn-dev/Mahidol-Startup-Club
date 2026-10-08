@@ -702,9 +702,15 @@ dl.kv dd { margin: 0; font-weight: 600; }
 .cta-link:hover .arrow { transform: translateX(4px); }
 .cta-link:focus-visible { outline: 3px solid #FFC726; outline-offset: 3px; }
 .cta-block { display: none; }
-/* Tablets and phones: the "see all" button sits right under the section title, full width */
-@media (max-width: 1100px) {
-  .hide-tablet { display: none !important; }
+.only-tablet { display: none; }
+/* Tablets: "ดูงานที่เปิดรับทั้งหมด" on the title's line */
+@media (min-width: 641px) and (max-width: 1100px) {
+  .only-tablet { display: inline; }
+  .section .head-row:has(.only-tablet) { align-items: center; }
+}
+/* Phones: the "see all" button sits right under the section title, full width */
+@media (max-width: 640px) {
+  .hide-phone { display: none !important; }
   .cta-block { display: flex; justify-content: space-between; width: 100%; margin: -14px 0 24px; min-height: 58px; font-size: 17px; }
 }
 @media (prefers-reduced-motion: reduce) { .cta-link, .cta-link .arrow { transition: none; } }
