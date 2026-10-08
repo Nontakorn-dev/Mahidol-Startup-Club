@@ -30,7 +30,7 @@ const MEMBER_QUICK: QuickReply[] = [
   { label: '⏰ ใกล้ปิดรับ', data: 'm:closing' },
   { label: '⭐ ตรงกับฉัน', data: 'm:foryou' },
   { label: '👥 หาทีม', data: 'm:teams' },
-  { label: '🎯 เลือกความสนใจ', data: 'm:interests' },
+  { label: '🎯 เลือกความสนใจ', url: '/settings/interests?src=line' },
   { label: '🌐 เปิดเว็บ', url: '/?src=line' },
 ]
 const GUEST_QUICK: QuickReply[] = [
@@ -140,88 +140,37 @@ export async function welcome(lineUserId: string, profile: Linked | null, justLi
       quickMsg('สมัครฟรีได้เลย หรือดูงานก่อนก็ได้ 👇', null),
     ]
   }
+  // Interests are picked on the website (/settings/interests) — one card here, no picker.
   return [
     noticeFlex({
       ...base,
       actions: [
-        { type: 'postback', label: 'ดูงานที่ตรงกับฉัน', data: 'm:foryou', displayText: 'งานที่ตรงกับฉัน' },
+        profile.interests.length
+          ? { type: 'postback', label: 'ดูงานที่ตรงกับฉัน', data: 'm:foryou', displayText: 'งานที่ตรงกับฉัน' }
+          : { type: 'uri', label: 'เลือกเรื่องที่สนใจ', url: web('/settings/interests') },
+        profile.interests.length
+          ? { type: 'uri', label: 'แก้เรื่องที่สนใจ', url: web('/settings/interests') }
+          : { type: 'postback', label: 'ดูงานที่เปิดรับ', data: 'm:open', displayText: 'งานที่เปิดรับ' },
         { type: 'uri', label: 'เปิดเว็บไซต์', url: web('/') },
       ],
     }),
-    interestPicker(profile, profile.interests.length ? 'อยากเปลี่ยนเรื่องที่สนใจไหม?' : 'ขั้นสุดท้าย: เลือกเรื่องที่สนใจ'),
   ]
 }
 
-/** Tappable interest toggles + "notify me about matching events" switch. */
-export function interestPicker(p: Linked, heading = 'เลือกเรื่องที่สนใจ'): LineMessage {
-  const chosen = new Set(p.interests)
-  const row = (r: Role) => ({
-    type: 'box',
-    layout: 'horizontal',
-    spacing: 'sm',
-    paddingAll: '10px',
-    cornerRadius: '10px',
-    backgroundColor: chosen.has(r) ? '#E8EEFB' : '#F8FAFC',
-    borderColor: chosen.has(r) ? '#0035AD' : '#E2E8F0',
-    borderWidth: '1px',
-    action: { type: 'postback', label: INTEREST_LABEL[r].slice(0, 20), data: `m:t:${r}` },
-    contents: [
-      { type: 'text', text: INTEREST_LABEL[r], size: 'sm', color: '#10233F', flex: 1, weight: chosen.has(r) ? 'bold' : 'regular' },
-      { type: 'text', text: chosen.has(r) ? '✓' : '＋', size: 'sm', color: chosen.has(r) ? '#0035AD' : '#94A3B8', flex: 0, weight: 'bold' },
+/** Interests and notification switch live on the website. */
+export function interestsOnWeb(p: Linked, heading = 'เลือกเรื่องที่สนใจบนเว็บ'): LineMessage {
+  const chosen = p.interests.map((r) => INTEREST_LABEL[r as Role]?.replace(/^\S+\s/, '')).filter(Boolean)
+  return noticeFlex({
+    altText: heading,
+    headerBar: 'ความสนใจ',
+    title: heading,
+    subtitle: 'เลือกเรื่องที่สนใจ และเปิด/ปิดการแจ้งเตือนงานที่ตรงกับคุณ — ใช้เวลาไม่ถึงนาที',
+    facts: [
+      { label: 'ตอนนี้', value: chosen.length ? chosen.join(', ') : 'ยังไม่ได้เลือก' },
+      { label: 'แจ้งเตือน', value: p.notify_matches ? 'เปิด (สรุปทุกสัปดาห์)' : 'ปิด' },
     ],
+    actions: [{ type: 'uri', label: 'เลือกเรื่องที่สนใจ', url: web('/settings/interests') }],
   })
-  return {
-    type: 'flex',
-    altText: 'เลือกเรื่องที่สนใจ',
-    contents: {
-      type: 'bubble',
-      size: 'mega',
-      body: {
-        type: 'box',
-        layout: 'vertical',
-        spacing: 'sm',
-        paddingAll: '16px',
-        contents: [
-          { type: 'text', text: heading, weight: 'bold', size: 'lg', color: '#10233F', wrap: true },
-          { type: 'text', text: 'แตะเพื่อเลือก/เอาออก (เลือกได้หลายข้อ) — ใช้แนะนำงานและทีมให้ตรงกับคุณ', size: 'xs', color: '#64748B', wrap: true },
-          { type: 'separator', margin: 'md', color: '#FFFFFF' },
-          ...ROLE_KEYS.map(row),
-          {
-            type: 'box',
-            layout: 'horizontal',
-            margin: 'lg',
-            paddingAll: '12px',
-            cornerRadius: '10px',
-            backgroundColor: p.notify_matches ? '#FFF6DB' : '#F1F5F9',
-            action: { type: 'postback', label: 'แจ้งเตือนตามความสนใจ', data: `m:n:${p.notify_matches ? 'off' : 'on'}` },
-            contents: [
-              {
-                type: 'box',
-                layout: 'vertical',
-                flex: 1,
-                contents: [
-                  { type: 'text', text: '🔔 แจ้งเตือนงานที่ตรงกับความสนใจ', size: 'sm', weight: 'bold', color: '#10233F', wrap: true },
-                  { type: 'text', text: 'สรุปส่งทาง LINE สัปดาห์ละครั้ง', size: 'xxs', color: '#64748B' },
-                ],
-              },
-              { type: 'text', text: p.notify_matches ? 'เปิด ✓' : 'ปิด', size: 'sm', weight: 'bold', color: p.notify_matches ? '#B45309' : '#64748B', flex: 0, gravity: 'center' },
-            ],
-          },
-        ],
-      },
-      footer: {
-        type: 'box',
-        layout: 'vertical',
-        spacing: 'sm',
-        paddingAll: '14px',
-        paddingTop: '4px',
-        contents: [
-          { type: 'button', style: 'primary', color: '#0035AD', height: 'md', action: { type: 'postback', label: 'เสร็จแล้ว — ดูงานที่ตรงกับฉัน', data: 'm:foryou', displayText: 'งานที่ตรงกับฉัน' } },
-          { type: 'button', style: 'secondary', color: '#EEF2FA', height: 'sm', action: { type: 'uri', label: 'แก้โปรไฟล์บนเว็บ', uri: absoluteUrl(web('/me')) } },
-        ],
-      },
-    },
-  }
 }
 
 export function help(): LineMessage {
@@ -250,7 +199,7 @@ export async function account(lineUserId: string, p: Linked | null): Promise<Lin
         { label: 'แจ้งเตือน', value: p.notify_matches ? 'สรุปงานที่ตรงกับคุณทุกสัปดาห์' : 'ปิดอยู่' },
       ],
       actions: [
-        { type: 'postback', label: 'เลือกเรื่องที่สนใจ', data: 'm:interests', displayText: 'เลือกเรื่องที่สนใจ' },
+        { type: 'uri', label: 'เลือกเรื่องที่สนใจ', url: web('/settings/interests') },
         { type: 'uri', label: 'ตั้งค่าแจ้งเตือนบนเว็บ', url: web('/settings/notifications') },
         { type: 'uri', label: 'โปรไฟล์ & กล่องข้อความ', url: web('/me') },
       ],
@@ -284,7 +233,7 @@ export async function openEvents(closingSoon: boolean, p: Linked | null = null):
 
 export async function forYou(lineUserId: string, p: Linked | null): Promise<LineMessage[]> {
   if (!p) return [await linkInvite(lineUserId, 'สมัครสมาชิกฟรี เพื่อดูงานที่ตรงกับคุณ ⭐')]
-  if (!p.interests.length) return [interestPicker(p, 'เลือกเรื่องที่สนใจก่อน แล้วเราจะหางานที่ตรงให้')]
+  if (!p.interests.length) return [interestsOnWeb(p, 'เลือกเรื่องที่สนใจก่อน แล้วเราจะหางานที่ตรงให้')]
   const matches = (await listPublishedEvents())
     .filter((ev) => !isClosed(ev))
     .map((ev) => ({ ev, why: fitsInterests(ev, p.interests) }))
@@ -293,14 +242,14 @@ export async function forYou(lineUserId: string, p: Linked | null): Promise<Line
   if (!matches.length) {
     return [
       textMessage('ตอนนี้ยังไม่มีงานที่ตรงกับความสนใจของคุณเปิดรับอยู่ — ลองเลือกเพิ่ม หรือดูงานทั้งหมด', [
-        { label: '🎯 เลือกความสนใจ', data: 'm:interests' },
+        { label: '🎯 เลือกความสนใจ', url: web('/settings/interests') },
         { label: '🏆 งานที่เปิดรับ', data: 'm:open' },
       ]),
     ]
   }
   return [
     eventsCarousel('งานที่ตรงกับคุณ', matches.slice(0, 9).map((m) => eventItem(m.ev, `ตรงกับ ${m.why}`)), web('/opportunities')),
-    quickMsg(`⭐ ${matches.length} งานตรงกับความสนใจของคุณ — แก้ความสนใจได้ที่ “🎯 เลือกความสนใจ”`, p),
+    quickMsg(`⭐ ${matches.length} งานตรงกับความสนใจของคุณ — แก้ความสนใจได้ที่ “🎯 เลือกความสนใจ” (บนเว็บ)`, p),
   ]
 }
 
@@ -364,21 +313,9 @@ export async function handleMenu(data: string, lineUserId: string): Promise<Line
     case 'welcome':
       return welcome(lineUserId, p)
     case 'interests':
-      return p ? [interestPicker(p)] : [await linkInvite(lineUserId, 'สมัครสมาชิกฟรี เพื่อเลือกเรื่องที่สนใจ 🎯')]
-    case 't': // toggle one interest
-    case 'n': {
-      // switch "notify me about matches"
-      if (!p) return [await linkInvite(lineUserId, 'สมัครสมาชิกฟรี เพื่อเลือกเรื่องที่สนใจ 🎯')]
-      const patch: Partial<Linked> = {}
-      if (action === 't' && (ROLE_KEYS as string[]).includes(arg)) {
-        patch.interests = p.interests.includes(arg) ? p.interests.filter((x) => x !== arg) : [...p.interests, arg]
-      } else if (action === 'n') {
-        patch.notify_matches = arg === 'on'
-      }
-      const { data: updated } = await adminClient().from('profiles').update(patch).eq('id', p.id).select(PROFILE_COLS).single()
-      p = (updated as Linked) ?? { ...p, ...patch }
-      return [interestPicker(p, 'บันทึกแล้ว ✓ — เลือกต่อได้เลย')]
-    }
+    case 't': // buttons on older in-chat pickers
+    case 'n':
+      return p ? [interestsOnWeb(p)] : [await linkInvite(lineUserId, 'สมัครสมาชิกฟรี เพื่อเลือกเรื่องที่สนใจ 🎯')]
     default:
       return [quickMsg('เลือกจากเมนูด้านล่างได้เลย 👇', p)]
   }

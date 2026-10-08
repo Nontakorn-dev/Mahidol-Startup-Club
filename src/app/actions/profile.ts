@@ -6,6 +6,7 @@ import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import { actionViewer } from '@/lib/auth'
 import { adminClient } from '@/lib/supabase/admin'
+import { ROLE_KEYS } from '@/lib/constants'
 
 type State = { error?: string; ok?: string } | null
 const errMsg = (err: unknown) => (err instanceof z.ZodError ? err.issues[0].message : (err as Error).message)
@@ -131,4 +132,18 @@ export async function unlinkLine(): Promise<{ error?: string }> {
   } catch (err) {
     return { error: errMsg(err) }
   }
+}
+
+/** "เลือกเรื่องที่สนใจ" page (shown right after linking LINE): interests + match notifications. */
+export async function saveInterests(form: FormData) {
+  const viewer = await actionViewer()
+  const interests = form.getAll('interests').map(String).filter((v) => (ROLE_KEYS as string[]).includes(v)).slice(0, 7)
+  await adminClient()
+    .from('profiles')
+    .update({ interests, notify_matches: form.get('notify_matches') === 'on' })
+    .eq('id', viewer.userId)
+  revalidatePath('/me')
+  revalidatePath('/settings/notifications')
+  const raw = String(form.get('next') || '/opportunities')
+  redirect(`${raw.startsWith('/') && !raw.startsWith('//') ? raw : '/opportunities'}${raw.includes('?') ? '&' : '?'}saved=interests`)
 }

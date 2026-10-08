@@ -6,6 +6,7 @@ import { linkLineToUser } from '@/lib/line/link'
 import { isOaFriend, pushMessage } from '@/lib/line/messaging'
 import { linkedProfile, welcome } from '@/lib/line/bot'
 import { getViewer } from '@/lib/auth'
+import { randomToken } from '@/lib/crypto'
 
 const STATE_TTL_MS = 10 * 60_000
 
@@ -48,10 +49,13 @@ export async function GET(request: NextRequest) {
 
   // Same browser as the website session → back to where they started. Otherwise (LINE's in-app
   // browser on phones) → a page that says it worked; the original tab refreshes itself.
+  // Next stop: pick interests on the website, then back to where they started.
+  const interests = `/settings/interests?linked=1&next=${encodeURIComponent(flow.next as string)}`
   const viewer = await getViewer()
-  if (viewer?.userId === flow.user_id) {
-    const next = flow.next as string
-    return NextResponse.redirect(new URL(`${next}${next.includes('?') ? '&' : '?'}linked=1`, request.url))
-  }
-  return page(`ok=1${displayName ? `&name=${encodeURIComponent(displayName)}` : ''}`)
+  if (viewer?.userId === flow.user_id) return NextResponse.redirect(new URL(interests, request.url))
+  // Different browser (LINE's in-app browser on phones): sign them in here with a one-time
+  // token so they don't have to log in again.
+  const token = randomToken(24)
+  await adminClient().from('line_login_states').update({ continue_token: token }).eq('state', state)
+  return page(`ok=1&t=${token}${displayName ? `&name=${encodeURIComponent(displayName)}` : ''}`)
 }
