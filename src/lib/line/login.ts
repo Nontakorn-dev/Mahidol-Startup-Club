@@ -12,9 +12,11 @@ export function lineAuthorizeUrl(opts: { state: string; nonce: string; redirectU
     state: opts.state,
     nonce: opts.nonce,
     scope: 'profile openid',
-    // Shows "add the Official Account as a friend" on the consent screen
-    // (requires the LINE Login channel to be linked to the OA).
-    bot_prompt: 'aggressive',
+    // One tap does both: the consent screen carries an "Add Mahidol Startup Club as a friend"
+    // checkbox, ticked by default (requires "Linked LINE Official Account" on the Login channel).
+    // prompt=consent makes that screen appear even for people who consented before.
+    bot_prompt: 'normal',
+    prompt: 'consent',
   })
   return `https://access.line.me/oauth2/v2.1/authorize?${params}`
 }

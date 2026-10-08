@@ -31,14 +31,23 @@ export default async function LineLinkCard({ p, next = '/settings/notifications'
         {p.line_is_friend ? (
           <div className="alert alert-ok">รับข่าวสารผ่าน LINE OA ได้แล้ว</div>
         ) : (
-          <div className="row" style={{ gap: 16, padding: 14, borderRadius: 16, background: 'var(--yellow-soft)' }}>
-            {qr && <div className="qr-box" style={{ borderStyle: 'solid', width: 96, height: 96 }} dangerouslySetInnerHTML={{ __html: qr }} />}
-            <span className="stack" style={{ flex: 1, gap: 8, fontSize: 14, color: '#4A3600' }}>
-              ยังไม่ได้เพิ่มเพื่อน Mahidol Startup Club — เพิ่มเพื่อนก่อน ระบบจึงส่งข้อความหาคุณได้ (ระหว่างนี้ส่งทางอีเมลแทน)
+          <div className="stack" style={{ gap: 12, padding: 16, borderRadius: 16, background: 'var(--yellow-soft)', border: '1px solid #F6D77A' }}>
+            <LinkStatusPoller until="friend" />
+            <span className="stack" style={{ gap: 4, color: '#4A3600' }}>
+              <b style={{ fontSize: 16 }}>อีกขั้นเดียว: เพิ่มเพื่อน Mahidol Startup Club</b>
+              <span style={{ fontSize: 14 }}>เพิ่มเพื่อนแล้ว คำชวนเข้าทีม งานที่ตรงกับคุณ และการเตือนก่อนปิดรับจะส่งมาทาง LINE (ระหว่างนี้ส่งทางอีเมลแทน) — หน้านี้จะอัปเดตเองเมื่อเพิ่มแล้ว</span>
+            </span>
+            <span className="row wrap" style={{ gap: 14, alignItems: 'center' }}>
               {addFriend && (
-                <a href={addFriend} target="_blank" rel="noopener" className="btn btn-line btn-sm" style={{ alignSelf: 'flex-start' }}>
-                  <IconLine size={18} /> เพิ่มเพื่อน
+                <a href={addFriend} target="_blank" rel="noopener" className="btn btn-line" style={{ minHeight: 50, padding: '0 24px', borderRadius: 14, fontSize: 16 }}>
+                  <IconLine size={22} /> เพิ่มเพื่อนใน LINE
                 </a>
+              )}
+              {qr && (
+                <span className="row" style={{ gap: 10, alignItems: 'center' }}>
+                  <span className="qr-box" style={{ borderStyle: 'solid', width: 88, height: 88 }} dangerouslySetInnerHTML={{ __html: qr }} />
+                  <span className="muted" style={{ fontSize: 12, maxWidth: 120 }}>อยู่บนคอม? สแกนด้วยมือถือ</span>
+                </span>
               )}
             </span>
           </div>

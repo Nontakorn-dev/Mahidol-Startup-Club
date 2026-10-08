@@ -31,7 +31,9 @@ export async function GET(request: NextRequest) {
     const identity = await exchangeLineCode(code, `${env.siteUrl}/api/auth/line/callback`, flow.nonce)
     const friend = await lineFriendshipStatus(identity.accessToken).catch(() => null)
     await linkLineToUser(viewer.userId, identity.sub, { displayName: identity.name, picture: identity.picture, friend })
-    if (friend) {
+    // Just added as a friend on the consent screen → the follow event already greets them.
+    const justAdded = sp.get('friendship_status_changed') === 'true'
+    if (friend && !justAdded) {
       await notifyUsers(
         [viewer.userId],
         'system',

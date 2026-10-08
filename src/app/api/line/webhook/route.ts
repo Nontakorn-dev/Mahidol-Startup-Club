@@ -150,7 +150,13 @@ function eventItem(ev: EventRow, reason?: string) {
 
 async function onFollow(e: LineEvent) {
   const uid = e.source.userId!
-  const profile = await linkedProfile(uid)
+  let profile = await linkedProfile(uid)
+  // Added as a friend from the LINE Login consent screen: the follow event arrives a moment
+  // before the website finishes linking — wait briefly so we greet them as linked.
+  if (!profile) {
+    await new Promise((r) => setTimeout(r, 4000))
+    profile = await linkedProfile(uid)
+  }
   if (profile) await adminClient().from('profiles').update({ line_is_friend: true }).eq('id', profile.id)
   if (!e.replyToken) return
   await replyMessage(e.replyToken, [await welcomeCard(uid, profile), textMessage('แตะเมนูด้านล่าง หรือพิมพ์สิ่งที่อยากทำได้เลย 👇', QUICK)])
