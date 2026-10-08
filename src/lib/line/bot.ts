@@ -6,7 +6,7 @@ import { isClosed, msLeft, thaiDeadline, timeLeftLabel, urgency } from '@/lib/fo
 import { CATEGORIES, ROLE_KEYS, type Role } from '@/lib/constants'
 import { TOPICS } from '@/lib/topics'
 import { issueLinkToken, linkPageUrl } from './link'
-import { WELCOME_IMAGE, eventsCarousel, noticeFlex, textMessage, type NoticeContent } from './messaging'
+import { WELCOME_IMAGE, absoluteUrl, eventsCarousel, noticeFlex, textMessage, type NoticeContent } from './messaging'
 import type { EventRow } from '@/lib/types'
 
 // What the OA chat answers. Every menu button is a postback ("m:<action>") answered with a
@@ -54,6 +54,7 @@ function eventItem(ev: EventRow, reason?: string) {
 }
 
 const byDeadline = (a: EventRow, b: EventRow) => (msLeft(a) ?? Infinity) - (msLeft(b) ?? Infinity)
+const weekCount = (events: EventRow[]) => events.filter((e) => (msLeft(e) ?? Infinity) <= 7 * 86_400_000).length
 
 /** Does an event fit these interests? Its tags, or the subject words of the matching topics. */
 export function fitsInterests(e: EventRow, interests: string[]): string | null {
@@ -119,6 +120,7 @@ export async function welcome(lineUserId: string, profile: Linked | null, justLi
           { type: 'uri', label: 'เปิดเว็บไซต์', url: web('/') },
         ],
       }),
+      textMessage('แตะเมนูด้านล่างเพื่อดูงานแข่ง หาทีม หรือสมัครสมาชิก — พิมพ์สิ่งที่อยากทำก็ได้ 👇'),
     ]
   }
   // Interests are picked on the website (/settings/interests) — one card here, no picker.
@@ -206,6 +208,13 @@ export async function openEvents(closingSoon: boolean, p: Linked | null = null):
   }
   return [
     eventsCarousel(closingSoon ? 'งานที่ใกล้ปิดรับใน 7 วัน' : 'งานแข่ง & ทุนที่เปิดรับ', events.slice(0, 9).map((ev) => eventItem(ev)), web(more)),
+    // Short summary under the carousel (no quick-reply buttons — the menu has them).
+    textMessage(
+      (closingSoon
+        ? `⏰ ${events.length} งานปิดรับภายใน 7 วัน — เลื่อนดูได้เลย`
+        : `🏆 เปิดรับอยู่ ${events.length} งาน เรียงตามวันปิดรับ — เลื่อนดู หรือแตะ “ดูทั้งหมดบนเว็บ”${weekCount(events) ? `\n⏰ ในนี้ ${weekCount(events)} งานปิดรับภายใน 7 วัน` : ''}`) +
+        (p ? '' : '\n\n🚀 สมัครสมาชิกฟรี (ปุ่มในเมนูด้านล่าง) เพื่อรับงานที่ตรงกับคุณและเตือนก่อนปิดรับ'),
+    ),
   ]
 }
 
@@ -232,6 +241,7 @@ export async function forYou(lineUserId: string, p: Linked | null): Promise<Line
   }
   return [
     eventsCarousel('งานที่ตรงกับคุณ', matches.slice(0, 9).map((m) => eventItem(m.ev, `ตรงกับ ${m.why}`)), web('/opportunities')),
+    textMessage(`⭐ ${matches.length} งานตรงกับความสนใจของคุณ เรียงตามวันปิดรับ — แก้เรื่องที่สนใจได้ที่เว็บ: ${absoluteUrl(web('/settings/interests'))}`),
   ]
 }
 
@@ -283,7 +293,7 @@ export async function handleMenu(data: string, lineUserId: string): Promise<Line
               ],
             }),
           ]
-        : [await linkInvite(lineUserId, 'สมัครสมาชิก Mahidol Startup Club ฟรี 🚀')]
+        : [await linkInvite(lineUserId, 'สมัครสมาชิก Mahidol Startup Club ฟรี 🚀'), textMessage('ยังไม่พร้อมสมัคร? แตะ “งานแข่ง & ทุน” ในเมนูด้านล่าง ดูงานก่อนได้เลย 👇')]
     case 'foryou':
       return forYou(lineUserId, p)
     case 'teams':

@@ -157,6 +157,7 @@ async function onText(e: LineEvent): Promise<Msg[]> {
       ),
     )
   }
+  messages.push(textMessage(profile ? 'พิมพ์ค้นอย่างอื่นได้เลย หรือเลือกจากเมนูด้านล่าง 👇' : 'สมัครสมาชิกฟรี (ปุ่มในเมนูด้านล่าง) เพื่อรับงานที่ตรงกับคุณในแชตนี้ 👇'))
   return messages
 }
 
