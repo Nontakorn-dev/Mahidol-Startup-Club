@@ -120,7 +120,8 @@ export async function welcome(lineUserId: string, profile: Linked | null, justLi
           { type: 'uri', label: 'เปิดเว็บไซต์', url: web('/') },
         ],
       }),
-      textMessage('แตะเมนูด้านล่าง (หรือพิมพ์ “เมนู” บน iPad/คอม) เพื่อดูงานแข่ง หาทีม หรือสมัครสมาชิก — พิมพ์สิ่งที่อยากทำก็ได้ 👇'),
+      // Always followed by the menu card: LINE on iPad/Mac/PC doesn't show the rich menu.
+      menuCard(null),
     ]
   }
   // Interests are picked on the website (/settings/interests) — one card here, no picker.
@@ -137,6 +138,7 @@ export async function welcome(lineUserId: string, profile: Linked | null, justLi
         { type: 'uri', label: 'เปิดเว็บไซต์', url: web('/') },
       ],
     }),
+    menuCard(profile),
   ]
 }
 
