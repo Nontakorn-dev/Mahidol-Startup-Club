@@ -3,13 +3,15 @@ import Link from 'next/link'
 import Image from 'next/image'
 import SearchBox from '@/components/SearchBox'
 import ConnectMap from '@/components/ConnectMap'
-import { EmptyState, EventCardH, SeekerCardView } from '@/components/Cards'
-import { IconArrowRight, IconLock, IconPeople, IconTrophy, IconUserPlus } from '@/components/icons'
+import { CofounderCardView, EmptyState, EventCardH, SeekerCardView, TeamCardView } from '@/components/Cards'
+import { IconArrowRight, IconLock, IconPeople, IconTrophy, IconUser, IconUserPlus } from '@/components/icons'
 import { getViewer } from '@/lib/auth'
 import { homeFeaturedEvents } from '@/lib/data/events'
-import { listSeekers } from '@/lib/data/community'
+import { listCofounders, listSeekers, listTeams } from '@/lib/data/community'
 
 export const dynamic = 'force-dynamic'
+
+const POST_KIND = { team: '👥 ทีมหาคน', seeker: '🙋 กำลังหาทีม', cofounder: '🚀 หา Co-founder' } as const
 
 const PARTNERS = [
   { src: '/assets/partners/msc-2026.png', alt: 'Mahidol Startup Club', h: 44, w: 146 },
@@ -39,10 +41,22 @@ function Marquee() {
 
 export default async function HomePage() {
   const viewer = await getViewer()
-  const [{ events, openCount }, seekers] = await Promise.all([
+  const uid = viewer?.userId ?? null
+  const [{ events, openCount }, teams, seekers, cofounders] = await Promise.all([
     homeFeaturedEvents(),
-    listSeekers(viewer?.userId ?? null, { limit: 4 }),
+    listTeams(uid, { limit: 6 }),
+    listSeekers(uid, { limit: 6 }),
+    listCofounders(uid, { limit: 6 }),
   ])
+  // One feed, newest first: teams looking for people, people looking for a team, co-founder posts.
+  const loggedIn = Boolean(viewer)
+  const feed = [
+    ...teams.map((t) => ({ kind: 'team' as const, at: t.created_at, node: <TeamCardView t={t} loggedIn={loggedIn} />, key: `t-${t.id}` })),
+    ...seekers.map((s) => ({ kind: 'seeker' as const, at: s.created_at, node: <SeekerCardView s={s} loggedIn={loggedIn} />, key: `s-${s.id}` })),
+    ...cofounders.map((c) => ({ kind: 'cofounder' as const, at: c.created_at, node: <CofounderCardView c={c} loggedIn={loggedIn} />, key: `c-${c.id}` })),
+  ]
+    .sort((a, b) => b.at.localeCompare(a.at))
+    .slice(0, 6)
 
   return (
     <>
@@ -132,8 +146,9 @@ export default async function HomePage() {
 
       <section style={{ background: 'linear-gradient(180deg, #E1E9F8 0%, #F4F7FC 45%, #FFFFFF 100%)' }}>
         <div className="container section home-seekers">
-          <div className="stack" style={{ gap: 12, marginBottom: 28 }}>
-            <h2 className="section-title">เพื่อนที่กำลังมองหาทีม</h2>
+          <div className="stack" style={{ gap: 12, marginBottom: 24 }}>
+            <h2 className="section-title">ประกาศหาทีม &amp; Co-founder</h2>
+            <p className="home-posts-sub">ทีมที่กำลังหาคน · คนที่กำลังหาทีม · คนที่หา co-founder — รวมไว้ที่นี่</p>
             <div className="seekers-bar">
               <span className="privacy-pill">
                 <span style={{ display: 'inline-flex', color: 'var(--navy-2)' }}>
@@ -149,23 +164,37 @@ export default async function HomePage() {
               </Link>
             </div>
           </div>
-          {seekers.length ? (
-            <div className="grid-cards">
-              {seekers.map((s) => (
-                <SeekerCardView key={s.id} s={s} loggedIn={Boolean(viewer)} />
+
+          {feed.length > 0 && (
+            <div className="home-posts">
+              {feed.map((f) => (
+                <div key={f.key} className={`home-post ${f.kind}`}>
+                  <span className="post-kind">{POST_KIND[f.kind]}</span>
+                  {f.node}
+                </div>
               ))}
             </div>
-          ) : (
-            <EmptyState
-              title="ยังไม่มีใครประกาศหาทีม"
-              body="เป็นคนแรกที่บอกว่ากำลังมองหาทีม แล้วให้ทีมที่ใช่ทักมาหาคุณ"
-              action={
-                <Link href="/teams/looking/new" className="btn btn-primary btn-pill">
-                  ประกาศว่ากำลังหาทีม
-                </Link>
-              }
-            />
           )}
+
+          {/* Three ways to post — always visible, so it's obvious what you can do here */}
+          <div className="post-actions">
+            {!feed.length && <p className="post-actions-head">ยังไม่มีประกาศ — เริ่มเป็นคนแรกได้เลย</p>}
+            <Link href="/teams/new" className="post-action">
+              <span className="ic team"><IconPeople size={20} /></span>
+              <span className="txt"><b>มีทีมแล้ว ขาดคน</b><span>ชวนคนที่สกิลตรงเข้าทีม</span></span>
+              <IconArrowRight size={18} />
+            </Link>
+            <Link href="/teams/looking/new" className="post-action">
+              <span className="ic seeker"><IconUser size={20} /></span>
+              <span className="txt"><b>กำลังหาทีม</b><span>บอกสกิล แล้วให้ทีมทักมา</span></span>
+              <IconArrowRight size={18} />
+            </Link>
+            <Link href="/cofounder/new" className="post-action">
+              <span className="ic cofounder"><IconUserPlus size={20} /></span>
+              <span className="txt"><b>หา Co-founder</b><span>หาคนร่วมสร้างสตาร์ตอัพ</span></span>
+              <IconArrowRight size={18} />
+            </Link>
+          </div>
         </div>
       </section>
     </>

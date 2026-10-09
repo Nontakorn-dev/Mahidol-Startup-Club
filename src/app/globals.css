@@ -1035,3 +1035,32 @@ html:has(.login-wrap), html:has(.login-wrap) body { background: var(--bg); }
 .line-cta { gap: 8px; min-height: 46px; padding: 0 20px; border-radius: 999px; font-size: 15px; font-weight: 600; box-shadow: 0 10px 22px -10px rgba(6, 199, 85, 0.7); transition: transform 0.15s ease, box-shadow 0.15s ease; }
 .line-cta:hover { transform: translateY(-1px); box-shadow: 0 14px 26px -10px rgba(6, 199, 85, 0.8); }
 @media (prefers-reduced-motion: reduce) { .line-cta { transition: none; } }
+
+/* Home: mixed feed of team / seeker / co-founder posts */
+.home-posts-sub { margin: -4px 0 4px; font-size: 15px; color: var(--muted); }
+.home-posts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; align-items: stretch; }
+.home-post { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.home-post > article { flex: 1; }
+.post-kind { align-self: flex-start; padding: 4px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; background: #fff; box-shadow: 0 2px 8px -4px rgba(16, 35, 63, 0.2); }
+.home-post.team .post-kind { color: var(--brand); }
+.home-post.seeker .post-kind { color: #B45309; }
+.home-post.cofounder .post-kind { color: #6D28D9; }
+.post-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 28px; }
+.post-actions-head { grid-column: 1 / -1; margin: 0 0 2px; font-weight: 600; color: var(--navy); }
+.post-action {
+  display: flex; align-items: center; gap: 12px; padding: 16px 18px; border-radius: 18px; background: #fff; border: 1px solid var(--border-2);
+  color: var(--navy); text-decoration: none; box-shadow: 0 8px 22px -16px rgba(0, 53, 173, 0.35); transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.post-action:hover { color: var(--navy); transform: translateY(-2px); box-shadow: 0 14px 28px -16px rgba(0, 53, 173, 0.45); }
+.post-action > svg { flex: none; color: var(--muted); }
+.post-action .ic { flex: none; width: 42px; height: 42px; border-radius: 13px; display: inline-flex; align-items: center; justify-content: center; }
+.post-action .ic.team { background: var(--bg-2); color: var(--brand); }
+.post-action .ic.seeker { background: #FFF4E0; color: #B45309; }
+.post-action .ic.cofounder { background: #F1EAFE; color: #6D28D9; }
+.post-action .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.35; }
+.post-action .txt b { font-weight: 600; font-size: 15.5px; }
+.post-action .txt span { font-size: 13px; color: var(--muted); }
+@media (max-width: 1100px) { .home-posts { grid-template-columns: repeat(2, minmax(0, 1fr)); } .home-posts > :nth-child(n + 5) { display: none; } }
+@media (max-width: 900px) { .post-actions { grid-template-columns: minmax(0, 1fr); gap: 10px; } }
+@media (max-width: 640px) { .home-posts { grid-template-columns: minmax(0, 1fr); gap: 16px; } .home-posts > :nth-child(n + 4) { display: none; } }
+@media (prefers-reduced-motion: reduce) { .post-action { transition: none; } }
