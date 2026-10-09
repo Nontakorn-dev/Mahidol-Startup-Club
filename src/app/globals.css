@@ -1030,3 +1030,8 @@ html:has(.login-wrap), html:has(.login-wrap) body { background: var(--bg); }
 @media (max-width: 640px) {
   .admin-main .tag { white-space: normal; max-width: 100%; }
 }
+
+/* "เชื่อม LINE รับแจ้งเตือน" on /me (shown until LINE is linked) */
+.line-cta { gap: 8px; min-height: 46px; padding: 0 20px; border-radius: 999px; font-size: 15px; font-weight: 600; box-shadow: 0 10px 22px -10px rgba(6, 199, 85, 0.7); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.line-cta:hover { transform: translateY(-1px); box-shadow: 0 14px 26px -10px rgba(6, 199, 85, 0.8); }
+@media (prefers-reduced-motion: reduce) { .line-cta { transition: none; } }

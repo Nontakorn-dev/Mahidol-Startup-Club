@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { IconLine } from '@/components/icons'
 import type { Metadata } from 'next'
 import Crumbs from '@/components/Crumbs'
 import ProfileForm from '@/components/forms/ProfileForm'
@@ -191,14 +192,13 @@ export default async function MePage({ searchParams }: PageProps<'/me'>) {
           <Crumbs back="/" trail={[{ label: 'หน้าแรก', href: '/' }, { label: 'โปรไฟล์ของฉัน' }]} />
           <div className="row wrap" style={{ justifyContent: 'space-between', gap: 12 }}>
             <h1 style={{ margin: 0, fontWeight: 600, fontSize: 36 }}>{shortName(p.first_name, p.last_name)}</h1>
-            <span className="row wrap" style={{ gap: 8 }}>
-              <Link href={`/u/${p.id}`} className="btn btn-outline btn-sm">
-                ดูโปรไฟล์สาธารณะ
+            {/* Only until LINE is linked — then notification settings live in the user menu. */}
+            {!p.line_user_id && (
+              <Link href="/settings/notifications#line" className="btn btn-line line-cta">
+                <IconLine size={20} />
+                เชื่อม LINE รับแจ้งเตือน
               </Link>
-              <Link href="/settings/notifications" className="btn btn-outline btn-sm">
-                ตั้งค่าแจ้งเตือน / LINE
-              </Link>
-            </span>
+            )}
           </div>
           <div role="tablist" className="segmented" style={{ alignSelf: 'flex-start' }}>
             {tabs.map((t) => (
