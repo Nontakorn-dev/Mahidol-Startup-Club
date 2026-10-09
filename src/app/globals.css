@@ -725,7 +725,7 @@ dl.kv dd { margin: 0; font-weight: 600; }
   .marquee .mask { padding: 18px 0; }
   .marquee .set { gap: 36px; padding-right: 36px; }
   .marquee .track { animation-duration: 26s; }
-  .explore a { font-size: 13px; gap: 4px; min-height: 50px; padding: 4px 4px; white-space: normal; text-align: center; line-height: 1.25; }
+  .explore a { font-size: 13px; gap: 4px; min-height: 46px; padding: 0 2px; }
   .explore a .ic svg { width: 16px; height: 16px; }
   .search-box { padding: 6px 6px 6px 16px; border-radius: 14px; }
   .search-box input { font-size: 16px; padding: 10px 0; }
@@ -1161,5 +1161,3 @@ html:has(.login-wrap), html:has(.login-wrap) body { background: var(--bg); }
 .member-card .go { font-size: 14px; font-weight: 600; color: var(--brand); }
 @media (max-width: 640px) { .people-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } .member-card { padding: 20px 12px 16px; } .member-card .name { font-size: 16px; } }
 @media (prefers-reduced-motion: reduce) { .member-card { transition: none; } }
-/* Very narrow phones: drop the icons in the 3 home buttons so "Co-Founder" fits */
-@media (max-width: 360px) { .explore a .ic { display: none; } }

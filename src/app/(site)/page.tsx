@@ -86,9 +86,8 @@ export default async function HomePage() {
                 <span className="ic">
                   <IconPeople size={18} />
                 </span>
-                <span>
-                  หาทีม &amp; <span style={{ whiteSpace: 'nowrap' }}>Co-Founder</span>
-                </span>
+                {/* Short label here only; the page itself is "หาทีม & Co-Founder" */}
+                หาทีม
               </Link>
               <Link href="/people">
                 <span className="ic">
