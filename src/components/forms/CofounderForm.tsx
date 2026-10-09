@@ -1,5 +1,5 @@
 'use client'
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { saveCofounder } from '@/app/actions/posts'
 import ChipSelect from '../ChipSelect'
 import PrivacySection from './PrivacySection'
@@ -17,6 +17,8 @@ type Cofounder = {
   is_anonymous?: boolean
   details?: string | null
   contact?: string | null
+  my_domain?: string | null
+  seeking_domain?: string | null
 }
 
 const trackOptions = TRACK_KEYS.map((k) => ({ value: k, label: TRACKS[k] }))
@@ -24,6 +26,8 @@ const stageOptions = (Object.keys(STAGES) as (keyof typeof STAGES)[]).map((k) =>
 
 export default function CofounderForm({ c = {}, lineLinked }: { c?: Cofounder; lineLinked: boolean }) {
   const [state, action, pending] = useActionState(saveCofounder, null)
+  const [mine, setMine] = useState<string[]>(c.my_skills ?? [])
+  const [seek, setSeek] = useState<string[]>(c.seeking ?? [])
   return (
     <form action={action} className="stack" style={{ gap: 20 }}>
       <div className="sheet">
@@ -34,7 +38,10 @@ export default function CofounderForm({ c = {}, lineLinked }: { c?: Cofounder; l
           </div>
           <div className="field">
             <span className="label">ความเชี่ยวชาญของคุณ</span>
-            <ChipSelect name="my_skills" label="ความเชี่ยวชาญของคุณ" options={trackOptions} defaultValue={c.my_skills} />
+            <ChipSelect name="my_skills" label="ความเชี่ยวชาญของคุณ" options={trackOptions} defaultValue={c.my_skills} onChange={setMine} />
+            {mine.includes('domain_expert') && (
+              <input name="my_domain" className="input" style={{ marginTop: 10 }} required maxLength={60} defaultValue={c.my_domain ?? ''} placeholder="เชี่ยวชาญด้านใด เช่น การแพทย์ เภสัชศาสตร์ กฎหมาย การเกษตร" aria-label="ด้านที่เชี่ยวชาญ" />
+            )}
           </div>
           <div className="field">
             <label htmlFor="hd">ประสบการณ์โดยย่อ</label>
@@ -42,7 +49,10 @@ export default function CofounderForm({ c = {}, lineLinked }: { c?: Cofounder; l
           </div>
           <div className="field">
             <span className="label">ต้องการ Co-Founder ด้าน</span>
-            <ChipSelect name="seeking" label="ต้องการ Co-Founder ด้าน" options={trackOptions} defaultValue={c.seeking} />
+            <ChipSelect name="seeking" label="ต้องการ Co-Founder ด้าน" options={trackOptions} defaultValue={c.seeking} onChange={setSeek} />
+            {seek.includes('domain_expert') && (
+              <input name="seeking_domain" className="input" style={{ marginTop: 10 }} required maxLength={60} defaultValue={c.seeking_domain ?? ''} placeholder="ต้องการผู้เชี่ยวชาญด้านใด เช่น แพทย์ นักกายภาพบำบัด นักกฎหมาย" aria-label="ด้านของผู้เชี่ยวชาญที่ต้องการ" />
+            )}
           </div>
           <div className="field">
             <label htmlFor="lk">

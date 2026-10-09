@@ -43,6 +43,12 @@ export const TRACK_SEEK_LABEL: Record<Track, string> = {
   domain_expert: 'ผู้เชี่ยวชาญเฉพาะด้าน',
 }
 
+/** "Domain expert" with its field when given: "ผู้เชี่ยวชาญด้านการแพทย์". */
+export function trackLabel(t: Track, domain: string | null | undefined, seeking = true): string {
+  if (t === 'domain_expert' && domain) return `ผู้เชี่ยวชาญด้าน${domain}`
+  return seeking ? TRACK_SEEK_LABEL[t] : TRACKS[t]
+}
+
 export const STAGES = {
   idea: 'Idea',
   prototype: 'Prototype',

@@ -5,7 +5,7 @@ import PostPage from '@/components/PostPage'
 import ContactButton from '@/components/ContactButton'
 import { getViewer } from '@/lib/auth'
 import { getCofounderPost } from '@/lib/data/community'
-import { STAGES, TRACKS, TRACK_SEEK_LABEL } from '@/lib/constants'
+import { STAGES, trackLabel } from '@/lib/constants'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'หา Co-Founder' }
@@ -31,8 +31,8 @@ export default async function CofounderPostPage({ params }: PageProps<'/cofounde
       detailsHeading="เกี่ยวกับโปรเจกต์"
       contact={extra?.contact ?? null}
       facts={[
-        { label: 'ต้องการ Co-Founder ด้าน', value: c.seeking.length ? c.seeking.map((t) => TRACK_SEEK_LABEL[t]).join(' / ') : '—' },
-        { label: 'ความเชี่ยวชาญของผู้ลงประกาศ', value: c.my_skills.length ? c.my_skills.map((t) => TRACKS[t]).join(', ') : '—' },
+        { label: 'ต้องการ Co-Founder ด้าน', value: c.seeking.length ? c.seeking.map((t) => trackLabel(t, c.seeking_domain)).join(' / ') : '—' },
+        { label: 'ความเชี่ยวชาญของผู้ลงประกาศ', value: c.my_skills.length ? c.my_skills.map((t) => trackLabel(t, c.my_domain, false)).join(', ') : '—' },
         { label: 'ความคืบหน้า', value: STAGES[c.stage] },
         { label: 'เวลาที่ทุ่มเทได้', value: c.commitment || '—' },
         ...(c.portfolio_url ? [{ label: 'ผลงาน', value: <a href={c.portfolio_url} target="_blank" rel="noopener">{c.portfolio_url.replace(/^https?:\/\//, '')}</a> }] : []),

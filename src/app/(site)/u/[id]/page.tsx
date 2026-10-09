@@ -142,7 +142,7 @@ export default async function PublicProfilePage({ params }: PageProps<'/u/[id]'>
                 {teamRows.map((t) => (
                   <Link
                     key={t.id}
-                    href={t.event ? `/opportunities/${t.event.slug}#teams` : '/teams?tab=teams'}
+                    href={t.event ? `/opportunities/${t.event.slug}#teams` : '/teams?tab=team'}
                     className="row"
                     style={{ gap: 18, padding: 16, borderRadius: 18, background: '#fff', boxShadow: 'var(--shadow-soft)', textDecoration: 'none', color: 'var(--navy)' }}
                   >

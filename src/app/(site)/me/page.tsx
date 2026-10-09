@@ -10,7 +10,7 @@ import { adminClient } from '@/lib/supabase/admin'
 import { listPublishedEvents } from '@/lib/data/events'
 import { shortName } from '@/lib/format'
 import { isOaFriend } from '@/lib/line/messaging'
-import { ROLES, STAGES, TRACK_SEEK_LABEL, type Role, type Stage, type Track } from '@/lib/constants'
+import { ROLES, STAGES, type Role, type Stage, type Track, trackLabel } from '@/lib/constants'
 import SubmitButton from '@/components/SubmitButton'
 
 export const metadata: Metadata = { title: 'โปรไฟล์ของฉัน' }
@@ -155,7 +155,7 @@ export default async function MePage({ searchParams }: PageProps<'/me'>) {
                 type="cofounder"
                 id={c.id}
                 title={`Co-founder: ${c.idea_title ?? '—'}`}
-                sub={`${STAGES[c.stage as Stage]} · มองหา ${(c.seeking as Track[]).map((t) => TRACK_SEEK_LABEL[t]).join(', ')}`}
+                sub={`${STAGES[c.stage as Stage]} · มองหา ${(c.seeking as Track[]).map((t) => trackLabel(t, c.seeking_domain)).join(', ')}`}
                 status={c.status}
                 editHref="/cofounder/new"
                 anonymous={c.is_anonymous}

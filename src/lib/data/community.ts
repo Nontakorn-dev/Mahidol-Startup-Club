@@ -155,6 +155,8 @@ export async function listCofounders(viewerId: string | null, f: CofounderFilter
       problem: r.problem,
       stage: r.stage as Stage,
       commitment: r.commitment,
+      my_domain: r.my_domain ?? null,
+      seeking_domain: r.seeking_domain ?? null,
       skill_tags: (owner?.skills || []).slice(0, 3),
       author: toPublicAuthor(owner, r.is_anonymous),
       is_mine: viewerId === r.owner_id,

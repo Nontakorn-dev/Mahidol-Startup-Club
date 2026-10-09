@@ -122,6 +122,8 @@ export type CofounderCard = {
   problem: string | null
   stage: Stage
   commitment: string | null
+  my_domain: string | null
+  seeking_domain: string | null
   skill_tags: string[]
   author: PublicAuthor
   is_mine: boolean

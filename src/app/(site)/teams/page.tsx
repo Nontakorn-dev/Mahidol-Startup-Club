@@ -16,11 +16,11 @@ export const dynamic = 'force-dynamic'
 // to join a team, and people looking for a co-founder. Opens on "ทั้งหมด" so everything open is
 // visible at once; the tabs narrow it down. (/cofounder redirects here with tab=cofounder.)
 
-type Tab = 'all' | 'teams' | 'people' | 'cofounder'
+// "หาทีมแข่ง" = teams looking for members + people looking for a team.
+type Tab = 'all' | 'team' | 'cofounder'
 const TABS: { key: Tab; label: string }[] = [
   { key: 'all', label: 'ทั้งหมด' },
-  { key: 'teams', label: 'ทีมเปิดรับสมาชิก' },
-  { key: 'people', label: 'ผู้ต้องการเข้าทีม' },
+  { key: 'team', label: 'หาทีมแข่ง' },
   { key: 'cofounder', label: 'หา Co-Founder' },
 ]
 const SEEK: { key?: Track; label: string }[] = [
@@ -33,7 +33,9 @@ const SEEK: { key?: Track; label: string }[] = [
 
 export default async function TeamsPage({ searchParams }: PageProps<'/teams'>) {
   const sp = await searchParams
-  const tab: Tab = TABS.some((t) => t.key === sp.tab) ? (sp.tab as Tab) : 'all'
+  // Old links used tab=teams / tab=people — both are "หาทีมแข่ง" now.
+  const rawTab = sp.tab === 'teams' || sp.tab === 'people' ? 'team' : sp.tab
+  const tab: Tab = TABS.some((t) => t.key === rawTab) ? (rawTab as Tab) : 'all'
   const eventId = typeof sp.event === 'string' ? sp.event : undefined
   const seek = typeof sp.seek === 'string' && (TRACK_KEYS as string[]).includes(sp.seek) ? (sp.seek as Track) : undefined
   const viewer = await getViewer()
@@ -47,19 +49,18 @@ export default async function TeamsPage({ searchParams }: PageProps<'/teams'>) {
     eventId ? adminClient().from('events').select('id, title, slug').eq('id', eventId).maybeSingle().then((r) => r.data) : Promise.resolve(null),
   ])
 
-  const counts: Record<Tab, number> = { all: teams.length + seekers.length + cofounders.length, teams: teams.length, people: seekers.length, cofounder: cofounders.length }
+  const counts: Record<Tab, number> = { all: teams.length + seekers.length + cofounders.length, team: teams.length + seekers.length, cofounder: cofounders.length }
   const qs = (t: Tab) => `/teams${t === 'all' ? '' : `?tab=${t}`}${eventId ? `${t === 'all' ? '?' : '&'}event=${eventId}` : ''}`
 
   const cards = [
-    ...(tab === 'all' || tab === 'teams' ? teams.map((t) => ({ at: t.created_at, key: `t-${t.id}`, node: <TeamCardView t={t} loggedIn={loggedIn} /> })) : []),
-    ...(tab === 'all' || tab === 'people' ? seekers.map((s) => ({ at: s.created_at, key: `s-${s.id}`, node: <SeekerCardView s={s} loggedIn={loggedIn} /> })) : []),
+    ...(tab !== 'cofounder' ? teams.map((t) => ({ at: t.created_at, key: `t-${t.id}`, node: <TeamCardView t={t} loggedIn={loggedIn} /> })) : []),
+    ...(tab !== 'cofounder' ? seekers.map((s) => ({ at: s.created_at, key: `s-${s.id}`, node: <SeekerCardView s={s} loggedIn={loggedIn} /> })) : []),
     ...(tab === 'all' || tab === 'cofounder' ? cofounders.map((c) => ({ at: c.created_at, key: `c-${c.id}`, node: <CofounderCardView c={c} loggedIn={loggedIn} /> })) : []),
   ].sort((a, b) => b.at.localeCompare(a.at))
 
   const empty: Record<Tab, { title: string; body: string; href: string; cta: string }> = {
     all: { title: 'ยังไม่มีประกาศ', body: 'ลงประกาศเป็นคนแรก แล้วผู้ที่สนใจจะติดต่อคุณ', href: '/teams/new', cta: 'ลงประกาศหาทีมแข่ง' },
-    teams: { title: 'ยังไม่มีทีมที่เปิดรับสมาชิก', body: 'มีทีมแข่งแล้วแต่ยังขาดสมาชิก ลงประกาศได้เลย', href: `/teams/new${eventId ? `?event=${eventId}` : ''}`, cta: 'ลงประกาศรับสมาชิก' },
-    people: { title: 'ยังไม่มีผู้ต้องการเข้าทีม', body: 'ระบุทักษะของคุณ แล้วให้ทีมที่ตรงกันติดต่อมา', href: '/teams/new?as=member', cta: 'ลงประกาศหาทีม' },
+    team: { title: 'ยังไม่มีประกาศหาทีมแข่ง', body: 'มีทีมแล้วแต่ยังขาดสมาชิก หรือยังไม่มีทีมและต้องการเข้าร่วม ลงประกาศได้เลย', href: `/teams/new${eventId ? `?event=${eventId}` : ''}`, cta: 'ลงประกาศหาทีมแข่ง' },
     cofounder: { title: seek ? 'ยังไม่มีประกาศในด้านนี้' : 'ยังไม่มีประกาศหา Co-Founder', body: 'มีไอเดียสตาร์ตอัพและต้องการผู้ร่วมก่อตั้ง ลงประกาศได้เลย', href: '/cofounder/new', cta: 'ลงประกาศหา Co-Founder' },
   }
 

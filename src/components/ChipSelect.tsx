@@ -10,17 +10,20 @@ export default function ChipSelect({
   defaultValue = [],
   single,
   label,
+  onChange,
 }: {
   name: string
   options: Option[]
   defaultValue?: string[]
   single?: boolean
   label: string
+  onChange?: (value: string[]) => void
 }) {
   const [value, setValue] = useState<string[]>(defaultValue)
   const toggle = (v: string) => {
-    if (single) setValue([v])
-    else setValue((cur) => (cur.includes(v) ? cur.filter((x) => x !== v) : [...cur, v]))
+    const next = single ? [v] : value.includes(v) ? value.filter((x) => x !== v) : [...value, v]
+    setValue(next)
+    onChange?.(next)
   }
   return (
     <div role={single ? 'radiogroup' : 'group'} aria-label={label} className="chip-group">

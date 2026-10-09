@@ -15,7 +15,7 @@ const ACTIONS = [
     href: '/cofounder/new',
     icon: <IconUserPlus size={24} />,
     title: 'หา Co-Founder',
-    body: 'มีไอเดียสตาร์ตอัพ และต้องการผู้ร่วมก่อตั้งที่มีความเชี่ยวชาญเสริมกัน',
+    body: 'มีไอเดียสตาร์ตอัพ และต้องการผู้ร่วมก่อตั้งที่เสริมทักษะกัน',
     cta: 'ลงประกาศหา Co-Founder',
   },
 ] as const

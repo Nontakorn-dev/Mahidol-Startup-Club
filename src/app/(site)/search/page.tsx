@@ -326,11 +326,11 @@ function TopPicks({ results }: { results: SearchResults }) {
   for (const r of results.events.slice(0, 2).filter((r) => r.score >= 3))
     picks.push({ key: `e${r.item.id}`, type: 'งาน', title: r.item.title, href: `/opportunities/${r.item.slug}`, reason: r.reason })
   for (const r of results.teams.slice(0, 1).filter((r) => r.score >= 3))
-    picks.push({ key: `t${r.item.id}`, type: 'ทีม', title: r.item.name, href: `/teams?tab=teams${r.item.event ? `&event=${r.item.event.id}` : ''}`, reason: r.reason })
+    picks.push({ key: `t${r.item.id}`, type: 'ทีม', title: r.item.name, href: `/teams/${r.item.id}`, reason: r.reason })
   for (const r of results.people.slice(0, 1).filter((r) => r.score >= 3))
-    picks.push({ key: `p${r.item.id}`, type: 'คน', title: r.item.author.name, href: '/teams?tab=people', reason: r.reason })
+    picks.push({ key: `p${r.item.id}`, type: 'คน', title: r.item.author.name, href: `/teams/looking/${r.item.id}`, reason: r.reason })
   for (const r of results.cofounders.slice(0, 1).filter((r) => r.score >= 3))
-    picks.push({ key: `c${r.item.id}`, type: 'Co-founder', title: r.item.idea_title || r.item.author.name, href: '/teams?tab=cofounder', reason: r.reason })
+    picks.push({ key: `c${r.item.id}`, type: 'Co-Founder', title: r.item.idea_title || r.item.author.name, href: `/cofounder/${r.item.id}`, reason: r.reason })
   if (picks.length < 2) return null
   return (
     <section className="box" style={{ background: '#fff', gap: 10 }}>

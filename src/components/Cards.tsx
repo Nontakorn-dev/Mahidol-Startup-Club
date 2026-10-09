@@ -3,7 +3,7 @@ import Image from 'next/image'
 import Avatar from './Avatar'
 import ContactButton from './ContactButton'
 import { IconCalendar, IconHome, IconLock, IconPin, IconVerified } from './icons'
-import { CATEGORIES, ROLES, STAGES, TRACK_SEEK_LABEL, type Role } from '@/lib/constants'
+import { CATEGORIES, ROLES, STAGES, trackLabel, type Role } from '@/lib/constants'
 import DeadlineBadge from './DeadlineBadge'
 import { closesAt, eventBlurb, isClosed, thaiDeadline } from '@/lib/format'
 import type { CofounderCard, EventRow, SeekerCard, TeamCard } from '@/lib/types'
@@ -197,7 +197,7 @@ export function SeekerCardView({ s, loggedIn, reason }: { s: SeekerCard; loggedI
 }
 
 export function CofounderCardView({ c, loggedIn, reason }: { c: CofounderCard; loggedIn: boolean; reason?: string }) {
-  const seekLabel = c.seeking.length ? c.seeking.map((t) => TRACK_SEEK_LABEL[t]).join(' / ') : 'Co-founder'
+  const seekLabel = c.seeking.length ? c.seeking.map((t) => trackLabel(t, c.seeking_domain)).join(' / ') : 'Co-Founder'
   return (
     <article className="person-card">
       <PostKind kind="cofounder" />

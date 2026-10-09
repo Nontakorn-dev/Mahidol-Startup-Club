@@ -160,7 +160,7 @@ export default async function EventDetailPage({ params }: PageProps<'/opportunit
                   </p>
                 </div>
                 <span className="band-actions">
-                  <Link href={`/teams?tab=teams&event=${e.id}`} className="btn btn-ghost">
+                  <Link href={`/teams?tab=team&event=${e.id}`} className="btn btn-ghost">
                     ดูทั้งหมด →
                   </Link>
                   <Link href={`/teams/new?event=${e.id}`} className="btn btn-outline">

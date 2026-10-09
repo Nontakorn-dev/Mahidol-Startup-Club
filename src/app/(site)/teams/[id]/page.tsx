@@ -27,7 +27,7 @@ export default async function TeamPostPage({ params }: PageProps<'/teams/[id]'>)
       title={t.name}
       lead={t.pitch}
       author={t.author}
-      backHref="/teams?tab=teams"
+      backHref="/teams?tab=team"
       closed={t.status === 'closed'}
       postedAt={t.created_at}
       loggedIn={Boolean(viewer)}

@@ -21,7 +21,7 @@ export default async function SeekerPostPage({ params }: PageProps<'/teams/looki
       kind="seeker"
       title={s.looking_text}
       author={s.author}
-      backHref="/teams?tab=people"
+      backHref="/teams?tab=team"
       closed={s.status === 'closed'}
       postedAt={s.created_at}
       loggedIn={Boolean(viewer)}

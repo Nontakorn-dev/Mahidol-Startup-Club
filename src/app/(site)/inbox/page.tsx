@@ -117,7 +117,7 @@ export default async function InboxPage({ searchParams }: PageProps<'/inbox'>) {
                   view.conv.request_kind !== 'message' ? (
                     <div className="request-card">
                       {view.team ? (
-                        <Link href={view.team.event ? `/opportunities/${view.team.event.slug}` : '/teams?tab=teams'} className="row" style={{ gap: 12, textDecoration: 'none', color: 'var(--navy)' }}>
+                        <Link href={view.team.event ? `/opportunities/${view.team.event.slug}` : '/teams?tab=team'} className="row" style={{ gap: 12, textDecoration: 'none', color: 'var(--navy)' }}>
                           {view.team.event?.poster_url ? (
                             <Image src={view.team.event.poster_url} alt="" width={48} height={60} style={{ flex: 'none', width: 48, height: 60, borderRadius: 10, objectFit: 'cover', objectPosition: 'top' }} />
                           ) : (

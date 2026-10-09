@@ -6,7 +6,7 @@ import { IconEye, IconLock, IconVerified } from '@/components/icons'
 import { requireAdmin } from '@/lib/auth'
 import { adminClient } from '@/lib/supabase/admin'
 import { adminTime, shortName } from '@/lib/format'
-import { ROLES, TRACK_SEEK_LABEL, type Role, type Track } from '@/lib/constants'
+import { ROLES, type Role, type Track, trackLabel } from '@/lib/constants'
 import SubmitButton from '@/components/SubmitButton'
 
 export const metadata: Metadata = { title: 'ทีม & โปรไฟล์' }
@@ -28,7 +28,7 @@ export default async function AdminCommunityPage({ searchParams }: PageProps<'/a
   const [teams, seekers, cofs] = await Promise.all([
     db.from('team_posts').select(`id, name, pitch, roles_needed, is_anonymous, status, created_at, event:events(title, slug), ${ownerSel}`).order('created_at', { ascending: false }).limit(200),
     db.from('seeker_posts').select(`id, looking_text, skills, is_anonymous, status, created_at, event:events(title, slug), ${ownerSel}`).order('created_at', { ascending: false }).limit(200),
-    db.from('cofounder_posts').select(`id, idea_title, seeking, is_anonymous, status, created_at, ${ownerSel}`).order('created_at', { ascending: false }).limit(200),
+    db.from('cofounder_posts').select(`id, idea_title, seeking, seeking_domain, is_anonymous, status, created_at, ${ownerSel}`).order('created_at', { ascending: false }).limit(200),
   ])
   type Row = { id: string; title: string; sub: string; anon: boolean; owner: Owner; status: string; created_at: string; view: string }
   const rows: Record<string, Row[]> = {
@@ -42,7 +42,7 @@ export default async function AdminCommunityPage({ searchParams }: PageProps<'/a
         owner: t.owner as unknown as Owner,
         status: t.status,
         created_at: t.created_at,
-        view: ev ? `/opportunities/${ev.slug}#teams` : '/teams?tab=teams',
+        view: ev ? `/opportunities/${ev.slug}#teams` : '/teams?tab=team',
       }
     }),
     seeker: (seekers.data || []).map((s) => {
@@ -55,18 +55,18 @@ export default async function AdminCommunityPage({ searchParams }: PageProps<'/a
         owner: s.owner as unknown as Owner,
         status: s.status,
         created_at: s.created_at,
-        view: '/teams?tab=people',
+        view: `/teams/looking/${s.id}`,
       }
     }),
     cofounder: (cofs.data || []).map((c) => ({
       id: c.id,
       title: `Co-founder: ${c.idea_title ?? '—'}`,
-      sub: `มองหา ${(c.seeking as Track[]).map((t) => TRACK_SEEK_LABEL[t]).join(', ')}`,
+      sub: `มองหา ${(c.seeking as Track[]).map((t) => trackLabel(t, c.seeking_domain)).join(', ')}`,
       anon: c.is_anonymous,
       owner: c.owner as unknown as Owner,
       status: c.status,
       created_at: c.created_at,
-      view: '/teams?tab=cofounder',
+      view: `/cofounder/${c.id}`,
     })),
   }
   const live = (r: Row[]) => r.filter((x) => x.status !== 'removed').length

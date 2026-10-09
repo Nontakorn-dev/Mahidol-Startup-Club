@@ -132,7 +132,7 @@ export async function saveSeeker(_prev: State, form: FormData): Promise<State> {
   } catch (err) {
     return { error: errMsg(err) }
   }
-  redirect(sid ? `/teams/looking/${sid}` : '/teams?tab=people')
+  redirect(sid ? `/teams/looking/${sid}` : '/teams?tab=team')
 }
 
 // ------------------------------------------------------------------ co-founder profile (one per user)
@@ -146,6 +146,8 @@ const CofounderSchema = z.object({
   problem: z.string().trim().min(1, 'กรุณาอธิบายปัญหาที่ต้องการแก้ไข').max(1500),
   details: optText(4000),
   contact: optText(200),
+  my_domain: optText(60),
+  seeking_domain: optText(60),
   stage: z.enum(['idea', 'prototype', 'mvp', 'revenue']),
   commitment: optText(60),
 })
@@ -166,7 +168,13 @@ export async function saveCofounder(_prev: State, form: FormData): Promise<State
       commitment: form.get('commitment') ?? '',
       details: form.get('details') ?? '',
       contact: form.get('contact') ?? '',
+      my_domain: form.get('my_domain') ?? '',
+      seeking_domain: form.get('seeking_domain') ?? '',
     })
+    if (v.my_skills.includes('domain_expert') && !v.my_domain) throw new Error('กรุณาระบุด้านที่คุณเชี่ยวชาญ')
+    if (v.seeking.includes('domain_expert') && !v.seeking_domain) throw new Error('กรุณาระบุด้านของผู้เชี่ยวชาญที่ต้องการ')
+    if (!v.my_skills.includes('domain_expert')) v.my_domain = null
+    if (!v.seeking.includes('domain_expert')) v.seeking_domain = null
     const row = { ...v, is_anonymous: form.get('anonymous') === 'on', status: draft ? 'draft' : 'open' }
     const db = adminClient()
     const { data: existing } = await db

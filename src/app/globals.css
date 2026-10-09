@@ -1051,10 +1051,17 @@ html:has(.login-wrap), html:has(.login-wrap) body { background: var(--bg); }
 .post-actions-head { margin: 0 0 14px; font-weight: 600; font-size: 20px; color: var(--navy); }
 .post-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
 .post-action { display: flex; align-items: center; gap: 18px; padding: 24px; border-radius: 24px; background: #fff; box-shadow: var(--shadow-card); }
-.post-action .ic { flex: none; width: 56px; height: 56px; border-radius: 16px; display: inline-flex; align-items: center; justify-content: center; background: var(--bg-2); color: var(--brand); }
+.post-action .ic {
+  position: relative; flex: none; width: 60px; height: 60px; border-radius: 18px; display: inline-flex; align-items: center; justify-content: center; color: #fff;
+  background: linear-gradient(135deg, #4F8BFF 0%, #1D4ED8 55%, #0035AD 100%); box-shadow: 0 12px 24px -10px rgba(29, 78, 216, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.post-action .ic::after { content: ''; position: absolute; right: -4px; top: -4px; width: 16px; height: 16px; border-radius: 50%; background: #FFC726; border: 3px solid #fff; }
+.post-action.cofounder .ic { background: linear-gradient(135deg, #C084FC 0%, #8B5CF6 50%, #F97316 120%); box-shadow: 0 12px 24px -10px rgba(139, 92, 246, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
+.post-action.cofounder .ic::after { background: #34D399; }
+.post-action .ic svg { width: 28px; height: 28px; stroke-width: 2.2; }
 .post-action .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; line-height: 1.45; }
 .post-action .txt b { font-family: var(--font-head); font-weight: 500; font-size: 20px; color: var(--navy); }
-.post-action .txt span { font-size: 14px; color: var(--muted); }
+.post-action .txt span { font-size: 14px; color: var(--muted); text-wrap: balance; }
 .post-action .btn { flex: none; }
 @media (max-width: 1100px) {
   .post-action { flex-wrap: wrap; }
@@ -1063,7 +1070,8 @@ html:has(.login-wrap), html:has(.login-wrap) body { background: var(--bg); }
 @media (max-width: 640px) {
   .post-actions { grid-template-columns: minmax(0, 1fr); gap: 14px; }
   .post-action { padding: 20px; gap: 14px; }
-  .post-action .ic { width: 48px; height: 48px; }
+  .post-action .ic { width: 52px; height: 52px; border-radius: 16px; }
+  .post-action .ic svg { width: 24px; height: 24px; }
   .post-action .txt b { font-size: 18px; }
 }
 @media (max-width: 1100px) { .home-posts { grid-template-columns: repeat(2, minmax(0, 1fr)); } .home-posts > :nth-child(n + 5) { display: none; } }
