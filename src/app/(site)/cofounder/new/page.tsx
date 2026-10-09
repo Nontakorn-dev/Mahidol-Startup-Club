@@ -16,7 +16,7 @@ export default async function CofounderFormPage() {
     .maybeSingle()
   return (
     <div className="bg-soft">
-      <div style={{ maxWidth: 760, margin: '0 auto', padding: '32px 20px 96px' }} className="stack">
+      <div style={{ maxWidth: 760, margin: '0 auto', padding: '32px var(--gutter) 96px' }} className="stack">
         <div style={{ marginBottom: 24 }}>
           <Crumbs back="/teams?tab=cofounder" trail={[{ label: 'หาทีม & Co-Founder', href: '/teams?tab=cofounder' }, { label: existing ? 'แก้ไขประกาศ' : 'ลงประกาศหา Co-Founder' }]} />
           <h1 style={{ margin: '4px 0 0', fontWeight: 600, fontSize: 36, lineHeight: 1.2 }}>{existing ? 'แก้ไขประกาศหา Co-Founder' : 'ลงประกาศหา Co-Founder'}</h1>

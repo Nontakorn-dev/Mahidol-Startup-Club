@@ -13,7 +13,7 @@ export default async function EditSeekerPage({ params }: PageProps<'/teams/looki
   const events = await openEventOptions()
   return (
     <div className="bg-soft">
-      <div style={{ maxWidth: 760, margin: '0 auto', padding: '32px 20px 96px' }} className="stack">
+      <div style={{ maxWidth: 760, margin: '0 auto', padding: '32px var(--gutter) 96px' }} className="stack">
         <div style={{ marginBottom: 24 }}>
           <Crumbs back="/me" trail={[{ label: 'ประกาศของฉัน', href: '/me' }, { label: 'ประกาศหาทีม' }]} />
           <h1 style={{ margin: '4px 0 0', fontWeight: 600, fontSize: 36, lineHeight: 1.2 }}>แก้ไขประกาศหาทีม</h1>

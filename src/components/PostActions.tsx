@@ -24,7 +24,7 @@ const ACTIONS = [
 export default function PostActions({ heading, eventId }: { heading?: string; eventId?: string }) {
   return (
     <section className="post-actions-wrap">
-      {heading && <h3 className="post-actions-head">{heading}</h3>}
+      {heading && <h2 className="section-title post-actions-head">{heading}</h2>}
       <div className="post-actions">
         {ACTIONS.map((a) => (
           <article key={a.kind} className={`post-action ${a.kind}`}>

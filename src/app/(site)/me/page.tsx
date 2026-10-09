@@ -186,7 +186,7 @@ export default async function MePage({ searchParams }: PageProps<'/me'>) {
 
   return (
     <div className="bg-soft">
-      <div style={{ maxWidth: 1000, margin: '0 auto', padding: '32px 20px 96px' }} className="stack">
+      <div style={{ maxWidth: 1000, margin: '0 auto', padding: '32px var(--gutter) 96px' }} className="stack">
         <div className="stack" style={{ gap: 12, marginBottom: 24 }}>
           <Crumbs back="/" trail={[{ label: 'หน้าแรก', href: '/' }, { label: 'โปรไฟล์ของฉัน' }]} />
           <div className="row wrap" style={{ justifyContent: 'space-between', gap: 12 }}>

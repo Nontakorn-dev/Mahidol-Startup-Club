@@ -146,7 +146,7 @@ export default async function HomePage() {
 
       <section style={{ background: 'linear-gradient(180deg, #E1E9F8 0%, #F4F7FC 45%, #FFFFFF 100%)' }}>
         <div className="container section home-seekers">
-          <div className="head-row" style={{ marginBottom: 24 }}>
+          <div className="head-row posts-head" style={{ marginBottom: 24 }}>
             <div className="stack" style={{ gap: 6 }}>
               <h2 className="section-title">หาทีม &amp; Co-Founder</h2>
               <p className="home-posts-sub">ทีมแข่งที่เปิดรับสมาชิก ผู้ที่ต้องการเข้าร่วมทีม และผู้ที่หา Co-Founder</p>
@@ -158,6 +158,13 @@ export default async function HomePage() {
               </span>
             </Link>
           </div>
+
+          <Link href="/teams" className="cta-link posts-cta-block">
+            ดูประกาศทั้งหมด
+            <span className="arrow" aria-hidden="true">
+              <IconArrowRight size={18} />
+            </span>
+          </Link>
 
           {feed.length > 0 && (
             <div className="home-posts">
