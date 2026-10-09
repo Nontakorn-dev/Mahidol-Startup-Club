@@ -4,6 +4,7 @@ import AvatarCropper from '../AvatarCropper'
 import { saveProfile } from '@/app/actions/profile'
 import Avatar from '../Avatar'
 import ChipSelect from '../ChipSelect'
+import Switch from '../Switch'
 import { IconClose, IconPlus } from '../icons'
 import { CAMPUSES, FACULTIES, ROLES, ROLE_KEYS, YEARS } from '@/lib/constants'
 import type { Profile } from '@/lib/types'
@@ -19,6 +20,7 @@ export default function ProfileForm({ p }: { p: Profile }) {
   const [exps, setExps] = useState<Exp[]>(() => p.experiences.map((x) => ({ ...x, k: key() })))
   const [preview, setPreview] = useState<string | null>(p.avatar_url)
   const [removeAvatar, setRemoveAvatar] = useState(false)
+  const [isPublic, setIsPublic] = useState(p.profile_public ?? true)
   const [cropSrc, setCropSrc] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -206,6 +208,21 @@ export default function ProfileForm({ p }: { p: Profile }) {
               )}
             </div>
           </div>
+        </section>
+
+        <section>
+          <div className="step-title">
+            <span className="step-num yellow">4</span>
+            <h2>การแสดงโปรไฟล์</h2>
+          </div>
+          <div className="toggle-row">
+            <span className="txt">
+              <b>แสดงโปรไฟล์ในเครือข่ายสมาชิก</b>
+              <span>สมาชิกคนอื่นจะค้นพบคุณได้จากหน้าเครือข่าย และติดต่อเพื่อชวนร่วมทีมหรือร่วมก่อตั้ง</span>
+            </span>
+            <Switch checked={isPublic} onChange={setIsPublic} label="แสดงโปรไฟล์ในเครือข่ายสมาชิก" name="profile_public" />
+          </div>
+          {!isPublic && <p className="help" style={{ margin: 0 }}>โปรไฟล์จะไม่แสดงในหน้าเครือข่าย และหน้าโปรไฟล์ของคุณจะเปิดดูได้เฉพาะคุณ</p>}
         </section>
       </div>
       {state?.error && <div className="alert alert-error">{state.error}</div>}

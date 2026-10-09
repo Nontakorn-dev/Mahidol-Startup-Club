@@ -24,7 +24,8 @@ export default function Avatar({ name, initial, src, anonymous, size = 60, brand
   if (src) {
     return (
       <span className={`avatar ${className}`} style={style}>
-        <img src={src} alt="" />
+        {/* Google profile photos refuse requests that carry a Referer */}
+        <img src={src} alt="" referrerPolicy="no-referrer" loading="lazy" decoding="async" />
       </span>
     )
   }

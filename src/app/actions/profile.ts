@@ -88,6 +88,7 @@ export async function saveProfile(_prev: State, form: FormData): Promise<State> 
       availability: optText(60).parse(form.get('availability') ?? ''),
       work_mode: optText(60).parse(form.get('work_mode') ?? ''),
       start_when: optText(60).parse(form.get('start_when') ?? ''),
+      profile_public: form.get('profile_public') === 'on',
       onboarded: true,
     }
     const avatar = form.get('avatar')

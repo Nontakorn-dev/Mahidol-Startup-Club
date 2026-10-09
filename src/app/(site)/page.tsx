@@ -86,13 +86,15 @@ export default async function HomePage() {
                 <span className="ic">
                   <IconPeople size={18} />
                 </span>
-                หาทีม
+                <span>
+                  หาทีม &amp; <span style={{ whiteSpace: 'nowrap' }}>Co-Founder</span>
+                </span>
               </Link>
-              <Link href="/teams?tab=cofounder">
+              <Link href="/people">
                 <span className="ic">
                   <IconUserPlus size={18} />
                 </span>
-                Co-Founder
+                เครือข่าย
               </Link>
             </nav>
           </div>

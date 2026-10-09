@@ -32,6 +32,22 @@ export default async function PublicProfilePage({ params }: PageProps<'/u/[id]'>
   if (!p) notFound()
   const viewer = await getViewer()
   const isMe = viewer?.userId === p.id
+  if (!p.profile_public && !isMe) {
+    return (
+      <div className="bg-soft">
+        <div className="container" style={{ paddingTop: 32, paddingBottom: 96 }}>
+          <Crumbs back="/people" trail={[{ label: 'เครือข่าย', href: '/people' }, { label: 'โปรไฟล์' }]} />
+          <div className="empty" style={{ marginTop: 24 }}>
+            <h3>โปรไฟล์นี้ไม่ได้เปิดเผย</h3>
+            <p style={{ margin: 0 }}>เจ้าของโปรไฟล์เลือกไม่แสดงโปรไฟล์ในเครือข่ายสมาชิก</p>
+            <Link href="/people" className="btn btn-primary btn-pill">
+              ดูสมาชิกคนอื่น
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
   const db = adminClient()
   // Only non-anonymous posts may be tied to a named profile.
   const [{ data: teams }, { data: seeker }, { data: myTeams }] = await Promise.all([
@@ -68,7 +84,7 @@ export default async function PublicProfilePage({ params }: PageProps<'/u/[id]'>
     <div className="bg-soft" style={{ lineHeight: 1.65 }}>
       <div style={{ maxWidth: 1080, margin: '0 auto', padding: '32px var(--gutter) 96px' }} className="stack">
         <div style={{ marginBottom: 24 }}>
-          <Crumbs back="/teams" trail={[{ label: 'หาทีม', href: '/teams' }, { label: name }]} />
+          <Crumbs back="/people" trail={[{ label: 'เครือข่าย', href: '/people' }, { label: name }]} />
         </div>
         <section className="card" style={{ overflow: 'hidden', marginBottom: 24 }}>
           <div className="profile-cover" />
