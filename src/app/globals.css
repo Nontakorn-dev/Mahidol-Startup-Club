@@ -1064,10 +1064,12 @@ html:has(.login-wrap), html:has(.login-wrap) body { background: var(--bg); }
 .home-post { display: flex; flex-direction: column; min-width: 0; }
 .home-post > article { flex: 1; }
 /* Post-type tag inside team / seeker / co-founder cards */
-.post-kind { align-self: flex-start; display: inline-flex; align-items: center; padding: 4px 11px; border-radius: 999px; font-size: 12.5px; font-weight: 600; line-height: 1.4; }
-.post-kind.team { background: var(--bg-2); color: var(--brand); }
-.post-kind.seeker { background: #FFF4E0; color: #B45309; }
-.post-kind.cofounder { background: #F1EAFE; color: #6D28D9; }
+.post-kind { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; padding: 6px 13px; border-radius: 999px; border: 1px solid; font-size: 13.5px; font-weight: 700; line-height: 1.35; letter-spacing: 0.01em; }
+.post-kind.team { background: #E3ECFF; border-color: #BCD0F8; color: #0035AD; }
+.post-kind.seeker { background: #FFEFD6; border-color: #F5CD8C; color: #9A4A00; }
+.post-kind.cofounder { background: #EFE5FF; border-color: #D3BEFA; color: #5B21B6; }
+/* Team "logo" sized like the avatars on the other cards */
+.team-logo.lg { width: 60px; height: 60px; border-radius: 18px; font-size: 24px; }
 /* "ลงประกาศ": two cards in the same style as the team / person cards */
 .post-actions-wrap { margin-top: 36px; }
 .post-actions-head { margin: 0 0 20px; }

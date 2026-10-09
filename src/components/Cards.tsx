@@ -258,63 +258,39 @@ export function CofounderCardView({ c, loggedIn, reason }: { c: CofounderCard; l
 }
 
 export function TeamCardView({ t, loggedIn, reason, showEvent = true }: { t: TeamCard; loggedIn: boolean; reason?: string; showEvent?: boolean }) {
+  // Same layout as the seeker / co-founder cards: tag → who → highlighted box → short line → links → button.
+  const roles = t.roles_needed.map((r) => ROLES[r] ?? r).join(', ')
   return (
-    <article className="team-card">
+    <article className="person-card">
       <PostKind kind="team" />
-      <div className="top">
-        <span className="team-logo">{Array.from(t.name)[0]?.toUpperCase()}</span>
-        <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.35 }}>
-          <Link href={`/teams/${t.id}`} className="head" style={{ fontWeight: 500, fontSize: 18, color: 'var(--navy)', textDecoration: 'none' }}>
-            {t.name}
-          </Link>
-          <span className="muted" style={{ fontSize: 13 }}>
-            สมาชิก {t.members_count}/{t.target_size} คน{t.author.anonymous ? ' · ไม่ระบุชื่อผู้โพสต์' : ` · โดย ${t.author.name}`}
+      <Link href={`/teams/${t.id}`} className="who">
+        <span className="team-logo lg">{Array.from(t.name)[0]?.toUpperCase()}</span>
+        <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+          <span className="name">{t.name}</span>
+          <span className="sub">
+            สมาชิก {t.members_count}/{t.target_size} คน{t.author.anonymous ? '' : ` · โดย ${t.author.name}`}
           </span>
         </span>
-        {t.member_initials.length > 0 && (
-          <span className="stack-avatars">
-            {t.member_initials.map((i, idx) => (
-              <span key={idx}>{i}</span>
-            ))}
-          </span>
-        )}
+      </Link>
+      <div className="looking-box">
+        <span className="k">ต้องการสมาชิกตำแหน่ง</span>
+        <span className="v">{roles || 'เปิดรับทุกตำแหน่ง'}</span>
       </div>
-      <span style={{ fontSize: 14 }}>{t.pitch}</span>
-      {showEvent && (t.event || t.event_note) && (
-        <span className="muted" style={{ fontSize: 13 }}>
-          รายการแข่งขัน:{' '}
-          {t.event ? <Link href={`/opportunities/${t.event.slug}`}>{t.event.title}</Link> : t.event_note}
-        </span>
-      )}
+      <span style={{ fontSize: 14 }}>
+        <b style={{ fontWeight: 600 }}>{t.pitch}</b>
+        {showEvent && (t.event || t.event_note) && <span className="muted"> — {t.event ? t.event.title : t.event_note}</span>}
+      </span>
       {reason && <span className="reason-line">แนะนำเพราะ {reason}</span>}
       <Link href={`/teams/${t.id}`} className="card-more">
         ดูรายละเอียด →
       </Link>
-      <div className="foot">
-        <span className="row wrap" style={{ gap: 6 }}>
-          <span className="muted" style={{ fontSize: 12 }}>
-            ต้องการ
-          </span>
-          {t.roles_needed.map((r) => (
-            <span key={r} className="tag tag-yellow tag-sm" style={{ fontSize: 13 }}>
-              {ROLES[r] ?? r}
-            </span>
-          ))}
-        </span>
+      <div className="cta">
         {t.is_mine ? (
-          <Link href={`/teams/${t.id}/edit`} className="btn btn-outline btn-pill btn-sm">
-            แก้ไขประกาศ
+          <Link href={`/teams/${t.id}/edit`} className="btn btn-outline btn-pill btn-block">
+            ประกาศของคุณ · แก้ไข
           </Link>
         ) : (
-          <ContactButton
-            targetType="team"
-            targetId={t.id}
-            kind="join"
-            label="ขอเข้าร่วมทีม"
-            targetName={`ทีม ${t.name}`}
-            loggedIn={loggedIn}
-            className="btn-sm"
-          />
+          <ContactButton targetType="team" targetId={t.id} kind="join" label="ขอเข้าร่วมทีม" targetName={`ทีม ${t.name}`} loggedIn={loggedIn} className="btn-block" />
         )}
       </div>
     </article>
