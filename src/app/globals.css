@@ -1070,35 +1070,41 @@ html:has(.login-wrap), html:has(.login-wrap) body { background: var(--bg); }
 .post-kind.cofounder { background: #EFE5FF; border-color: #D3BEFA; color: #5B21B6; }
 /* Team "logo" sized like the avatars on the other cards */
 .team-logo.lg { width: 60px; height: 60px; border-radius: 18px; font-size: 24px; }
-/* "ลงประกาศ": two cards in the same style as the team / person cards */
-.post-actions-wrap { margin-top: 36px; }
-.post-actions-head { margin: 0 0 20px; }
-.post-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
-/* Cream cards: clearly "an action", set apart from the white post cards above */
-.post-action {
-  position: relative; overflow: hidden; display: flex; align-items: center; gap: 18px; padding: 24px; border-radius: 24px;
-  background: linear-gradient(135deg, #FFFEFB 0%, #FFFAF0 100%); border: 1px solid #F5EBD6;
-  box-shadow: 0 16px 36px -28px rgba(146, 102, 20, 0.3);
+/* "ลงประกาศ": white cards on a navy panel — clearly a separate "post your own" section */
+.post-actions-wrap {
+  position: relative; overflow: hidden; margin-top: 44px; padding: 32px; border-radius: 28px; color: #fff;
+  background: radial-gradient(70% 120% at 100% 0%, rgba(255, 199, 38, 0.16) 0%, rgba(255, 199, 38, 0) 60%), linear-gradient(135deg, #0A2558 0%, #0035AD 100%);
+  box-shadow: 0 24px 50px -30px rgba(0, 53, 173, 0.75);
 }
-.post-action::after { content: ''; position: absolute; right: -60px; bottom: -70px; width: 200px; height: 200px; border-radius: 50%; background: radial-gradient(circle, rgba(255, 199, 38, 0.08) 0%, rgba(255, 199, 38, 0) 70%); pointer-events: none; }
-.post-action > * { position: relative; z-index: 1; }
-/* Icon: light tile holding a small hand-drawn illustration (src/components/PostIcons.tsx) */
+.post-actions-intro { margin-bottom: 22px; }
+.post-actions-head { margin: 0; color: #fff; }
+.post-actions-intro p { margin: 6px 0 0; font-size: 15px; color: #C9D6EE; text-wrap: balance; }
+.post-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.post-action {
+  display: flex; align-items: center; gap: 18px; padding: 22px; border-radius: 22px; background: #fff; color: var(--navy); text-decoration: none;
+  box-shadow: 0 14px 30px -18px rgba(0, 0, 0, 0.45); transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.post-action:hover { color: var(--navy); transform: translateY(-3px); box-shadow: 0 22px 38px -18px rgba(0, 0, 0, 0.55); }
+.post-action:focus-visible { outline: 3px solid #FFC726; outline-offset: 3px; }
 .post-action .ic {
   flex: none; width: 76px; height: 76px; border-radius: 22px; display: inline-flex; align-items: center; justify-content: center;
-  background: #fff; box-shadow: inset 0 0 0 1px #F3E8D2, 0 10px 24px -20px rgba(146, 102, 20, 0.35);
+  background: linear-gradient(160deg, #F7FAFF 0%, #EAF1FD 100%); box-shadow: inset 0 0 0 1px #DCE6F8;
 }
 .post-action .ic svg { width: 58px; height: 58px; }
 .post-action .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; line-height: 1.45; }
 .post-action .txt b { font-family: var(--font-head); font-weight: 500; font-size: 20px; color: var(--navy); }
 .post-action .txt span { font-size: 14px; color: var(--muted); text-wrap: balance; }
-.post-action .btn { flex: none; }
+.post-action .btn { flex: none; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .post-action { transition: none; } }
 @media (max-width: 1100px) {
   .post-action { flex-wrap: wrap; }
   .post-action .btn { width: 100%; }
 }
 @media (max-width: 640px) {
-  .post-actions { grid-template-columns: minmax(0, 1fr); gap: 14px; }
-  .post-action { padding: 20px; gap: 14px; }
+  .post-actions-wrap { margin-top: 32px; padding: 22px 16px 16px; border-radius: 22px; }
+  .post-actions-intro { margin-bottom: 16px; padding: 0 4px; }
+  .post-actions { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .post-action { padding: 18px; gap: 14px; border-radius: 18px; }
   .post-action .ic { width: 64px; height: 64px; border-radius: 18px; }
   .post-action .ic svg { width: 48px; height: 48px; }
   .post-action .txt b { font-size: 18px; }

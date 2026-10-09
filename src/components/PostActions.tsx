@@ -20,23 +20,24 @@ const ACTIONS = [
   },
 ] as const
 
-/** The two kinds of post (home page and /teams), styled like the other cards. */
+/** The two kinds of post (home page and /teams): white cards on a navy panel, so the section reads as "your turn". */
 export default function PostActions({ heading, eventId }: { heading?: string; eventId?: string }) {
   return (
     <section className="post-actions-wrap">
-      {heading && <h2 className="section-title post-actions-head">{heading}</h2>}
+      <div className="post-actions-intro">
+        {heading && <h2 className="section-title post-actions-head">{heading}</h2>}
+        <p>ลงประกาศฟรี ใช้เวลาไม่กี่นาที แล้วให้คนที่ใช่ติดต่อคุณ</p>
+      </div>
       <div className="post-actions">
         {ACTIONS.map((a) => (
-          <article key={a.kind} className={`post-action ${a.kind}`}>
+          <Link key={a.kind} href={a.kind === 'team' && eventId ? `${a.href}?event=${eventId}` : a.href} className={`post-action ${a.kind}`}>
             <span className="ic">{a.icon}</span>
             <span className="txt">
               <b>{a.title}</b>
               <span>{a.body}</span>
             </span>
-            <Link href={a.kind === 'team' && eventId ? `${a.href}?event=${eventId}` : a.href} className="btn btn-primary btn-pill">
-              {a.cta}
-            </Link>
-          </article>
+            <span className="btn btn-primary btn-pill">{a.cta}</span>
+          </Link>
         ))}
       </div>
     </section>
