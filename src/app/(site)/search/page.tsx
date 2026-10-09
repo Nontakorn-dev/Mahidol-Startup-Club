@@ -265,7 +265,7 @@ function Suggestion({ intent, results }: { intent: Intent; results: SearchResult
     title = e.title
     sub = wantsTeam ? 'ดูรายละเอียดงาน และทีมที่กำลังมองหาคนสำหรับงานนี้' : 'ดูรายละเอียดและสมัครได้เลย'
   } else if (intent.targets[0] === 'cofounder') {
-    href = '/cofounder'
+    href = '/teams?tab=cofounder'
     title = 'หน้า Co-founder'
     sub = 'คนที่กำลังมองหาคนร่วมก่อตั้งสตาร์ตอัพ'
   } else if (intent.targets[0] === 'people' || intent.roles_needed.length) {
@@ -330,7 +330,7 @@ function TopPicks({ results }: { results: SearchResults }) {
   for (const r of results.people.slice(0, 1).filter((r) => r.score >= 3))
     picks.push({ key: `p${r.item.id}`, type: 'คน', title: r.item.author.name, href: '/teams?tab=people', reason: r.reason })
   for (const r of results.cofounders.slice(0, 1).filter((r) => r.score >= 3))
-    picks.push({ key: `c${r.item.id}`, type: 'Co-founder', title: r.item.idea_title || r.item.author.name, href: '/cofounder', reason: r.reason })
+    picks.push({ key: `c${r.item.id}`, type: 'Co-founder', title: r.item.idea_title || r.item.author.name, href: '/teams?tab=cofounder', reason: r.reason })
   if (picks.length < 2) return null
   return (
     <section className="box" style={{ background: '#fff', gap: 10 }}>

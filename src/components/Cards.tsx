@@ -115,6 +115,12 @@ export function EventCard({ e, reason }: { e: EventRow; reason?: string }) {
   )
 }
 
+/** What kind of post a card is — shown on every team / seeker / co-founder card. */
+export const POST_KIND = { team: '👥 ทีมรับคนเพิ่ม', seeker: '🙋 กำลังหาทีม', cofounder: '🚀 หา Co-founder' } as const
+function PostKind({ kind }: { kind: keyof typeof POST_KIND }) {
+  return <span className={`post-kind ${kind}`}>{POST_KIND[kind]}</span>
+}
+
 function Who({ author, href }: { author: SeekerCard['author']; href: string | null }) {
   const inner = (
     <>
@@ -149,6 +155,7 @@ function Who({ author, href }: { author: SeekerCard['author']; href: string | nu
 export function SeekerCardView({ s, loggedIn, reason }: { s: SeekerCard; loggedIn: boolean; reason?: string }) {
   return (
     <article className="person-card">
+      <PostKind kind="seeker" />
       <Who author={s.author} href={s.author.id ? `/u/${s.author.id}` : null} />
       <div className="looking-box">
         <span className="k">กำลังมองหา</span>
@@ -190,6 +197,7 @@ export function CofounderCardView({ c, loggedIn, reason }: { c: CofounderCard; l
   const seekLabel = c.seeking.length ? c.seeking.map((t) => TRACK_SEEK_LABEL[t]).join(' / ') : 'Co-founder'
   return (
     <article className="person-card">
+      <PostKind kind="cofounder" />
       <div className="row" style={{ alignItems: 'flex-start', gap: 8 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <Who author={c.author} href={c.author.id ? `/u/${c.author.id}` : null} />
@@ -244,6 +252,7 @@ export function CofounderCardView({ c, loggedIn, reason }: { c: CofounderCard; l
 export function TeamCardView({ t, loggedIn, reason, showEvent = true }: { t: TeamCard; loggedIn: boolean; reason?: string; showEvent?: boolean }) {
   return (
     <article className="team-card">
+      <PostKind kind="team" />
       <div className="top">
         <span className="team-logo">{Array.from(t.name)[0]?.toUpperCase()}</span>
         <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.35 }}>

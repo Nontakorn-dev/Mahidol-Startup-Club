@@ -68,7 +68,7 @@ export default async function PublicProfilePage({ params }: PageProps<'/u/[id]'>
     <div className="bg-soft" style={{ lineHeight: 1.65 }}>
       <div style={{ maxWidth: 1080, margin: '0 auto', padding: '32px 20px 96px' }} className="stack">
         <div style={{ marginBottom: 24 }}>
-          <Crumbs back="/teams" trail={[{ label: 'เพื่อนร่วมทีม', href: '/teams' }, { label: name }]} />
+          <Crumbs back="/teams" trail={[{ label: 'หาทีม', href: '/teams' }, { label: name }]} />
         </div>
         <section className="card" style={{ overflow: 'hidden', marginBottom: 24 }}>
           <div className="profile-cover" />

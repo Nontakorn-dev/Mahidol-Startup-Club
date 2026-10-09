@@ -10,6 +10,8 @@ const nextConfig: NextConfig = {
     return [
       { source: '/settings/notifications', destination: '/me#line', permanent: true },
       { source: '/settings/password', destination: '/me', permanent: true },
+      // Co-founder posts now live on /teams with the other posts (query string carries over).
+      { source: '/cofounder', destination: '/teams?tab=cofounder', permanent: true },
     ]
   },
   experimental: {

@@ -1039,12 +1039,13 @@ html:has(.login-wrap), html:has(.login-wrap) body { background: var(--bg); }
 /* Home: mixed feed of team / seeker / co-founder posts */
 .home-posts-sub { margin: -4px 0 4px; font-size: 15px; color: var(--muted); }
 .home-posts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; align-items: stretch; }
-.home-post { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.home-post { display: flex; flex-direction: column; min-width: 0; }
 .home-post > article { flex: 1; }
-.post-kind { align-self: flex-start; padding: 4px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; background: #fff; box-shadow: 0 2px 8px -4px rgba(16, 35, 63, 0.2); }
-.home-post.team .post-kind { color: var(--brand); }
-.home-post.seeker .post-kind { color: #B45309; }
-.home-post.cofounder .post-kind { color: #6D28D9; }
+/* Post-type tag inside team / seeker / co-founder cards */
+.post-kind { align-self: flex-start; display: inline-flex; align-items: center; padding: 4px 11px; border-radius: 999px; font-size: 12.5px; font-weight: 600; line-height: 1.4; }
+.post-kind.team { background: var(--bg-2); color: var(--brand); }
+.post-kind.seeker { background: #FFF4E0; color: #B45309; }
+.post-kind.cofounder { background: #F1EAFE; color: #6D28D9; }
 .post-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 28px; }
 .post-actions-head { grid-column: 1 / -1; margin: 0 0 2px; font-weight: 600; color: var(--navy); }
 .post-action {
@@ -1064,3 +1065,6 @@ html:has(.login-wrap), html:has(.login-wrap) body { background: var(--bg); }
 @media (max-width: 900px) { .post-actions { grid-template-columns: minmax(0, 1fr); gap: 10px; } }
 @media (max-width: 640px) { .home-posts { grid-template-columns: minmax(0, 1fr); gap: 16px; } .home-posts > :nth-child(n + 4) { display: none; } }
 @media (prefers-reduced-motion: reduce) { .post-action { transition: none; } }
+
+/* /teams: all post types in one grid */
+.post-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 20px; align-items: stretch; }

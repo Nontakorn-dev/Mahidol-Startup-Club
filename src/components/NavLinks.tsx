@@ -4,8 +4,7 @@ import { usePathname } from 'next/navigation'
 
 export const NAV = [
   { href: '/opportunities', label: 'งานแข่ง & ทุน' },
-  { href: '/teams', label: 'เพื่อนร่วมทีม' },
-  { href: '/cofounder', label: 'Co-founder' },
+  { href: '/teams', label: 'หาทีม & Co-founder' },
 ]
 
 export default function NavLinks() {

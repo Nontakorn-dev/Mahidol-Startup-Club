@@ -18,7 +18,7 @@ export default async function CofounderFormPage() {
     <div className="bg-soft">
       <div style={{ maxWidth: 760, margin: '0 auto', padding: '32px 20px 96px' }} className="stack">
         <div style={{ marginBottom: 24 }}>
-          <Crumbs back="/cofounder" trail={[{ label: 'Co-founder', href: '/cofounder' }, { label: existing ? 'แก้ไขโปรไฟล์ Co-founder' : 'สร้างโปรไฟล์ Co-founder' }]} />
+          <Crumbs back="/teams?tab=cofounder" trail={[{ label: 'หาทีม', href: '/teams?tab=cofounder' }, { label: existing ? 'แก้ไขโปรไฟล์ Co-founder' : 'สร้างโปรไฟล์ Co-founder' }]} />
           <h1 style={{ margin: '4px 0 0', fontWeight: 600, fontSize: 40, lineHeight: 1.2 }}>{existing ? 'แก้ไขโปรไฟล์ Co-founder' : 'สร้างโปรไฟล์ Co-founder'}</h1>
           <p className="muted" style={{ margin: '4px 0 0', fontSize: 16 }}>
             เล่าว่าคุณถนัดอะไร มีไอเดียอะไร และกำลังมองหาใครมาร่วมสร้าง

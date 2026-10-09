@@ -14,7 +14,7 @@ export default async function NewSeekerPage({ searchParams }: PageProps<'/teams/
     <div className="bg-soft">
       <div style={{ maxWidth: 760, margin: '0 auto', padding: '32px 20px 96px' }} className="stack">
         <div style={{ marginBottom: 24 }}>
-          <Crumbs back="/teams" trail={[{ label: 'เพื่อนร่วมทีม', href: '/teams' }, { label: 'ประกาศหาทีม' }]} />
+          <Crumbs back="/teams" trail={[{ label: 'หาทีม', href: '/teams' }, { label: 'ประกาศหาทีม' }]} />
           <h1 style={{ margin: '4px 0 0', fontWeight: 600, fontSize: 40, lineHeight: 1.2 }}>ประกาศว่ากำลังหาทีม</h1>
           <p className="muted" style={{ margin: '4px 0 0', fontSize: 16 }}>
             ทีมที่ขาดคนแบบคุณจะเจอการ์ดของคุณ และทักมาได้ทันที — เลือกไม่เปิดเผยชื่อได้

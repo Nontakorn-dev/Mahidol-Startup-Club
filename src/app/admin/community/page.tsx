@@ -66,7 +66,7 @@ export default async function AdminCommunityPage({ searchParams }: PageProps<'/a
       owner: c.owner as unknown as Owner,
       status: c.status,
       created_at: c.created_at,
-      view: '/cofounder',
+      view: '/teams?tab=cofounder',
     })),
   }
   const live = (r: Row[]) => r.filter((x) => x.status !== 'removed').length

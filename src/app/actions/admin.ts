@@ -204,7 +204,7 @@ export async function moderatePost(form: FormData) {
   }
   revalidatePath('/admin/community')
   revalidatePath('/teams')
-  revalidatePath('/cofounder')
+  revalidatePath('/teams')
 }
 
 export async function setUserRole(form: FormData) {

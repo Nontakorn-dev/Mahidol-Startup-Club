@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import SearchBox from '@/components/SearchBox'
+import PostActions from '@/components/PostActions'
 import ConnectMap from '@/components/ConnectMap'
 import { CofounderCardView, EmptyState, EventCardH, SeekerCardView, TeamCardView } from '@/components/Cards'
 import { IconArrowRight, IconLock, IconPeople, IconTrophy, IconUser, IconUserPlus } from '@/components/icons'
@@ -11,7 +12,6 @@ import { listCofounders, listSeekers, listTeams } from '@/lib/data/community'
 
 export const dynamic = 'force-dynamic'
 
-const POST_KIND = { team: '👥 ทีมหาคน', seeker: '🙋 กำลังหาทีม', cofounder: '🚀 หา Co-founder' } as const
 
 const PARTNERS = [
   { src: '/assets/partners/msc-2026.png', alt: 'Mahidol Startup Club', h: 44, w: 146 },
@@ -86,9 +86,9 @@ export default async function HomePage() {
                 <span className="ic">
                   <IconPeople size={18} />
                 </span>
-                เพื่อนร่วมทีม
+                หาทีม
               </Link>
-              <Link href="/cofounder">
+              <Link href="/teams?tab=cofounder">
                 <span className="ic">
                   <IconUserPlus size={18} />
                 </span>
@@ -147,8 +147,8 @@ export default async function HomePage() {
       <section style={{ background: 'linear-gradient(180deg, #E1E9F8 0%, #F4F7FC 45%, #FFFFFF 100%)' }}>
         <div className="container section home-seekers">
           <div className="stack" style={{ gap: 12, marginBottom: 24 }}>
-            <h2 className="section-title">ประกาศหาทีม &amp; Co-founder</h2>
-            <p className="home-posts-sub">ทีมที่กำลังหาคน · คนที่กำลังหาทีม · คนที่หา co-founder — รวมไว้ที่นี่</p>
+            <h2 className="section-title">ใครกำลังหาทีมอยู่บ้าง</h2>
+            <p className="home-posts-sub">ทีมที่ยังขาดคน คนที่อยากเข้าทีม และคนที่หา co-founder</p>
             <div className="seekers-bar">
               <span className="privacy-pill">
                 <span style={{ display: 'inline-flex', color: 'var(--navy-2)' }}>
@@ -168,33 +168,14 @@ export default async function HomePage() {
           {feed.length > 0 && (
             <div className="home-posts">
               {feed.map((f) => (
-                <div key={f.key} className={`home-post ${f.kind}`}>
-                  <span className="post-kind">{POST_KIND[f.kind]}</span>
+                <div key={f.key} className="home-post">
                   {f.node}
                 </div>
               ))}
             </div>
           )}
 
-          {/* Three ways to post — always visible, so it's obvious what you can do here */}
-          <div className="post-actions">
-            {!feed.length && <p className="post-actions-head">ยังไม่มีประกาศ — เริ่มเป็นคนแรกได้เลย</p>}
-            <Link href="/teams/new" className="post-action">
-              <span className="ic team"><IconPeople size={20} /></span>
-              <span className="txt"><b>มีทีมแล้ว ขาดคน</b><span>ชวนคนที่สกิลตรงเข้าทีม</span></span>
-              <IconArrowRight size={18} />
-            </Link>
-            <Link href="/teams/looking/new" className="post-action">
-              <span className="ic seeker"><IconUser size={20} /></span>
-              <span className="txt"><b>กำลังหาทีม</b><span>บอกสกิล แล้วให้ทีมทักมา</span></span>
-              <IconArrowRight size={18} />
-            </Link>
-            <Link href="/cofounder/new" className="post-action">
-              <span className="ic cofounder"><IconUserPlus size={20} /></span>
-              <span className="txt"><b>หา Co-founder</b><span>หาคนร่วมสร้างสตาร์ตอัพ</span></span>
-              <IconArrowRight size={18} />
-            </Link>
-          </div>
+          <PostActions heading={feed.length ? 'อยากลงประกาศเอง?' : 'ยังไม่มีประกาศ — ลงเป็นคนแรกได้เลย'} />
         </div>
       </section>
     </>

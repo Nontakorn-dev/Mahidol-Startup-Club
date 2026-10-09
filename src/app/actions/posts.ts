@@ -163,11 +163,11 @@ export async function saveCofounder(_prev: State, form: FormData): Promise<State
       .maybeSingle()
     if (existing) await db.from('cofounder_posts').update(row).eq('id', existing.id)
     else await db.from('cofounder_posts').insert({ ...row, owner_id: viewer.userId })
-    revalidatePath('/cofounder')
+    revalidatePath('/teams')
   } catch (err) {
     return { error: errMsg(err) }
   }
-  redirect(form.get('intent') === 'draft' ? '/me?saved=draft' : '/cofounder')
+  redirect(form.get('intent') === 'draft' ? '/me?saved=draft' : '/teams?tab=cofounder')
 }
 
 // ------------------------------------------------------------------ status changes from "ประกาศของฉัน"
@@ -186,5 +186,5 @@ export async function setPostStatus(form: FormData) {
   else await db.from(TABLES[type]).update({ status }).eq('id', id)
   revalidatePath('/me')
   revalidatePath('/teams')
-  revalidatePath('/cofounder')
+  revalidatePath('/teams')
 }
