@@ -9,11 +9,11 @@ import { lineAuthorizeUrl } from '@/lib/line/login'
 // LINE is never used to sign in. The flow state lives in the database (not a cookie): on phones
 // LINE often comes back inside its own in-app browser, which has none of this site's cookies.
 export async function GET(request: NextRequest) {
-  const rawNext = request.nextUrl.searchParams.get('next') || '/settings/notifications'
-  const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/settings/notifications'
+  const rawNext = request.nextUrl.searchParams.get('next') || '/me'
+  const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/me'
   const viewer = await getViewer()
   if (!viewer) return NextResponse.redirect(new URL(`/login?next=${encodeURIComponent(next)}`, request.url))
-  if (!lineLoginEnabled()) return NextResponse.redirect(new URL('/settings/notifications#line', request.url))
+  if (!lineLoginEnabled()) return NextResponse.redirect(new URL('/me#line', request.url))
   const state = randomToken(24)
   const nonce = randomToken(16)
   const db = adminClient()

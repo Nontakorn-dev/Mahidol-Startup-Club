@@ -79,7 +79,7 @@ export default async function InboxPage({ searchParams }: PageProps<'/inbox'>) {
                 </Link>
               ))}
             </div>
-            <Link href="/settings/notifications" className="line-status">
+            <Link href="/me#line" className="line-status">
               <span style={{ display: 'inline-flex', color: '#06C755' }}>
                 <IconLine size={18} />
               </span>

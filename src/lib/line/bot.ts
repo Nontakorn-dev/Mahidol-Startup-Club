@@ -78,7 +78,7 @@ async function linkUrl(lineUserId: string): Promise<string> {
     return linkPageUrl(await issueLinkToken(lineUserId))
   } catch (err) {
     console.error('linkToken failed — using the website link page', err)
-    return web('/settings/notifications')
+    return web('/me#line')
   }
 }
 
@@ -212,7 +212,7 @@ export async function account(lineUserId: string, p: Linked | null): Promise<Lin
       ],
       actions: [
         { type: 'uri', label: 'เลือกเรื่องที่สนใจ', url: web('/settings/interests') },
-        { type: 'uri', label: 'ตั้งค่าแจ้งเตือนบนเว็บ', url: web('/settings/notifications') },
+        { type: 'uri', label: 'บัญชีของฉันบนเว็บ', url: web('/me#line') },
         { type: 'uri', label: 'โปรไฟล์ & กล่องข้อความ', url: web('/me') },
       ],
     }),

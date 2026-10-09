@@ -27,7 +27,7 @@ export default function PrivacySection({ defaultAnonymous, lineLinked, num = 3 }
         {lineLinked ? (
           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ok)' }}>เชื่อมแล้ว</span>
         ) : (
-          <Link href="/settings/notifications#line" style={{ fontSize: 13, fontWeight: 600 }}>
+          <Link href="#line" style={{ fontSize: 13, fontWeight: 600 }}>
             เชื่อม LINE →
           </Link>
         )}

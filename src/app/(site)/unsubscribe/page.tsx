@@ -26,7 +26,7 @@ export default async function UnsubscribePage({ searchParams }: PageProps<'/unsu
           <>
             <h1 style={{ margin: 0, fontWeight: 600, fontSize: 28 }}>ยกเลิกรับอีเมลแล้ว</h1>
             <p className="muted" style={{ margin: 0 }}>เราจะไม่ส่งข่าวสารทางอีเมลอีก เปิดรับใหม่ หรือเชื่อม LINE เพื่อรับทาง LINE แทนได้ที่หน้าตั้งค่า</p>
-            <Link href="/settings/notifications" className="btn btn-outline btn-pill">ตั้งค่าการแจ้งเตือน</Link>
+            <Link href="/me" className="btn btn-outline btn-pill">ตั้งค่าการแจ้งเตือน</Link>
           </>
         ) : valid ? (
           <form action={confirm} className="stack" style={{ gap: 14, alignItems: 'center' }}>
@@ -38,7 +38,7 @@ export default async function UnsubscribePage({ searchParams }: PageProps<'/unsu
         ) : (
           <>
             <h1 style={{ margin: 0, fontWeight: 600, fontSize: 28 }}>ลิงก์ไม่ถูกต้อง</h1>
-            <Link href="/settings/notifications" className="btn btn-outline btn-pill">ไปที่ตั้งค่าการแจ้งเตือน</Link>
+            <Link href="/me" className="btn btn-outline btn-pill">ไปที่ตั้งค่าการแจ้งเตือน</Link>
           </>
         )}
       </section>

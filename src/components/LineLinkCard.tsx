@@ -13,7 +13,7 @@ import type { Profile } from '@/lib/types'
  *  • Button: LINE Login consent (when the LINE Login channel is configured)
  *  • QR / mobile button: opens the OA chat with a one-time code; the webhook links it and this card auto-refreshes
  */
-export default async function LineLinkCard({ p, next = '/settings/notifications', compact }: { p: Profile; next?: string; compact?: boolean }) {
+export default async function LineLinkCard({ p, next = '/me', compact }: { p: Profile; next?: string; compact?: boolean }) {
   const addFriend = lineAddFriendUrl()
   if (p.line_user_id && !p.line_is_friend && (await isOaFriend(p.line_user_id))) {
     // Added the OA some other way (QR, search, before linking) — remember it.

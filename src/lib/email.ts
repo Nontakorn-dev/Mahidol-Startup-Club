@@ -34,7 +34,7 @@ export function renderNoticeEmail(c: NoticeContent, opts: { unsubscribeUrl?: str
   const uris = c.actions.filter((a) => a.type === 'uri') as { label: string; url: string }[]
   const [primary, ...secondary] = uris
   const preheader = (c.subtitle || c.quote || c.title).replace(/\s+/g, ' ').slice(0, 140)
-  const settings = `${env.siteUrl}/settings/notifications`
+  const settings = `${env.siteUrl}/me`
 
   const html = `<!doctype html>
 <html lang="th" xmlns="http://www.w3.org/1999/xhtml">

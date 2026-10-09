@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import type { EmailOtpType } from '@supabase/supabase-js'
+import SetPasswordForm from './SetPasswordForm'
 
 /**
  * Lands on /login after Google (?code=…) or an email button (?token_hash=…) and creates the
@@ -12,6 +13,7 @@ import type { EmailOtpType } from '@supabase/supabase-js'
 export default function AuthCompleter({ next, code, tokenHash, type, providerError }: { next: string; code?: string; tokenHash?: string; type?: string; providerError?: string }) {
   const [error, setError] = useState<string | null>(providerError ? 'ยกเลิกหรือเข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่' : null)
   const ran = useRef(false)
+  const [reset, setReset] = useState(false)
   useEffect(() => {
     if (ran.current || providerError) return
     ran.current = true
@@ -28,11 +30,22 @@ export default function AuthCompleter({ next, code, tokenHash, type, providerErr
         setError(/verifier|both auth code/i.test(error.message) ? 'ลิงก์นี้ต้องเปิดในเบราว์เซอร์เดียวกับที่ขอ — หรือกรอกรหัส 6 หลักจากอีเมลแทน' : 'ลิงก์หมดอายุหรือถูกใช้ไปแล้ว กรุณาขอใหม่')
         return
       }
-      // "Reset password" email button: signed in — now pick the new password.
-      const dest = type === 'recovery' ? `/settings/password?reset=1&next=${encodeURIComponent(next)}` : next
-      window.location.replace(`/auth/after?next=${encodeURIComponent(dest)}`)
+      // "Reset password" email button: signed in — pick the new password on this page.
+      if (type === 'recovery') return setReset(true)
+      window.location.replace(`/auth/after?next=${encodeURIComponent(next)}`)
     })()
   }, [code, tokenHash, type, next, providerError])
+  if (reset) {
+    return (
+      <div className="auth-form">
+        <div className="auth-head">
+          <h1>ตั้งรหัสผ่านใหม่</h1>
+          <p>ยืนยันอีเมลแล้ว — ตั้งรหัสผ่านใหม่เพื่อใช้เข้าสู่ระบบครั้งต่อไป</p>
+        </div>
+        <SetPasswordForm next={`/auth/after?next=${encodeURIComponent(next)}`} />
+      </div>
+    )
+  }
   if (error) {
     return (
       <div className="stack" style={{ gap: 12 }}>

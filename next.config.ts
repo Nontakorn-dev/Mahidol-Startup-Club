@@ -5,6 +5,13 @@ const supabaseHost = process.env.NEXT_PUBLIC_SUPABASE_URL
   : 'hxbpcnlxyigjfqmkgcku.supabase.co'
 
 const nextConfig: NextConfig = {
+  // Settings moved to /me (LINE linking there; every notification is on). Old links keep working.
+  async redirects() {
+    return [
+      { source: '/settings/notifications', destination: '/me#line', permanent: true },
+      { source: '/settings/password', destination: '/me', permanent: true },
+    ]
+  },
   experimental: {
     serverActions: { bodySizeLimit: '4mb' },
     // Keep visited pages in the browser for 30 s: back/forward and re-opening a tab are instant.

@@ -46,7 +46,7 @@ export default async function LineLinkedPage({ searchParams }: PageProps<'/line/
         ) : (
           <>
             <p className="muted" style={{ margin: 0, fontSize: 15 }}>{error || 'กรุณาลองใหม่อีกครั้ง'}</p>
-            <Link href="/settings/notifications" className="btn btn-outline">
+            <Link href="/me" className="btn btn-outline">
               กลับไปลองใหม่
             </Link>
           </>

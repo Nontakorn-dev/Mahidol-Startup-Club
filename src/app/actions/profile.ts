@@ -50,7 +50,8 @@ export async function saveOnboarding(_prev: State, form: FormData): Promise<Stat
   } catch (err) {
     return { error: errMsg(err) }
   }
-  redirect(`/settings/notifications?onboarding=1&next=${encodeURIComponent(next)}`)
+  // One step: straight to where they were going (new members land on /me to link LINE).
+  redirect(next === '/' ? '/me#line' : next)
 }
 
 const LinkSchema = z.object({ label: z.string().trim().max(30), url: z.url() })
@@ -127,7 +128,7 @@ export async function unlinkLine(): Promise<{ error?: string }> {
       .update({ line_user_id: null, line_display_name: null, line_picture_url: null, line_is_friend: false, line_linked_at: null })
       .eq('id', viewer.userId)
     if (lineUserId) await setLineMenu(lineUserId, false)
-    revalidatePath('/settings/notifications')
+    revalidatePath('/me')
     return {}
   } catch (err) {
     return { error: errMsg(err) }
@@ -143,7 +144,7 @@ export async function saveInterests(form: FormData) {
     .update({ interests, notify_matches: form.get('notify_matches') === 'on' })
     .eq('id', viewer.userId)
   revalidatePath('/me')
-  revalidatePath('/settings/notifications')
+  revalidatePath('/me')
   const raw = String(form.get('next') || '/opportunities')
   redirect(`${raw.startsWith('/') && !raw.startsWith('//') ? raw : '/opportunities'}${raw.includes('?') ? '&' : '?'}saved=interests`)
 }

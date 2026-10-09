@@ -1,11 +1,9 @@
 'use client'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import PasswordInput from './PasswordInput'
 
 export default function SetPasswordForm({ next }: { next: string }) {
-  const router = useRouter()
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -20,7 +18,7 @@ export default function SetPasswordForm({ next }: { next: string }) {
     setBusy(false)
     if (error) return setError(error.code === 'same_password' ? 'รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสเดิม' : error.code === 'weak_password' ? 'รหัสผ่านง่ายเกินไป ลองใช้รหัสที่ยาวขึ้น' : error.message)
     setDone(true)
-    setTimeout(() => router.push(next), 1200)
+    setTimeout(() => window.location.assign(next), 1200)
   }
 
   if (done) return <div className="alert alert-ok">ตั้งรหัสผ่านเรียบร้อย ✓ กำลังพาไปต่อ…</div>

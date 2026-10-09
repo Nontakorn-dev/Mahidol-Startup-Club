@@ -82,7 +82,7 @@ export default function OnboardingForm({ p, next }: { p: P; next: string }) {
       {state?.error && <div className="alert alert-error">{state.error}</div>}
       <div className="form-actions sticky-m">
         <button type="submit" className="btn btn-primary btn-lg" style={{ padding: '0 32px' }} disabled={pending}>
-          {pending ? 'กำลังบันทึก…' : 'ถัดไป: การแจ้งเตือน'}
+          {pending ? 'กำลังบันทึก…' : 'เริ่มใช้งาน'}
         </button>
       </div>
     </form>

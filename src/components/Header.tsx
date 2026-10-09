@@ -38,7 +38,6 @@ export default async function Header() {
                 avatarUrl={p.avatar_url || p.line_picture_url}
                 email={p.email_is_placeholder ? null : p.email}
                 isAdmin={p.role === 'admin'}
-                lineLinked={Boolean(p.line_user_id)}
               />
             </>
           ) : (

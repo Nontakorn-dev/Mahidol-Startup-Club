@@ -4,20 +4,18 @@ import { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import Avatar from './Avatar'
 import { NAV } from './NavLinks'
-import { IconBell, IconChevronDown, IconDashboard, IconLine, IconLock, IconLogout, IconUser } from './icons'
+import { IconChevronDown, IconDashboard, IconLogout, IconUser } from './icons'
 
 export default function UserMenu({
   name,
   avatarUrl,
   email,
   isAdmin,
-  lineLinked,
 }: {
   name: string
   avatarUrl: string | null
   email: string | null
   isAdmin: boolean
-  lineLinked: boolean
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -54,18 +52,6 @@ export default function UserMenu({
           ))}
           <Link href="/me" role="menuitem">
             <IconUser size={18} /> โปรไฟล์และประกาศของฉัน
-          </Link>
-          <Link href="/settings/notifications" role="menuitem">
-            <IconBell size={18} /> ตั้งค่าการแจ้งเตือน
-          </Link>
-          <Link href="/settings/notifications#line" role="menuitem">
-            <span style={{ color: '#06C755', display: 'inline-flex' }}>
-              <IconLine size={18} />
-            </span>
-            {lineLinked ? 'LINE เชื่อมแล้ว' : 'เชื่อม LINE'}
-          </Link>
-          <Link href="/settings/password" role="menuitem">
-            <IconLock size={18} /> ตั้งรหัสผ่าน
           </Link>
           {isAdmin && (
             <Link href="/admin" role="menuitem">

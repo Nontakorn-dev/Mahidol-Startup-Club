@@ -10,7 +10,7 @@ export default function LineBrowserBanner() {
   useEffect(() => {
     setInLine(/\bLine\//i.test(navigator.userAgent) || new URLSearchParams(location.search).get('src') === 'line')
   }, [])
-  if (!inLine || path.startsWith('/settings/notifications')) return null
+  if (!inLine || path.startsWith('/me')) return null
   return (
     <div className="line-banner">
       <div className="container">
@@ -18,7 +18,7 @@ export default function LineBrowserBanner() {
           <IconLine size={20} />
         </span>
         <span style={{ flex: 1 }}>เปิดจาก LINE อยู่ — เชื่อม LINE นี้กับบัญชีของคุณ เพื่อรับข่าวสารผ่าน LINE OA</span>
-        <a href="/settings/notifications#line" className="btn btn-line btn-sm">
+        <a href="/me#line" className="btn btn-line btn-sm">
           เชื่อมต่อ LINE
         </a>
       </div>
