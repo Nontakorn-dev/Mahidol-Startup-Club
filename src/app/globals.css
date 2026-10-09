@@ -612,7 +612,9 @@ dl.kv dd { margin: 0; font-weight: 600; }
 .admin-home:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
 .admin-home + .admin-me { margin-top: 6px; }
 .admin-back { display: inline-flex; align-items: center; gap: 2px; min-height: 36px; padding: 0 10px 0 6px; border-radius: 999px; border: 1px solid var(--border-4); background: #fff; color: var(--navy-2); font-size: 13px; font-weight: 600; text-decoration: none; }
-@media (max-width: 380px) { .admin-back span { display: none; } .admin-back { padding: 0 8px; } }
+.admin-mobile-tabs { display: flex; align-items: center; gap: 0; padding-left: 16px; }
+.admin-mobile-tabs .admin-back { flex: none; min-height: 40px; margin: 4px 0 12px; }
+.admin-mobile-tabs > nav { flex: 1; min-width: 0; padding-left: 8px !important; }
 .admin-me { margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 14px; background: rgba(255, 255, 255, 0.08); text-decoration: none; }
 .admin-main { flex: 1; min-width: 0; padding: 32px 40px 56px; display: flex; flex-direction: column; gap: 22px; }
 .admin-main h1 { margin: 0; font-weight: 600; font-size: 32px; line-height: 1.2; }

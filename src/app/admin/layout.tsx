@@ -49,22 +49,25 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       </aside>
       <div className="admin-mobile-nav">
         <div className="top">
-          <Link href="/" className="admin-back" aria-label="กลับหน้าเว็บไซต์">
-            <IconBack size={18} />
-            <span>หน้าเว็บ</span>
-          </Link>
           <Link href="/" style={{ display: 'inline-flex' }}>
             <Image src="/assets/logo-2026.png" alt="Mahidol Startup Club" width={100} height={30} />
           </Link>
+          <span className="spacer" />
           <span className="kicker" style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', color: 'var(--muted)' }}>
             ADMIN
           </span>
-          <span className="spacer" />
           <Link href="/me" aria-label="โปรไฟล์ของฉัน" style={{ display: 'inline-flex' }}>
             <Avatar name={name} initial={initialOf(admin.profile.first_name)} src={photo} size={34} brand fontSize={14} />
           </Link>
         </div>
-        <AdminNav newPosts={newPosts} pendingImports={pendingImports} mobile />
+        {/* "← หน้าเว็บ" stays put at the start of the tab row; the tabs scroll beside it */}
+        <div className="admin-mobile-tabs">
+          <Link href="/" className="admin-back" aria-label="กลับหน้าเว็บไซต์">
+            <IconBack size={16} />
+            <span>หน้าเว็บ</span>
+          </Link>
+          <AdminNav newPosts={newPosts} pendingImports={pendingImports} mobile />
+        </div>
       </div>
       <main className="admin-main">{children}</main>
     </div>
