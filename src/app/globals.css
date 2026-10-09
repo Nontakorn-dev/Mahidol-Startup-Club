@@ -1070,22 +1070,22 @@ html:has(.login-wrap), html:has(.login-wrap) body { background: var(--bg); }
 .post-kind.cofounder { background: #EFE5FF; border-color: #D3BEFA; color: #5B21B6; }
 /* Team "logo" sized like the avatars on the other cards */
 .team-logo.lg { width: 60px; height: 60px; border-radius: 18px; font-size: 24px; }
-/* "ลงประกาศ": white cards on a navy panel — clearly a separate "post your own" section */
+/* "ลงประกาศ": white cards on a light-blue panel — clearly a separate "post your own" section */
 .post-actions-wrap {
-  position: relative; overflow: hidden; margin-top: 44px; padding: 32px; border-radius: 28px; color: #fff;
-  background: radial-gradient(70% 120% at 100% 0%, rgba(255, 199, 38, 0.16) 0%, rgba(255, 199, 38, 0) 60%), linear-gradient(135deg, #0A2558 0%, #0035AD 100%);
-  box-shadow: 0 24px 50px -30px rgba(0, 53, 173, 0.75);
+  position: relative; overflow: hidden; margin-top: 44px; padding: 32px; border-radius: 28px; color: var(--navy);
+  background: radial-gradient(60% 120% at 100% 0%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 60%), linear-gradient(135deg, #E8F0FE 0%, #D9E6FB 100%);
+  border: 1px solid #C9D9F6;
 }
 .post-actions-intro { margin-bottom: 22px; }
-.post-actions-head { margin: 0; color: #fff; }
-.post-actions-intro p { margin: 6px 0 0; font-size: 15px; color: #C9D6EE; text-wrap: balance; }
+.post-actions-head { margin: 0; color: var(--navy); }
+.post-actions-intro p { margin: 6px 0 0; font-size: 15px; color: var(--navy-2); opacity: 0.8; text-wrap: balance; }
 .post-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .post-action {
   display: flex; align-items: center; gap: 18px; padding: 22px; border-radius: 22px; background: #fff; color: var(--navy); text-decoration: none;
-  box-shadow: 0 14px 30px -18px rgba(0, 0, 0, 0.45); transition: transform 0.18s ease, box-shadow 0.18s ease;
+  box-shadow: 0 14px 30px -20px rgba(0, 53, 173, 0.45); transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
-.post-action:hover { color: var(--navy); transform: translateY(-3px); box-shadow: 0 22px 38px -18px rgba(0, 0, 0, 0.55); }
-.post-action:focus-visible { outline: 3px solid #FFC726; outline-offset: 3px; }
+.post-action:hover { color: var(--navy); transform: translateY(-3px); box-shadow: 0 22px 40px -20px rgba(0, 53, 173, 0.55); }
+.post-action:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px; }
 .post-action .ic {
   flex: none; width: 76px; height: 76px; border-radius: 22px; display: inline-flex; align-items: center; justify-content: center;
   background: linear-gradient(160deg, #F7FAFF 0%, #EAF1FD 100%); box-shadow: inset 0 0 0 1px #DCE6F8;
