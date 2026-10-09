@@ -92,7 +92,7 @@ export default async function HomePage() {
                 <span className="ic">
                   <IconUserPlus size={18} />
                 </span>
-                Co-founder
+                Co-Founder
               </Link>
             </nav>
           </div>
@@ -148,7 +148,7 @@ export default async function HomePage() {
         <div className="container section home-seekers">
           <div className="stack" style={{ gap: 12, marginBottom: 24 }}>
             <h2 className="section-title">ใครกำลังหาทีมอยู่บ้าง</h2>
-            <p className="home-posts-sub">ทีมที่ยังขาดคน คนที่อยากเข้าทีม และคนที่หา co-founder</p>
+            <p className="home-posts-sub">ทีมแข่งที่ยังขาดคน คนที่อยากเข้าทีมแข่ง และคนที่หา Co-Founder</p>
             <div className="seekers-bar">
               <span className="privacy-pill">
                 <span style={{ display: 'inline-flex', color: 'var(--navy-2)' }}>
@@ -175,7 +175,7 @@ export default async function HomePage() {
             </div>
           )}
 
-          <PostActions heading={feed.length ? 'อยากลงประกาศเอง?' : 'ยังไม่มีประกาศ — ลงเป็นคนแรกได้เลย'} />
+          <PostActions heading={feed.length ? 'ลงประกาศของคุณ' : 'ยังไม่มีประกาศ — ลงเป็นคนแรกได้เลย'} />
         </div>
       </section>
     </>

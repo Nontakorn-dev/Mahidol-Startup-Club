@@ -10,7 +10,7 @@ import { listCofounders, listSeekers, listTeams } from '@/lib/data/community'
 import { adminClient } from '@/lib/supabase/admin'
 import { TRACK_KEYS, type Track } from '@/lib/constants'
 
-export const metadata: Metadata = { title: 'หาทีม & Co-founder' }
+export const metadata: Metadata = { title: 'หาทีม & Co-Founder' }
 export const dynamic = 'force-dynamic'
 
 // One page for every "looking for people" post: teams that still need members, people who want
@@ -20,9 +20,9 @@ export const dynamic = 'force-dynamic'
 type Tab = 'all' | 'teams' | 'people' | 'cofounder'
 const TABS: { key: Tab; label: string }[] = [
   { key: 'all', label: 'ทั้งหมด' },
-  { key: 'teams', label: 'ทีมรับคนเพิ่ม' },
-  { key: 'people', label: 'คนอยากเข้าทีม' },
-  { key: 'cofounder', label: 'หา Co-founder' },
+  { key: 'teams', label: 'ทีมแข่งรับคนเพิ่ม' },
+  { key: 'people', label: 'คนอยากเข้าทีมแข่ง' },
+  { key: 'cofounder', label: 'หา Co-Founder' },
 ]
 const SEEK: { key?: Track; label: string }[] = [
   { label: 'ทุกสาย' },
@@ -58,10 +58,10 @@ export default async function TeamsPage({ searchParams }: PageProps<'/teams'>) {
   ].sort((a, b) => b.at.localeCompare(a.at))
 
   const empty: Record<Tab, { title: string; body: string; href: string; cta: string }> = {
-    all: { title: 'ยังไม่มีประกาศ', body: 'ลงประกาศเป็นคนแรก แล้วคนที่สนใจจะทักมาหาคุณ', href: '/teams/looking/new', cta: 'ลงประกาศว่าอยากเข้าทีม' },
-    teams: { title: 'ยังไม่มีทีมที่กำลังรับคน', body: 'มีทีมแล้วแต่ยังขาดคน? ลงประกาศได้เลย', href: `/teams/new${eventId ? `?event=${eventId}` : ''}`, cta: 'ลงประกาศหาคนเข้าทีม' },
-    people: { title: 'ยังไม่มีใครลงว่าอยากเข้าทีม', body: 'บอกว่าคุณถนัดอะไร แล้วให้ทีมที่ใช่ทักมา', href: '/teams/looking/new', cta: 'ลงประกาศว่าอยากเข้าทีม' },
-    cofounder: { title: seek ? 'ยังไม่มีใครหาคนสายนี้' : 'ยังไม่มีใครหา co-founder', body: 'มีไอเดียสตาร์ตอัพและอยากได้คนมาร่วมก่อตั้ง? ลงประกาศได้เลย', href: '/cofounder/new', cta: 'ลงประกาศหา co-founder' },
+    all: { title: 'ยังไม่มีประกาศ', body: 'ลงประกาศเป็นคนแรก แล้วคนที่สนใจจะทักมาหาคุณ', href: '/teams/looking/new', cta: 'ลงประกาศหาทีม' },
+    teams: { title: 'ยังไม่มีทีมแข่งที่กำลังรับคน', body: 'มีทีมแข่งแล้วแต่ยังขาดคน? ลงประกาศได้เลย', href: `/teams/new${eventId ? `?event=${eventId}` : ''}`, cta: 'ลงประกาศหาคนเข้าทีม' },
+    people: { title: 'ยังไม่มีใครลงว่าอยากเข้าทีมแข่ง', body: 'บอกว่าคุณถนัดอะไร แล้วให้ทีมที่ใช่ทักมา', href: '/teams/looking/new', cta: 'ลงประกาศหาทีม' },
+    cofounder: { title: seek ? 'ยังไม่มีใครหาคนสายนี้' : 'ยังไม่มีใครหา Co-Founder', body: 'มีไอเดียสตาร์ตอัพและอยากได้คนมาร่วมก่อตั้ง? ลงประกาศได้เลย', href: '/cofounder/new', cta: 'ลงประกาศหา Co-Founder' },
   }
 
   return (
@@ -69,9 +69,9 @@ export default async function TeamsPage({ searchParams }: PageProps<'/teams'>) {
       <section className="page-head">
         <div className="inner">
           <div className="stack" style={{ flex: '1 1 560px', gap: 18 }}>
-            <Crumbs back="/" trail={[{ label: 'หน้าแรก', href: '/' }, { label: 'หาทีม & Co-founder' }]} />
+            <Crumbs back="/" trail={[{ label: 'หน้าแรก', href: '/' }, { label: 'หาทีม & Co-Founder' }]} />
             <div>
-              <h1>หาทีม &amp; Co-founder</h1>
+              <h1>หาทีม &amp; Co-Founder</h1>
               <p className="lead">ดูว่าตอนนี้ใครกำลังหาใคร แล้วทักไปคุยได้เลย</p>
             </div>
             <SearchBox id="tq" maxWidth={640} placeholder="เช่น ทีม HealthTech ที่อยากได้ UX" scope="teams" />
@@ -133,7 +133,7 @@ export default async function TeamsPage({ searchParams }: PageProps<'/teams'>) {
             />
           )}
 
-          <PostActions heading="ลงประกาศของคุณเอง" eventId={eventId} />
+          <PostActions heading="ลงประกาศของคุณ" eventId={eventId} />
         </div>
       </div>
     </div>

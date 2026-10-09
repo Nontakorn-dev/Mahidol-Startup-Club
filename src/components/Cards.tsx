@@ -116,7 +116,7 @@ export function EventCard({ e, reason }: { e: EventRow; reason?: string }) {
 }
 
 /** What kind of post a card is — shown on every team / seeker / co-founder card. */
-export const POST_KIND = { team: '👥 ทีมรับคนเพิ่ม', seeker: '🙋 กำลังหาทีม', cofounder: '🚀 หา Co-founder' } as const
+export const POST_KIND = { team: '🏆 ทีมแข่งรับคนเพิ่ม', seeker: '🙋 อยากเข้าทีมแข่ง', cofounder: '🚀 หา Co-Founder' } as const
 function PostKind({ kind }: { kind: keyof typeof POST_KIND }) {
   return <span className={`post-kind ${kind}`}>{POST_KIND[kind]}</span>
 }

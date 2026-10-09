@@ -1,42 +1,33 @@
 import Link from 'next/link'
 import { IconArrowRight, IconPeople, IconUser, IconUserPlus } from './icons'
 
+const ACTIONS = [
+  { kind: 'team', href: '/teams/new', icon: <IconPeople size={26} />, title: 'มีทีมแข่งแล้ว ขาดคน', body: 'บอกว่าลงงานไหน และอยากได้คนสายไหนมาเติมทีม', cta: 'ลงประกาศหาคน' },
+  { kind: 'seeker', href: '/teams/looking/new', icon: <IconUser size={26} />, title: 'อยากเข้าทีมแข่ง', body: 'บอกว่าคุณถนัดอะไร แล้วรอทีมที่ใช่ทักมา', cta: 'ลงประกาศหาทีม' },
+  { kind: 'cofounder', href: '/cofounder/new', icon: <IconUserPlus size={26} />, title: 'หา Co-Founder', body: 'มีไอเดียสตาร์ตอัพ อยากได้คนมาร่วมสร้างด้วยกัน', cta: 'ลงประกาศหา Co-Founder' },
+] as const
+
 /** The three kinds of post, as big plain choices (home page and /teams). */
 export default function PostActions({ heading, eventId }: { heading?: string; eventId?: string }) {
   const ev = eventId ? `?event=${eventId}` : ''
   return (
-    <div className="post-actions">
-      {heading && <p className="post-actions-head">{heading}</p>}
-      <Link href={`/teams/new${ev}`} className="post-action">
-        <span className="ic team">
-          <IconPeople size={20} />
-        </span>
-        <span className="txt">
-          <b>มีทีมแล้ว ขาดคน</b>
-          <span>บอกว่าอยากได้คนแบบไหน</span>
-        </span>
-        <IconArrowRight size={18} />
-      </Link>
-      <Link href={`/teams/looking/new${ev}`} className="post-action">
-        <span className="ic seeker">
-          <IconUser size={20} />
-        </span>
-        <span className="txt">
-          <b>อยากเข้าทีม</b>
-          <span>บอกว่าถนัดอะไร แล้วรอทีมทัก</span>
-        </span>
-        <IconArrowRight size={18} />
-      </Link>
-      <Link href="/cofounder/new" className="post-action">
-        <span className="ic cofounder">
-          <IconUserPlus size={20} />
-        </span>
-        <span className="txt">
-          <b>หาคนมาก่อตั้งด้วยกัน</b>
-          <span>มีไอเดียสตาร์ตอัพ อยากได้ co-founder</span>
-        </span>
-        <IconArrowRight size={18} />
-      </Link>
-    </div>
+    <section className="post-actions-wrap">
+      {heading && <h3 className="post-actions-head">{heading}</h3>}
+      <div className="post-actions">
+        {ACTIONS.map((a) => (
+          <Link key={a.kind} href={a.kind === 'cofounder' ? a.href : `${a.href}${ev}`} className={`post-action ${a.kind}`}>
+            <span className="ic">{a.icon}</span>
+            <span className="txt">
+              <b>{a.title}</b>
+              <span>{a.body}</span>
+            </span>
+            <span className="go">
+              <span className="go-label">{a.cta}</span>
+              <IconArrowRight size={18} />
+            </span>
+          </Link>
+        ))}
+      </div>
+    </section>
   )
 }
