@@ -5,6 +5,7 @@ import SearchBox from '@/components/SearchBox'
 import PostActions from '@/components/PostActions'
 import { CofounderCardView, EmptyState, SeekerCardView, TeamCardView } from '@/components/Cards'
 import { getViewer } from '@/lib/auth'
+import { byTrust } from '@/lib/post-order'
 import { listCofounders, listSeekers, listTeams } from '@/lib/data/community'
 import { adminClient } from '@/lib/supabase/admin'
 import { TRACK_KEYS, type Track } from '@/lib/constants'
@@ -53,10 +54,10 @@ export default async function TeamsPage({ searchParams }: PageProps<'/teams'>) {
   const qs = (t: Tab) => `/teams${t === 'all' ? '' : `?tab=${t}`}${eventId ? `${t === 'all' ? '?' : '&'}event=${eventId}` : ''}`
 
   const cards = [
-    ...(tab !== 'cofounder' ? teams.map((t) => ({ at: t.created_at, key: `t-${t.id}`, node: <TeamCardView t={t} loggedIn={loggedIn} /> })) : []),
-    ...(tab !== 'cofounder' ? seekers.map((s) => ({ at: s.created_at, key: `s-${s.id}`, node: <SeekerCardView s={s} loggedIn={loggedIn} /> })) : []),
-    ...(tab === 'all' || tab === 'cofounder' ? cofounders.map((c) => ({ at: c.created_at, key: `c-${c.id}`, node: <CofounderCardView c={c} loggedIn={loggedIn} /> })) : []),
-  ].sort((a, b) => b.at.localeCompare(a.at))
+    ...(tab !== 'cofounder' ? teams.map((t) => ({ author: t.author, at: t.created_at, key: `t-${t.id}`, node: <TeamCardView t={t} loggedIn={loggedIn} /> })) : []),
+    ...(tab !== 'cofounder' ? seekers.map((s) => ({ author: s.author, at: s.created_at, key: `s-${s.id}`, node: <SeekerCardView s={s} loggedIn={loggedIn} /> })) : []),
+    ...(tab === 'all' || tab === 'cofounder' ? cofounders.map((c) => ({ author: c.author, at: c.created_at, key: `c-${c.id}`, node: <CofounderCardView c={c} loggedIn={loggedIn} /> })) : []),
+  ].sort(byTrust)
 
   const empty: Record<Tab, { title: string; body: string; href: string; cta: string }> = {
     all: { title: 'ยังไม่มีประกาศ', body: 'ลงประกาศเป็นคนแรก แล้วผู้ที่สนใจจะติดต่อคุณ', href: '/teams/new', cta: 'ลงประกาศหาทีมแข่ง' },

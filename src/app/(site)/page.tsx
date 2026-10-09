@@ -7,6 +7,7 @@ import ConnectMap from '@/components/ConnectMap'
 import { CofounderCardView, EmptyState, EventCardH, SeekerCardView, TeamCardView } from '@/components/Cards'
 import { IconArrowRight, IconPeople, IconTrophy, IconUser, IconUserPlus } from '@/components/icons'
 import { getViewer } from '@/lib/auth'
+import { byTrust } from '@/lib/post-order'
 import { homeFeaturedEvents } from '@/lib/data/events'
 import { listCofounders, listSeekers, listTeams } from '@/lib/data/community'
 
@@ -51,11 +52,11 @@ export default async function HomePage() {
   // One feed, newest first: teams looking for people, people looking for a team, co-founder posts.
   const loggedIn = Boolean(viewer)
   const feed = [
-    ...teams.map((t) => ({ kind: 'team' as const, at: t.created_at, node: <TeamCardView t={t} loggedIn={loggedIn} />, key: `t-${t.id}` })),
-    ...seekers.map((s) => ({ kind: 'seeker' as const, at: s.created_at, node: <SeekerCardView s={s} loggedIn={loggedIn} />, key: `s-${s.id}` })),
-    ...cofounders.map((c) => ({ kind: 'cofounder' as const, at: c.created_at, node: <CofounderCardView c={c} loggedIn={loggedIn} />, key: `c-${c.id}` })),
+    ...teams.map((t) => ({ kind: 'team' as const, author: t.author, at: t.created_at, node: <TeamCardView t={t} loggedIn={loggedIn} />, key: `t-${t.id}` })),
+    ...seekers.map((s) => ({ kind: 'seeker' as const, author: s.author, at: s.created_at, node: <SeekerCardView s={s} loggedIn={loggedIn} />, key: `s-${s.id}` })),
+    ...cofounders.map((c) => ({ kind: 'cofounder' as const, author: c.author, at: c.created_at, node: <CofounderCardView c={c} loggedIn={loggedIn} />, key: `c-${c.id}` })),
   ]
-    .sort((a, b) => b.at.localeCompare(a.at))
+    .sort(byTrust)
     .slice(0, 6)
 
   return (

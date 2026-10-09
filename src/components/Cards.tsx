@@ -2,7 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import Avatar from './Avatar'
 import ContactButton from './ContactButton'
-import { IconCalendar, IconHome, IconLock, IconPin, IconVerified } from './icons'
+import { IconCalendar, IconHome, IconLock, IconPin, IconTrophy, IconVerified } from './icons'
 import { CATEGORIES, ROLES, STAGES, trackLabel, type Role } from '@/lib/constants'
 import DeadlineBadge from './DeadlineBadge'
 import { closesAt, eventBlurb, isClosed, thaiDeadline } from '@/lib/format'
@@ -116,7 +116,7 @@ export function EventCard({ e, reason }: { e: EventRow; reason?: string }) {
 }
 
 /** What kind of post a card is — shown on every team / seeker / co-founder card. */
-export const POST_KIND = { team: '🏆 ทีมแข่งเปิดรับสมาชิก', seeker: '🙋 ต้องการเข้าร่วมทีมแข่ง', cofounder: '🚀 หา Co-Founder' } as const
+export const POST_KIND = { team: 'ทีมแข่งเปิดรับสมาชิก', seeker: 'ต้องการเข้าร่วมทีมแข่ง', cofounder: 'หา Co-Founder' } as const
 export function PostKind({ kind }: { kind: keyof typeof POST_KIND }) {
   return <span className={`post-kind ${kind}`}>{POST_KIND[kind]}</span>
 }
@@ -259,7 +259,6 @@ export function CofounderCardView({ c, loggedIn, reason }: { c: CofounderCard; l
 
 export function TeamCardView({ t, loggedIn, reason, showEvent = true }: { t: TeamCard; loggedIn: boolean; reason?: string; showEvent?: boolean }) {
   // Same layout as the seeker / co-founder cards: tag → who → highlighted box → short line → links → button.
-  const roles = t.roles_needed.map((r) => ROLES[r] ?? r).join(', ')
   return (
     <article className="person-card">
       <PostKind kind="team" />
@@ -272,13 +271,37 @@ export function TeamCardView({ t, loggedIn, reason, showEvent = true }: { t: Tea
           </span>
         </span>
       </Link>
-      <div className="looking-box">
-        <span className="k">ต้องการสมาชิกตำแหน่ง</span>
-        <span className="v">{roles || 'เปิดรับทุกตำแหน่ง'}</span>
+      {/* The competition is the headline of a team post */}
+      {showEvent && (
+        <div className="looking-box event-box">
+          <span className="k">
+            <IconTrophy size={14} /> สมัครรายการแข่งขัน
+          </span>
+          {t.event ? (
+            <Link href={`/opportunities/${t.event.slug}`} className="v">
+              {t.event.title}
+            </Link>
+          ) : (
+            <span className="v">{t.event_note || 'ยังไม่ระบุรายการ'}</span>
+          )}
+        </div>
+      )}
+      <div className="row wrap" style={{ gap: 6 }}>
+        <span className="muted" style={{ fontSize: 13, marginRight: 2 }}>
+          ต้องการ
+        </span>
+        {t.roles_needed.length ? (
+          t.roles_needed.map((r) => (
+            <span key={r} className="tag tag-yellow tag-sm">
+              {ROLES[r] ?? r}
+            </span>
+          ))
+        ) : (
+          <span className="tag tag-yellow tag-sm">ทุกตำแหน่ง</span>
+        )}
       </div>
-      <span style={{ fontSize: 14 }}>
-        <b style={{ fontWeight: 600 }}>{t.pitch}</b>
-        {showEvent && (t.event || t.event_note) && <span className="muted"> — {t.event ? t.event.title : t.event_note}</span>}
+      <span className="muted" style={{ fontSize: 14 }}>
+        {t.pitch}
       </span>
       {reason && <span className="reason-line">แนะนำเพราะ {reason}</span>}
       <Link href={`/teams/${t.id}`} className="card-more">
