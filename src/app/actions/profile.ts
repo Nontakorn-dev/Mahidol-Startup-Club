@@ -4,19 +4,14 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
+import { errMsg, splitTags } from '@/lib/form-errors'
 import { actionViewer } from '@/lib/auth'
 import { adminClient } from '@/lib/supabase/admin'
 import { ROLE_KEYS } from '@/lib/constants'
 
 type State = { error?: string; ok?: string } | null
-const errMsg = (err: unknown) => (err instanceof z.ZodError ? err.issues[0].message : (err as Error).message)
 const optText = (max: number) => z.string().trim().max(max).optional().transform((v) => v || null)
-const splitList = (v: FormDataEntryValue | null, max = 12) =>
-  String(v || '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .slice(0, max)
+const splitList = (v: FormDataEntryValue | null, max = 12) => splitTags(v, max)
 
 const BasicsSchema = z.object({
   first_name: z.string().trim().min(1, 'กรุณาใส่ชื่อ').max(40),
@@ -54,7 +49,7 @@ export async function saveOnboarding(_prev: State, form: FormData): Promise<Stat
   redirect(next === '/' ? '/me#line' : next)
 }
 
-const LinkSchema = z.object({ label: z.string().trim().max(30), url: z.url() })
+const LinkSchema = z.object({ label: z.string().trim().transform((s) => s.slice(0, 30)), url: z.url('ลิงก์ไม่ถูกต้อง') })
 
 export async function saveProfile(_prev: State, form: FormData): Promise<State> {
   try {

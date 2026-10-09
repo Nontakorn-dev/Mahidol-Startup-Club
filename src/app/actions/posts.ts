@@ -2,6 +2,7 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
+import { errMsg, splitTags } from '@/lib/form-errors'
 import { actionViewer } from '@/lib/auth'
 import { adminClient } from '@/lib/supabase/admin'
 import { ROLE_KEYS, TRACK_KEYS } from '@/lib/constants'
@@ -13,7 +14,6 @@ const trackList = z.array(z.enum(TRACK_KEYS as [string, ...string[]])).max(5)
 const optUuid = z.union([z.uuid(), z.literal('')]).optional().transform((v) => v || null)
 const optText = (max: number) => z.string().trim().max(max).optional().transform((v) => v || null)
 
-const errMsg = (err: unknown) => (err instanceof z.ZodError ? err.issues[0].message : (err as Error).message)
 
 // ------------------------------------------------------------------ team calls
 
@@ -89,7 +89,7 @@ const SeekerSchema = z.object({
   id: optUuid,
   event: z.string().optional(),
   event_text: z.string().trim().max(80).optional(),
-  skills: z.array(z.string().trim().min(1).max(30)).max(6),
+  skills: z.array(z.string().trim().min(1).max(60)).max(6),
   details: optText(4000),
   contact: optText(200),
 })
@@ -102,10 +102,7 @@ export async function saveSeeker(_prev: State, form: FormData): Promise<State> {
       id: form.get('id') ?? '',
       event: form.get('event') ?? '',
       event_text: String(form.get('event_text') ?? ''),
-      skills: String(form.get('skills') || '')
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean),
+      skills: splitTags(form.get('skills'), 6),
       details: form.get('details') ?? '',
       contact: form.get('contact') ?? '',
     })

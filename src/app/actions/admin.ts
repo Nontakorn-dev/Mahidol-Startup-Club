@@ -4,6 +4,7 @@ import { revalidatePath, updateTag } from 'next/cache'
 import { after } from 'next/server'
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
+import { errMsg } from '@/lib/form-errors'
 import { actionAdmin } from '@/lib/auth'
 import { adminClient } from '@/lib/supabase/admin'
 import { notifyEventMatches } from '@/lib/event-notify'
@@ -13,7 +14,6 @@ import { CATEGORY_KEYS, HOME_FEATURED_LIMIT, ROLE_KEYS } from '@/lib/constants'
 import type { EventRow } from '@/lib/types'
 
 type State = { error?: string; ok?: string } | null
-const errMsg = (err: unknown) => (err instanceof z.ZodError ? err.issues[0].message : (err as Error).message)
 const optText = (max: number) => z.string().trim().max(max).optional().transform((v) => v || null)
 
 async function uploadPoster(file: File): Promise<string> {
