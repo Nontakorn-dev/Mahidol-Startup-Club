@@ -154,14 +154,16 @@ export default async function OpportunitiesPage({ searchParams }: PageProps<'/op
                         <div className="cal-events">
                           {evs.map((e) => (
                             <Link key={e.id} href={`/opportunities/${e.slug}`} className={`cal-event ${isClosed(e, now) ? 'closed' : ''}`}>
-                              <span className="stack" style={{ flex: 1, minWidth: 0, lineHeight: 1.4 }}>
-                                <b style={{ fontSize: 15 }}>{e.title}</b>
-                                <span className="muted" style={{ fontSize: 13 }}>
+                              <span className="cal-ev-text">
+                                <b className="cal-ev-title">{e.title}</b>
+                                <span className="cal-ev-meta">
                                   {CATEGORIES[e.category]} · ปิดรับ {thaiDeadline(e)}
                                   {e.organizer ? ` · ${e.organizer}` : ''}
                                 </span>
                               </span>
-                              <DeadlineBadge closesAt={iso(e)} size="sm" />
+                              <span className="cal-ev-badge">
+                                <DeadlineBadge closesAt={iso(e)} size="sm" />
+                              </span>
                             </Link>
                           ))}
                         </div>
@@ -176,8 +178,12 @@ export default async function OpportunitiesPage({ searchParams }: PageProps<'/op
                   <div className="cal-events">
                     {undated.map((e) => (
                       <Link key={e.id} href={`/opportunities/${e.slug}`} className="cal-event">
-                        <b style={{ flex: 1, fontSize: 15 }}>{e.title}</b>
-                        <DeadlineBadge closesAt={null} openNote={e.open_note} size="sm" />
+                        <span className="cal-ev-text">
+                          <b className="cal-ev-title">{e.title}</b>
+                        </span>
+                        <span className="cal-ev-badge">
+                          <DeadlineBadge closesAt={null} openNote={e.open_note} size="sm" />
+                        </span>
                       </Link>
                     ))}
                   </div>
