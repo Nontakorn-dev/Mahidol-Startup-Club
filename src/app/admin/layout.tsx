@@ -2,6 +2,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import type { Metadata } from 'next'
 import AdminNav from '@/components/admin/AdminNav'
+import Avatar from '@/components/Avatar'
+import { IconBack } from '@/components/icons'
 import { requireAdmin } from '@/lib/auth'
 import { adminClient } from '@/lib/supabase/admin'
 import { initialOf, shortName } from '@/lib/format'
@@ -25,6 +27,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     .eq('status', 'pending')
     .then((r) => r.count || 0)
   const name = shortName(admin.profile.first_name, admin.profile.last_name)
+  const photo = admin.profile.avatar_url || admin.profile.line_picture_url
   return (
     <div className="admin-shell">
       <aside className="admin-side">
@@ -33,10 +36,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </Link>
         <span className="kicker">ADMIN</span>
         <AdminNav newPosts={newPosts} pendingImports={pendingImports} />
+        <Link href="/" className="admin-home">
+          <IconBack size={16} /> กลับหน้าเว็บไซต์
+        </Link>
         <Link href="/me" className="admin-me">
-          <span className="avatar" style={{ width: 36, height: 36, background: 'var(--yellow)', color: 'var(--navy)', fontWeight: 600 }}>
-            {initialOf(admin.profile.first_name)}
-          </span>
+          <Avatar name={name} initial={initialOf(admin.profile.first_name)} src={photo} size={36} brand fontSize={15} />
           <span className="stack" style={{ lineHeight: 1.3 }}>
             <span style={{ color: '#fff', fontWeight: 600, fontSize: 14 }}>{name}</span>
             <span style={{ color: '#8FA6D6', fontSize: 12 }}>ผู้ดูแลระบบ</span>
@@ -45,16 +49,20 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       </aside>
       <div className="admin-mobile-nav">
         <div className="top">
-          <Link href="/">
+          <Link href="/" className="admin-back" aria-label="กลับหน้าเว็บไซต์">
+            <IconBack size={18} />
+            <span>หน้าเว็บ</span>
+          </Link>
+          <Link href="/" style={{ display: 'inline-flex' }}>
             <Image src="/assets/logo-2026.png" alt="Mahidol Startup Club" width={100} height={30} />
           </Link>
           <span className="kicker" style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', color: 'var(--muted)' }}>
             ADMIN
           </span>
           <span className="spacer" />
-          <span className="avatar" style={{ width: 32, height: 32, background: 'var(--yellow)', color: 'var(--navy)', fontSize: 14 }}>
-            {initialOf(admin.profile.first_name)}
-          </span>
+          <Link href="/me" aria-label="โปรไฟล์ของฉัน" style={{ display: 'inline-flex' }}>
+            <Avatar name={name} initial={initialOf(admin.profile.first_name)} src={photo} size={34} brand fontSize={14} />
+          </Link>
         </div>
         <AdminNav newPosts={newPosts} pendingImports={pendingImports} mobile />
       </div>
