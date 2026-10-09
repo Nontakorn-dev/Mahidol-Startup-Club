@@ -36,7 +36,7 @@ export default async function PublicProfilePage({ params }: PageProps<'/u/[id]'>
     return (
       <div className="bg-soft">
         <div className="container" style={{ paddingTop: 32, paddingBottom: 96 }}>
-          <Crumbs back="/people" trail={[{ label: 'เครือข่าย', href: '/people' }, { label: 'โปรไฟล์' }]} />
+          <Crumbs smart back="/people" trail={[{ label: 'เครือข่าย', href: '/people' }, { label: 'โปรไฟล์' }]} />
           <div className="empty" style={{ marginTop: 24 }}>
             <h3>โปรไฟล์นี้ไม่ได้เปิดเผย</h3>
             <p style={{ margin: 0 }}>เจ้าของโปรไฟล์เลือกไม่แสดงโปรไฟล์ในเครือข่ายสมาชิก</p>
@@ -84,7 +84,7 @@ export default async function PublicProfilePage({ params }: PageProps<'/u/[id]'>
     <div className="bg-soft" style={{ lineHeight: 1.65 }}>
       <div style={{ maxWidth: 1080, margin: '0 auto', padding: '32px var(--gutter) 96px' }} className="stack">
         <div style={{ marginBottom: 24 }}>
-          <Crumbs back="/people" trail={[{ label: 'เครือข่าย', href: '/people' }, { label: name }]} />
+          <Crumbs smart back="/people" trail={[{ label: 'เครือข่าย', href: '/people' }, { label: name }]} />
         </div>
         <section className="card" style={{ overflow: 'hidden', marginBottom: 24 }}>
           <div className="profile-cover" />

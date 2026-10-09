@@ -24,7 +24,7 @@ export default async function NewTeamPostPage({ searchParams }: PageProps<'/team
     <div className="bg-soft">
       <div style={{ maxWidth: 760, margin: '0 auto', padding: '32px var(--gutter) 96px' }} className="stack">
         <div style={{ marginBottom: 20 }}>
-          <Crumbs back="/teams" trail={[{ label: 'หาทีม & Co-Founder', href: '/teams' }, { label: 'ลงประกาศหาทีมแข่ง' }]} />
+          <Crumbs smart back="/teams" trail={[{ label: 'หาทีม & Co-Founder', href: '/teams' }, { label: 'ลงประกาศหาทีมแข่ง' }]} />
           <h1 style={{ margin: '4px 0 0', fontWeight: 600, fontSize: 36, lineHeight: 1.2 }}>ลงประกาศหาทีมแข่ง</h1>
           <p className="muted" style={{ margin: '6px 0 0', fontSize: 16 }}>เลือกสถานะของคุณ แล้วกรอกรายละเอียดด้านล่าง</p>
         </div>

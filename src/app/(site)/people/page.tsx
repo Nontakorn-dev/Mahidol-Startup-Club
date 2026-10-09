@@ -55,7 +55,7 @@ export default async function PeoplePage({ searchParams }: PageProps<'/people'>)
       <section className="page-head">
         <div className="inner">
           <div className="stack" style={{ flex: '1 1 560px', gap: 18 }}>
-            <Crumbs back="/" trail={[{ label: 'หน้าแรก', href: '/' }, { label: 'เครือข่าย' }]} />
+            <Crumbs smart back="/" trail={[{ label: 'หน้าแรก', href: '/' }, { label: 'เครือข่าย' }]} />
             <div>
               <h1>เครือข่าย</h1>
               <p className="lead">สร้างโปรไฟล์ของคุณ และค้นพบสมาชิกที่มีทักษะเสริมกัน</p>

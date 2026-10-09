@@ -70,7 +70,7 @@ export default async function TeamsPage({ searchParams }: PageProps<'/teams'>) {
       <section className="page-head">
         <div className="inner">
           <div className="stack" style={{ flex: '1 1 560px', gap: 18 }}>
-            <Crumbs back="/" trail={[{ label: 'หน้าแรก', href: '/' }, { label: 'หาทีม & Co-Founder' }]} />
+            <Crumbs smart back="/" trail={[{ label: 'หน้าแรก', href: '/' }, { label: 'หาทีม & Co-Founder' }]} />
             <div>
               <h1>หาทีม &amp; Co-Founder</h1>
               <p className="lead">รวมทีมแข่งที่เปิดรับสมาชิก ผู้ที่ต้องการเข้าร่วมทีม และผู้ที่หา Co-Founder</p>

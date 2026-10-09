@@ -20,7 +20,7 @@ export default async function EditTeamPage({ params }: PageProps<'/teams/[id]/ed
     <div className="bg-soft">
       <div style={{ maxWidth: 760, margin: '0 auto', padding: '32px var(--gutter) 96px' }} className="stack">
         <div style={{ marginBottom: 24 }}>
-          <Crumbs back="/me" trail={[{ label: 'ประกาศของฉัน', href: '/me' }, { label: team.name }]} />
+          <Crumbs smart back="/me" trail={[{ label: 'ประกาศของฉัน', href: '/me' }, { label: team.name }]} />
           <h1 style={{ margin: '4px 0 0', fontWeight: 600, fontSize: 36, lineHeight: 1.2 }}>แก้ไขประกาศทีม</h1>
         </div>
         <TeamForm team={team} events={events} lineLinked={Boolean(viewer.profile.line_user_id)} />

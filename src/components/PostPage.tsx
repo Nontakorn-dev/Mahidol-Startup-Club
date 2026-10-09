@@ -43,7 +43,7 @@ export default function PostPage({
     <div className="bg-soft">
       <section className="page-head">
         <div className="inner" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 16 }}>
-          <Crumbs back={backHref} trail={[{ label: 'หาทีม & Co-Founder', href: backHref }, { label: title }]} />
+          <Crumbs smart back={backHref} trail={[{ label: 'หาทีม & Co-Founder', href: backHref }, { label: title }]} />
           <div className="stack" style={{ gap: 10, maxWidth: 820 }}>
             <PostKind kind={kind} />
             <h1 style={{ margin: 0 }}>{title}</h1>
