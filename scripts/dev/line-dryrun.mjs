@@ -11,7 +11,7 @@ const toggles = process.argv.includes('--toggles')
 const events = toggles ? [pb('m:t:data_ai'), pb('m:t:data_ai'), pb('m:n:off'), pb('m:n:on')] : [
   ev('follow'),
   pb('m:open'), pb('m:foryou'), pb('m:teams'), pb('m:join'), pb('m:welcome'), pb('m:menu'), text('เมนู'), text('สมัคร'),
-  text('งานแข่ง'), text('ใกล้ปิดรับ'), text('หาทีมลง hackathon ฉันทำ UX ได้'), text('งานแข่งด้านการแพทย์'), text('ช่วยเขียนเรียงความ'),
+  text('งานแข่ง'), text('ใกล้ปิดรับ'), text('หาทีมลง hackathon ฉันทำ UX ได้'), text('งานแข่งด้านการแพทย์'), text('ช่วยเขียนเรียงความ'), text('สวัสดี'), text('ขอบคุณครับ'), text('asdfgh'), ev('message', { message: { type: 'sticker', id: '2', packageId: '1', stickerId: '1' } }),
 ]
 const body = JSON.stringify({ destination: 'x', events })
 const sig = createHmac('sha256', process.env.LINE_MESSAGING_CHANNEL_SECRET).update(body).digest('base64')

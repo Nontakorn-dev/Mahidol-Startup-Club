@@ -3,7 +3,7 @@ import { adminClient } from '@/lib/supabase/admin'
 import { verifyPayload } from '@/lib/crypto'
 import { eventsCarousel, noticeFlex, replyMessage, textMessage, verifyLineSignature } from '@/lib/line/messaging'
 import { LINK_CODE_RE, consumeLinkCode, consumeNonce } from '@/lib/line/link'
-import { handleMenu, linkInvite, linkedProfile, welcome } from '@/lib/line/bot'
+import { handleMenu, linkInvite, linkedProfile, menuCard, welcome } from '@/lib/line/bot'
 import { parseIntent } from '@/lib/ai/intent'
 import { runSearch } from '@/lib/search'
 import { respondToRequest } from '@/lib/messaging'
@@ -33,7 +33,8 @@ const COMMANDS: [RegExp, string][] = [
   [/^(เชื่อมบัญชี|เชื่อม line|ผูกบัญชี|บัญชี|ตั้งค่า|ตั้งค่าแจ้งเตือน|แจ้งเตือน|settings?)$/i, 'm:account'],
   [/^(เมนู|menu|เมนูหลัก|ปุ่ม)$/i, 'm:menu'],
   [/^(สมัคร|สมัครสมาชิก|join|sign ?up)$/i, 'm:join'],
-  [/^(start|เริ่ม|สวัสดี.*|หวัดดี.*|hi|hello)$/i, 'm:welcome'],
+  [/^(start|เริ่ม|สวัสดี.*|หวัดดี.*|ดีครับ|ดีค่ะ|hi|hello|hey)$/i, 'm:welcome'],
+  [/^(ขอบคุณ.*|thank.*|ok|โอเค|ครับ|ค่ะ|คับ|จ้า|555+|\?+|!+)$/i, 'm:menu'],
 ]
 
 const TONE = { closed: 'grey', today: 'red', soon: 'red', week: 'orange', normal: 'blue', none: 'blue' } as const
@@ -108,7 +109,8 @@ async function onText(e: LineEvent): Promise<Msg[]> {
   const { intent, usedFallback } = parsed
   if (parsed.status !== 'ok') {
     await adminClient().from('search_logs').insert({ user_id: profile?.id ?? null, query: text.slice(0, 300), used_fallback: false, source: 'line', engine: parsed.engine, status: parsed.status })
-    return [textMessage(parsed.message ?? '')]
+    // Didn't understand / off-topic: say so, then the menu card (tappable on iPad/Mac/PC too).
+    return [...(parsed.message ? [textMessage(parsed.message)] : []), menuCard(profile)]
   }
   const results = await runSearch(intent, profile?.id ?? null)
   const searchUrl = `/search?q=${encodeURIComponent(text)}&src=line`
@@ -169,6 +171,8 @@ async function answer(e: LineEvent): Promise<Msg[]> {
   if (e.type === 'accountLink') return onAccountLink(e)
   if (e.type === 'postback') return onPostback(e)
   if (e.type === 'message' && e.message?.type === 'text') return onText(e)
+  // Stickers, photos, voice…: answer with the menu so there's always something to tap.
+  if (e.type === 'message') return [menuCard(await linkedProfile(e.source.userId!))]
   return []
 }
 
