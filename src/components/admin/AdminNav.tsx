@@ -37,11 +37,6 @@ export default function AdminNav({ newPosts, pendingImports = 0, mobile }: { new
           </Link>
         )
       })}
-      {!mobile && (
-        <Link href="/" style={{ marginTop: 12, fontSize: 14 }}>
-          ← กลับไปหน้าเว็บ
-        </Link>
-      )}
     </nav>
   )
 }
