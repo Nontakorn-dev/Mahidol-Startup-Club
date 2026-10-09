@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import Crumbs from '@/components/Crumbs'
+import DeletePostButton from '@/components/DeletePostButton'
 import TeamForm from '@/components/forms/TeamForm'
 import { requireViewer } from '@/lib/auth'
 import { openEventOptions } from '@/lib/data/events'
@@ -23,6 +24,7 @@ export default async function EditTeamPage({ params }: PageProps<'/teams/[id]/ed
           <h1 style={{ margin: '4px 0 0', fontWeight: 600, fontSize: 36, lineHeight: 1.2 }}>แก้ไขประกาศทีม</h1>
         </div>
         <TeamForm team={team} events={events} lineLinked={Boolean(viewer.profile.line_user_id)} />
+        <DeletePostButton type="team" id={team.id} />
       </div>
     </div>
   )

@@ -1182,3 +1182,12 @@ html:has(.login-wrap), html:has(.login-wrap) body { background: var(--bg); }
 .looking-box.event-box .k { display: inline-flex; align-items: center; gap: 6px; color: var(--brand); font-weight: 600; }
 .looking-box.event-box a.v { text-decoration: none; }
 .looking-box.event-box a.v:hover { text-decoration: underline; }
+
+/* Edit pages: delete the post */
+.danger-zone { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 8px; padding: 18px 20px; border-radius: 18px; background: #fff; border: 1px solid #F3C9C9; }
+.danger-zone .txt { display: flex; flex-direction: column; line-height: 1.45; }
+.danger-zone .txt b { font-weight: 600; color: #B42318; }
+.danger-zone .txt span { font-size: 13px; color: var(--muted); }
+.btn-danger-outline { background: #fff; color: #B42318; border: 1.5px solid #F0B4B4; }
+.btn-danger-outline:hover { color: #fff; background: #D92D20; border-color: #D92D20; }
+@media (max-width: 640px) { .danger-zone .btn { width: 100%; } }

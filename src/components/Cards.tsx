@@ -238,7 +238,7 @@ export function CofounderCardView({ c, loggedIn, reason }: { c: CofounderCard; l
       <div className="cta">
         {c.is_mine ? (
           <Link href="/cofounder/new" className="btn btn-outline btn-pill btn-block">
-            โปรไฟล์ของคุณ · แก้ไข
+            ประกาศของคุณ · แก้ไข
           </Link>
         ) : (
           <ContactButton

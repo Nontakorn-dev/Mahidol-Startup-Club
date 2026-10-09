@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Crumbs from '@/components/Crumbs'
+import DeletePostButton from '@/components/DeletePostButton'
 import CofounderForm from '@/components/forms/CofounderForm'
 import { requireViewer } from '@/lib/auth'
 import { adminClient } from '@/lib/supabase/admin'
@@ -25,6 +26,7 @@ export default async function CofounderFormPage() {
           </p>
         </div>
         <CofounderForm c={existing ?? undefined} lineLinked={Boolean(viewer.profile.line_user_id)} />
+        {existing && <DeletePostButton type="cofounder" id={existing.id} />}
       </div>
     </div>
   )

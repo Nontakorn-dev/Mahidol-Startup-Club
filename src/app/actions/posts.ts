@@ -214,5 +214,8 @@ export async function setPostStatus(form: FormData) {
   else await db.from(TABLES[type]).update({ status }).eq('id', id)
   revalidatePath('/me')
   revalidatePath('/teams')
-  revalidatePath('/teams')
+  revalidatePath('/')
+  // From an edit page: leave it (the post may be gone).
+  const next = String(form.get('next') || '')
+  if (next.startsWith('/') && !next.startsWith('//')) redirect(next)
 }

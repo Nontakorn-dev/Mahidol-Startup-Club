@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import Crumbs from '@/components/Crumbs'
+import DeletePostButton from '@/components/DeletePostButton'
 import SeekerForm from '@/components/forms/SeekerForm'
 import { requireViewer } from '@/lib/auth'
 import { openEventOptions } from '@/lib/data/events'
@@ -19,6 +20,7 @@ export default async function EditSeekerPage({ params }: PageProps<'/teams/looki
           <h1 style={{ margin: '4px 0 0', fontWeight: 600, fontSize: 36, lineHeight: 1.2 }}>แก้ไขประกาศหาทีม</h1>
         </div>
         <SeekerForm seeker={seeker} events={events} defaultSkills={viewer.profile.skills} lineLinked={Boolean(viewer.profile.line_user_id)} />
+        <DeletePostButton type="seeker" id={seeker.id} />
       </div>
     </div>
   )
