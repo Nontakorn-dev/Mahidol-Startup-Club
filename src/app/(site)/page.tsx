@@ -147,7 +147,7 @@ export default async function HomePage() {
       <section style={{ background: 'linear-gradient(180deg, #E1E9F8 0%, #F4F7FC 45%, #FFFFFF 100%)' }}>
         <div className="container section home-seekers">
           <div className="stack" style={{ gap: 12, marginBottom: 24 }}>
-            <h2 className="section-title">ใครกำลังหาทีมอยู่บ้าง</h2>
+            <h2 className="section-title">หาทีม &amp; Co-Founder</h2>
             <p className="home-posts-sub">ทีมแข่งที่ยังขาดคน คนที่อยากเข้าทีมแข่ง และคนที่หา Co-Founder</p>
             <div className="seekers-bar">
               <span className="privacy-pill">
@@ -175,7 +175,7 @@ export default async function HomePage() {
             </div>
           )}
 
-          <PostActions heading={feed.length ? 'ลงประกาศของคุณ' : 'ยังไม่มีประกาศ — ลงเป็นคนแรกได้เลย'} />
+          <PostActions heading={feed.length ? 'ลงประกาศ' : 'ยังไม่มีประกาศ — ลงเป็นคนแรกได้เลย'} />
         </div>
       </section>
     </>

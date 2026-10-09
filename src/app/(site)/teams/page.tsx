@@ -133,7 +133,7 @@ export default async function TeamsPage({ searchParams }: PageProps<'/teams'>) {
             />
           )}
 
-          <PostActions heading="ลงประกาศของคุณ" eventId={eventId} />
+          <PostActions heading="ลงประกาศ" eventId={eventId} />
         </div>
       </div>
     </div>
