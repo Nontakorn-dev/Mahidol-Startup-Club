@@ -31,7 +31,9 @@ const COMMANDS: [RegExp, string][] = [
   [/^(วิธีค้นหา|วิธีใช้|ช่วยเหลือ|help|\?)$/i, 'm:help'],
   [/^(ความสนใจ|เลือกความสนใจ|เลือกเรื่องที่สนใจ|สนใจ)$/i, 'm:interests'],
   [/^(เชื่อมบัญชี|เชื่อม line|ผูกบัญชี|บัญชี|ตั้งค่า|ตั้งค่าแจ้งเตือน|แจ้งเตือน|settings?)$/i, 'm:account'],
-  [/^(เมนู|menu|start|เริ่ม|สวัสดี.*|หวัดดี.*|hi|hello)$/i, 'm:welcome'],
+  [/^(เมนู|menu|เมนูหลัก|ปุ่ม)$/i, 'm:menu'],
+  [/^(สมัคร|สมัครสมาชิก|join|sign ?up)$/i, 'm:join'],
+  [/^(start|เริ่ม|สวัสดี.*|หวัดดี.*|hi|hello)$/i, 'm:welcome'],
 ]
 
 const TONE = { closed: 'grey', today: 'red', soon: 'red', week: 'orange', normal: 'blue', none: 'blue' } as const
@@ -157,7 +159,7 @@ async function onText(e: LineEvent): Promise<Msg[]> {
       ),
     )
   }
-  messages.push(textMessage(profile ? 'พิมพ์ค้นอย่างอื่นได้เลย หรือเลือกจากเมนูด้านล่าง 👇' : 'สมัครสมาชิกฟรี (ปุ่มในเมนูด้านล่าง) เพื่อรับงานที่ตรงกับคุณในแชตนี้ 👇'))
+  messages.push(textMessage(profile ? 'พิมพ์ค้นอย่างอื่นได้เลย หรือพิมพ์ “เมนู” เพื่อดูปุ่มทั้งหมด 👇' : 'สมัครสมาชิกฟรี (พิมพ์ “สมัคร”) เพื่อรับงานที่ตรงกับคุณในแชตนี้ 👇'))
   return messages
 }
 

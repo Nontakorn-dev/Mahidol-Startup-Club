@@ -16,14 +16,14 @@ const FONT = "Prompt, 'Sukhumvit Set', Thonburi, sans-serif"
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;')
 const b64 = (buf) => `data:image/png;base64,${buf.toString('base64')}`
 
-// Rocket mark = the left part of the wordmark logo.
+// Rocket mark (cut from the wordmark, square, transparent) + the full wordmark logo.
 const logo = readFileSync(asset('logo-2026.png'))
-const rocket = await sharp(logo).extract({ left: 0, top: 0, width: 262, height: 272 }).png().toBuffer()
+const rocket = readFileSync(asset('logo-mark.png'))
 
 // ------------------------------------------------------------------ icon.png
 {
   const S = 640
-  const mark = await sharp(rocket).resize({ height: 430 }).toBuffer()
+  const mark = await sharp(rocket).resize({ height: 470 }).toBuffer()
   const m = await sharp(mark).metadata()
   await sharp({ create: { width: S, height: S, channels: 4, background: '#FFFFFF' } })
     .composite([{ input: mark, left: Math.round((S - m.width) / 2) + 6, top: Math.round((S - m.height) / 2) }])

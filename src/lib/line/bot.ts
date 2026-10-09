@@ -120,7 +120,7 @@ export async function welcome(lineUserId: string, profile: Linked | null, justLi
           { type: 'uri', label: 'เปิดเว็บไซต์', url: web('/') },
         ],
       }),
-      textMessage('แตะเมนูด้านล่างเพื่อดูงานแข่ง หาทีม หรือสมัครสมาชิก — พิมพ์สิ่งที่อยากทำก็ได้ 👇'),
+      textMessage('แตะเมนูด้านล่าง (หรือพิมพ์ “เมนู” บน iPad/คอม) เพื่อดูงานแข่ง หาทีม หรือสมัครสมาชิก — พิมพ์สิ่งที่อยากทำก็ได้ 👇'),
     ]
   }
   // Interests are picked on the website (/settings/interests) — one card here, no picker.
@@ -138,6 +138,33 @@ export async function welcome(lineUserId: string, profile: Linked | null, justLi
       ],
     }),
   ]
+}
+
+/**
+ * The rich menu's 4 buttons as a message. LINE shows rich menus only in the phone apps (not on
+ * LINE for PC/Mac, nor on an iPad that isn't the account's main device) — typing "เมนู" gives
+ * everyone the same buttons.
+ */
+export function menuCard(p: Linked | null): LineMessage {
+  return noticeFlex({
+    altText: 'เมนู Mahidol Startup Club',
+    headerBar: 'เมนู',
+    title: 'อยากดูอะไรดี?',
+    subtitle: 'แตะปุ่มด้านล่าง หรือพิมพ์สิ่งที่อยากทำได้เลย เช่น “หาทีมทำแอป”',
+    actions: p
+      ? [
+          { type: 'postback', label: 'งานแข่ง & ทุน', data: 'm:open', displayText: 'งานแข่ง & ทุน' },
+          { type: 'postback', label: 'ตรงกับฉัน', data: 'm:foryou', displayText: 'ตรงกับฉัน' },
+          { type: 'postback', label: 'หาทีม', data: 'm:teams', displayText: 'หาทีม' },
+          { type: 'uri', label: 'เปิดเว็บไซต์', url: web('/') },
+        ]
+      : [
+          { type: 'postback', label: 'งานแข่ง & ทุน', data: 'm:open', displayText: 'งานแข่ง & ทุน' },
+          { type: 'postback', label: 'หาทีม', data: 'm:teams', displayText: 'หาทีม' },
+          { type: 'postback', label: 'สมัครสมาชิกฟรี', data: 'm:join', displayText: 'สมัครสมาชิก' },
+          { type: 'uri', label: 'เปิดเว็บไซต์', url: web('/') },
+        ],
+  })
 }
 
 /** Interests and notification switch live on the website. */
@@ -213,7 +240,7 @@ export async function openEvents(closingSoon: boolean, p: Linked | null = null):
       (closingSoon
         ? `⏰ ${events.length} งานปิดรับภายใน 7 วัน — เลื่อนดูได้เลย`
         : `🏆 เปิดรับอยู่ ${events.length} งาน เรียงตามวันปิดรับ — เลื่อนดู หรือแตะ “ดูทั้งหมดบนเว็บ”${weekCount(events) ? `\n⏰ ในนี้ ${weekCount(events)} งานปิดรับภายใน 7 วัน` : ''}`) +
-        (p ? '' : '\n\n🚀 สมัครสมาชิกฟรี (ปุ่มในเมนูด้านล่าง) เพื่อรับงานที่ตรงกับคุณและเตือนก่อนปิดรับ'),
+        (p ? '' : '\n\n🚀 สมัครสมาชิกฟรี (พิมพ์ “สมัคร” หรือแตะในเมนู) เพื่อรับงานที่ตรงกับคุณและเตือนก่อนปิดรับ'),
     ),
   ]
 }
@@ -293,7 +320,7 @@ export async function handleMenu(data: string, lineUserId: string): Promise<Line
               ],
             }),
           ]
-        : [await linkInvite(lineUserId, 'สมัครสมาชิก Mahidol Startup Club ฟรี 🚀'), textMessage('ยังไม่พร้อมสมัคร? แตะ “งานแข่ง & ทุน” ในเมนูด้านล่าง ดูงานก่อนได้เลย 👇')]
+        : [await linkInvite(lineUserId, 'สมัครสมาชิก Mahidol Startup Club ฟรี 🚀'), textMessage('ยังไม่พร้อมสมัคร? พิมพ์ “งานแข่ง” หรือแตะ “งานแข่ง & ทุน” ในเมนู ดูงานก่อนได้เลย 👇')]
     case 'foryou':
       return forYou(lineUserId, p)
     case 'teams':
@@ -304,11 +331,13 @@ export async function handleMenu(data: string, lineUserId: string): Promise<Line
       return account(lineUserId, p)
     case 'welcome':
       return welcome(lineUserId, p)
+    case 'menu':
+      return [menuCard(p)]
     case 'interests':
     case 't': // buttons on older in-chat pickers
     case 'n':
       return p ? [interestsOnWeb(p)] : [await linkInvite(lineUserId, 'สมัครสมาชิกฟรี เพื่อเลือกเรื่องที่สนใจ 🎯')]
     default:
-      return [textMessage('เลือกจากเมนูด้านล่างได้เลย 👇')]
+      return [menuCard(p)]
   }
 }

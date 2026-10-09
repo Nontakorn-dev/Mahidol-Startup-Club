@@ -147,8 +147,8 @@ export type NoticeContent = {
   size?: 'kilo' | 'mega'
 }
 
-const LOGO_ICON = () => absoluteUrl('/assets/line/icon.png')
-export const WELCOME_IMAGE = () => absoluteUrl('/assets/line/welcome.png')
+const LOGO_ICON = () => absoluteUrl('/assets/line/icon.png?v=2026')
+export const WELCOME_IMAGE = () => absoluteUrl('/assets/line/welcome.png?v=2026')
 
 const TONES: Record<NonNullable<NoticeContent['badgeTone']>, { bg: string; fg: string }> = {
   yellow: { bg: YELLOW, fg: NAVY },
