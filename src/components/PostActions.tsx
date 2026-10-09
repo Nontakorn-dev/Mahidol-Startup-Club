@@ -1,11 +1,11 @@
 import Link from 'next/link'
-import { IconPeople, IconUserPlus } from './icons'
+import { CofounderIllustration, TeamIllustration } from './PostIcons'
 
 const ACTIONS = [
   {
     kind: 'team',
     href: '/teams/new',
-    icon: <IconPeople size={24} />,
+    icon: <TeamIllustration />,
     title: 'หาทีมแข่ง',
     body: 'มีทีมแล้วแต่ยังขาดสมาชิก หรือยังไม่มีทีมและต้องการเข้าร่วม',
     cta: 'ลงประกาศหาทีมแข่ง',
@@ -13,7 +13,7 @@ const ACTIONS = [
   {
     kind: 'cofounder',
     href: '/cofounder/new',
-    icon: <IconUserPlus size={24} />,
+    icon: <CofounderIllustration />,
     title: 'หา Co-Founder',
     body: 'มีไอเดียสตาร์ตอัพ และต้องการผู้ร่วมก่อตั้งที่เสริมทักษะกัน',
     cta: 'ลงประกาศหา Co-Founder',
