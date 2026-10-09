@@ -53,7 +53,7 @@ export function renderNoticeEmail(c: NoticeContent, opts: { unsubscribeUrl?: str
 <tr><td align="center" style="padding:28px 12px">
   <table role="presentation" class="card" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background:#ffffff;border-radius:20px;overflow:hidden;border:1px solid ${C.line}">
     <tr><td class="px" style="padding:22px 32px;border-bottom:1px solid ${C.line}">
-      <a href="${env.siteUrl}" target="_blank"><img src="${env.siteUrl}/assets/logo.png" width="150" height="45" alt="Mahidol Startup Club" style="display:block;border:0;height:45px;width:auto"></a>
+      <a href="${env.siteUrl}" target="_blank"><img src="${env.siteUrl}/assets/logo-2026.png" width="150" height="45" alt="Mahidol Startup Club" style="display:block;border:0;height:45px;width:auto"></a>
     </td></tr>
     ${c.headerBar ? `<tr><td class="px" bgcolor="${C.brand}" style="padding:12px 32px;font-family:${FONT};font-size:14px;font-weight:600;color:#ffffff">${esc(c.headerBar)}</td></tr>` : ''}
     ${img ? `<tr><td><img src="${esc(img)}" width="560" alt="" style="display:block;width:100%;max-width:560px;height:auto;border:0"></td></tr>` : ''}

@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   title: { default: 'Mahidol Startup Club — Hands-on Experience. Support, Connect.', template: '%s · Mahidol Startup Club' },
   description: 'ชมรมสตาร์ตอัพมหาวิทยาลัยมหิดล หางานแข่ง ทุน ทีม และ co-founder ในที่เดียว พิมพ์สิ่งที่อยากทำ แล้วให้ AI พาไปเจอสิ่งที่ใช่',
   openGraph: { images: ['/assets/hero-connect.png'], locale: 'th_TH', type: 'website' },
-  icons: { icon: '/assets/partners/msc.png' },
+  icons: { icon: '/assets/partners/msc-2026.png' },
 }
 
 export const viewport: Viewport = { themeColor: '#0035AD', width: 'device-width', initialScale: 1 }

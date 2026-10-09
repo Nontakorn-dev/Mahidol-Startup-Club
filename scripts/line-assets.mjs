@@ -17,7 +17,7 @@ const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;')
 const b64 = (buf) => `data:image/png;base64,${buf.toString('base64')}`
 
 // Rocket mark = the left part of the wordmark logo.
-const logo = readFileSync(asset('logo.png'))
+const logo = readFileSync(asset('logo-2026.png'))
 const rocket = await sharp(logo).extract({ left: 0, top: 0, width: 262, height: 272 }).png().toBuffer()
 
 // ------------------------------------------------------------------ icon.png

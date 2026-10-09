@@ -29,7 +29,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="admin-shell">
       <aside className="admin-side">
         <Link href="/" className="logo">
-          <Image src="/assets/logo.png" alt="Mahidol Startup Club" width={112} height={34} />
+          <Image src="/assets/logo-2026.png" alt="Mahidol Startup Club" width={112} height={34} />
         </Link>
         <span className="kicker">ADMIN</span>
         <AdminNav newPosts={newPosts} pendingImports={pendingImports} />
@@ -46,7 +46,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <div className="admin-mobile-nav">
         <div className="top">
           <Link href="/">
-            <Image src="/assets/logo.png" alt="Mahidol Startup Club" width={100} height={30} />
+            <Image src="/assets/logo-2026.png" alt="Mahidol Startup Club" width={100} height={30} />
           </Link>
           <span className="kicker" style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', color: 'var(--muted)' }}>
             ADMIN

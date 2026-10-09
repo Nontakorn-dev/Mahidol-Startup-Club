@@ -8,7 +8,7 @@ export default function Footer() {
       <div className="inner">
         <div className="about">
           <Link href="/" className="logo-link">
-            <Image src="/assets/logo.png" alt="Mahidol Startup Club" width={212} height={64} className="logo" />
+            <Image src="/assets/logo-2026.png" alt="Mahidol Startup Club" width={212} height={64} className="logo" />
           </Link>
           <p className="mantra-sm">
             <span>Hands-on Experience.</span> <span className="accent">Support, Connect.</span>

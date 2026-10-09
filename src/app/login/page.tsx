@@ -29,7 +29,7 @@ export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
       {/* Desktop / iPad landscape: navy brand panel */}
       <section className="login-brand">
         <Link href="/" className="login-logo">
-          <Image src="/assets/logo.png" alt="Mahidol Startup Club" width={146} height={44} />
+          <Image src="/assets/logo-2026.png" alt="Mahidol Startup Club" width={146} height={44} />
         </Link>
         <div className="login-brand-body">
           <ConnectMap dark className="login-map" />
@@ -48,7 +48,7 @@ export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
             <span className="txt">หน้าแรก</span>
           </Link>
           <Link href="/" className="login-top-logo">
-            <Image src="/assets/logo.png" alt="Mahidol Startup Club" width={146} height={44} />
+            <Image src="/assets/logo-2026.png" alt="Mahidol Startup Club" width={146} height={44} />
           </Link>
         </div>
         <div className="login-card">

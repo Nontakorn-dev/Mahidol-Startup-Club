@@ -12,7 +12,7 @@ import { listSeekers } from '@/lib/data/community'
 export const dynamic = 'force-dynamic'
 
 const PARTNERS = [
-  { src: '/assets/partners/msc.png', alt: 'Mahidol Startup Club', h: 46, w: 147 },
+  { src: '/assets/partners/msc-2026.png', alt: 'Mahidol Startup Club', h: 44, w: 146 },
   { src: '/assets/partners/int.png', alt: 'iNT Mahidol', h: 52, w: 105 },
   { src: '/assets/partners/mahidol.png', alt: 'Mahidol University', h: 44, w: 170 },
   { src: '/assets/partners/ted-youth.png', alt: 'Mahidol TED Youth Startup', h: 50, w: 150 },

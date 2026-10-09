@@ -16,7 +16,7 @@ export default async function Header() {
     <header className="site-header">
       <div className="bar">
         <Link href="/" className="logo" aria-label="Mahidol Startup Club หน้าแรก">
-          <Image src="/assets/logo.png" alt="Mahidol Startup Club" width={172} height={52} priority />
+          <Image src="/assets/logo-2026.png" alt="Mahidol Startup Club" width={172} height={52} priority />
         </Link>
         <NavLinks />
         <div className="header-right">
