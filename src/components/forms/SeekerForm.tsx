@@ -2,6 +2,9 @@
 import { useActionState } from 'react'
 import { saveSeeker } from '@/app/actions/posts'
 import PrivacySection from './PrivacySection'
+import EventPicker from './EventPicker'
+
+const ANY = 'เปิดรับทุกรายการ'
 
 type Seeker = { id?: string; looking_text?: string; event_id?: string | null; skills?: string[]; details?: string | null; is_anonymous?: boolean; contact?: string | null }
 
@@ -28,23 +31,13 @@ export default function SeekerForm({
             <span className="step-num">1</span>
             <h2>ข้อมูลผู้สมัคร</h2>
           </div>
-          <div className="field">
-            <label htmlFor="lt">ทีมหรือรายการแข่งขันที่ต้องการเข้าร่วม</label>
-            <input id="lt" name="looking_text" className="input" required maxLength={80} defaultValue={seeker.looking_text} placeholder="เช่น ทีมแข่ง TED Youth Startup / ทีมด้านสุขภาพ" />
-          </div>
-          <div className="field">
-            <label htmlFor="ev">
-              รายการแข่งขัน <span className="opt">(ไม่บังคับ)</span>
-            </label>
-            <select id="ev" name="event" className="select" defaultValue={seeker.event_id ?? defaultEvent ?? ''}>
-              <option value="">— เปิดรับทุกรายการ —</option>
-              {events.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.title}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Open events to pick from; anything else is typed (stored in looking_text). */}
+          <EventPicker
+            events={events}
+            defaultEvent={seeker.event_id ?? (seeker.looking_text && seeker.looking_text !== ANY ? 'other' : defaultEvent ?? '')}
+            defaultText={seeker.event_id || seeker.looking_text === ANY ? '' : seeker.looking_text ?? ''}
+            emptyLabel="— เปิดรับทุกรายการ —"
+          />
           <div className="field">
             <label htmlFor="sk">ทักษะและความถนัด</label>
             <input id="sk" name="skills" className="input" defaultValue={(seeker.skills ?? defaultSkills).join(', ')} placeholder="เช่น Full-stack, React, UX/UI (คั่นด้วยเครื่องหมายจุลภาค สูงสุด 6 รายการ)" />

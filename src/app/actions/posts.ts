@@ -52,7 +52,7 @@ export async function saveTeam(_prev: State, form: FormData): Promise<State> {
     const row = {
       name: v.name,
       event_id: eventId,
-      event_note: !eventId && v.event === 'other' ? 'งานแข่งอื่นๆ / ยังไม่แน่ใจ' : null,
+      event_note: !eventId && v.event === 'other' ? String(form.get('event_text') || '').trim().slice(0, 80) || 'รายการอื่น' : null,
       pitch: v.pitch,
       details: v.details,
       contact: v.contact,
@@ -87,8 +87,8 @@ export async function saveTeam(_prev: State, form: FormData): Promise<State> {
 
 const SeekerSchema = z.object({
   id: optUuid,
-  looking_text: z.string().trim().min(1, 'กรุณาระบุทีมหรือรายการแข่งขันที่ต้องการเข้าร่วม').max(80),
   event: z.string().optional(),
+  event_text: z.string().trim().max(80).optional(),
   skills: z.array(z.string().trim().min(1).max(30)).max(6),
   details: optText(4000),
   contact: optText(200),
@@ -100,8 +100,8 @@ export async function saveSeeker(_prev: State, form: FormData): Promise<State> {
     const viewer = await actionViewer()
     const v = SeekerSchema.parse({
       id: form.get('id') ?? '',
-      looking_text: form.get('looking_text'),
       event: form.get('event') ?? '',
+      event_text: String(form.get('event_text') ?? ''),
       skills: String(form.get('skills') || '')
         .split(',')
         .map((s) => s.trim())
@@ -109,9 +109,17 @@ export async function saveSeeker(_prev: State, form: FormData): Promise<State> {
       details: form.get('details') ?? '',
       contact: form.get('contact') ?? '',
     })
+    const eventId = v.event && z.uuid().safeParse(v.event).success ? v.event : null
+    if (v.event === 'other' && !v.event_text) throw new Error('กรุณาระบุชื่อรายการแข่งขัน')
+    // Card line "ต้องการเข้าร่วม …": the chosen event, the typed name, or any event.
+    const looking_text = eventId
+      ? ((await adminClient().from('events').select('title').eq('id', eventId).maybeSingle()).data?.title ?? 'เปิดรับทุกรายการ').slice(0, 80)
+      : v.event === 'other'
+        ? v.event_text!
+        : 'เปิดรับทุกรายการ'
     const row = {
-      looking_text: v.looking_text,
-      event_id: v.event && z.uuid().safeParse(v.event).success ? v.event : null,
+      looking_text,
+      event_id: eventId,
       skills: v.skills,
       details: v.details,
       contact: v.contact,

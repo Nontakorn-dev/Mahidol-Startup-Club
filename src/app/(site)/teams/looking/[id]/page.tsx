@@ -19,7 +19,7 @@ export default async function SeekerPostPage({ params }: PageProps<'/teams/looki
   return (
     <PostPage
       kind="seeker"
-      title={s.looking_text}
+      title={s.event || s.looking_text !== 'เปิดรับทุกรายการ' ? `ต้องการเข้าร่วมทีม ${s.looking_text}` : 'ต้องการเข้าร่วมทีมแข่ง'}
       author={s.author}
       backHref="/teams?tab=team"
       closed={s.status === 'closed'}
@@ -29,7 +29,7 @@ export default async function SeekerPostPage({ params }: PageProps<'/teams/looki
       detailsHeading="เกี่ยวกับผู้สมัคร"
       contact={extra?.contact ?? null}
       facts={[
-        { label: 'รายการแข่งขันที่สนใจ', value: s.event ? <Link href={`/opportunities/${s.event.slug}`}>{s.event.title}</Link> : 'เปิดรับทุกรายการ' },
+        { label: 'รายการแข่งขันที่สนใจ', value: s.event ? <Link href={`/opportunities/${s.event.slug}`}>{s.event.title}</Link> : s.looking_text },
         { label: 'ทักษะ', value: s.skills.length ? s.skills.map((k) => ROLES[k as Role] ?? k).join(', ') : '—' },
       ]}
       action={

@@ -3,6 +3,7 @@ import { useActionState, useState } from 'react'
 import { saveTeam } from '@/app/actions/posts'
 import ChipSelect from '../ChipSelect'
 import PrivacySection from './PrivacySection'
+import EventPicker from './EventPicker'
 import { ROLES, ROLE_KEYS } from '@/lib/constants'
 
 type Team = {
@@ -49,18 +50,7 @@ export default function TeamForm({
             <label htmlFor="tn">ชื่อทีมหรือชื่อโปรเจกต์</label>
             <input id="tn" name="name" className="input" required maxLength={60} defaultValue={team.name} placeholder="เช่น CareLoop" />
           </div>
-          <div className="field">
-            <label htmlFor="tc">รายการแข่งขัน</label>
-            <select id="tc" name="event" className="select" defaultValue={eventDefault}>
-              <option value="">— เลือกรายการแข่งขัน —</option>
-              {events.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.title}
-                </option>
-              ))}
-              <option value="other">รายการอื่น / ยังไม่ระบุ</option>
-            </select>
-          </div>
+          <EventPicker events={events} defaultEvent={eventDefault} defaultText={team.event_id ? '' : team.event_note ?? ''} emptyLabel="— เลือกรายการแข่งขัน —" />
           <div className="field">
             <label htmlFor="tp">สรุปโปรเจกต์ในหนึ่งประโยค</label>
             <input
