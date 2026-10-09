@@ -179,7 +179,7 @@ export default async function EventDetailPage({ params }: PageProps<'/opportunit
                   title="ยังไม่มีทีมประกาศหาคนสำหรับงานนี้"
                   body="เริ่มเป็นทีมแรก แล้วให้คนที่สกิลตรงทักมาหาคุณ"
                   action={
-                    <Link href={`/teams/looking/new?event=${e.id}`} className="btn btn-outline btn-pill">
+                    <Link href={`/teams/new?as=member&event=${e.id}`} className="btn btn-outline btn-pill">
                       หรือประกาศว่าคุณกำลังหาทีมสำหรับงานนี้
                     </Link>
                   }

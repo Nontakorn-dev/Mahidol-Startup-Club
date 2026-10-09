@@ -222,7 +222,7 @@ async function Results({ q, f, tab, scope }: { q: string; f: string | null; tab:
           <EmptyState
             title="ยังไม่มีทีมที่ตรงกับคุณ"
             body="ลองประกาศว่าคุณกำลังหาทีม แล้วให้ทีมที่ขาดคนแบบคุณทักมา"
-            action={<Link href={`/teams/looking/new${results.focusEvent ? `?event=${results.focusEvent.id}` : ''}`} className="btn btn-primary btn-pill">ประกาศหาทีม</Link>}
+            action={<Link href={`/teams/new?as=member${results.focusEvent ? `&event=${results.focusEvent.id}` : ''}`} className="btn btn-primary btn-pill">ประกาศหาทีม</Link>}
           />
         ))}
       {active === 'people' &&

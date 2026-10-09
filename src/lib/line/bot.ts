@@ -288,7 +288,7 @@ export async function teams(viewerId: string | null): Promise<LineMessage[]> {
       subtitle: 'ดูทีมที่ขาดตำแหน่งที่คุณทำได้ หรือประกาศของคุณเองให้คนที่ใช่ทักมา',
       actions: [
         { type: 'uri', label: 'ดูทีม & คนหาทีม', url: web('/teams') },
-        { type: 'uri', label: 'ประกาศหาทีม', url: web('/teams/looking/new') },
+        { type: 'uri', label: 'ประกาศหาทีม', url: web('/teams/new?as=member') },
         { type: 'uri', label: 'ชวนคนเข้าทีม', url: web('/teams/new') },
       ],
     }),

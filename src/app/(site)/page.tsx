@@ -5,7 +5,7 @@ import SearchBox from '@/components/SearchBox'
 import PostActions from '@/components/PostActions'
 import ConnectMap from '@/components/ConnectMap'
 import { CofounderCardView, EmptyState, EventCardH, SeekerCardView, TeamCardView } from '@/components/Cards'
-import { IconArrowRight, IconLock, IconPeople, IconTrophy, IconUser, IconUserPlus } from '@/components/icons'
+import { IconArrowRight, IconPeople, IconTrophy, IconUser, IconUserPlus } from '@/components/icons'
 import { getViewer } from '@/lib/auth'
 import { homeFeaturedEvents } from '@/lib/data/events'
 import { listCofounders, listSeekers, listTeams } from '@/lib/data/community'
@@ -146,23 +146,17 @@ export default async function HomePage() {
 
       <section style={{ background: 'linear-gradient(180deg, #E1E9F8 0%, #F4F7FC 45%, #FFFFFF 100%)' }}>
         <div className="container section home-seekers">
-          <div className="stack" style={{ gap: 12, marginBottom: 24 }}>
-            <h2 className="section-title">หาทีม &amp; Co-Founder</h2>
-            <p className="home-posts-sub">ทีมแข่งที่ยังขาดคน คนที่อยากเข้าทีมแข่ง และคนที่หา Co-Founder</p>
-            <div className="seekers-bar">
-              <span className="privacy-pill">
-                <span style={{ display: 'inline-flex', color: 'var(--navy-2)' }}>
-                  <IconLock size={14} />
-                </span>
-                เลือกไม่เปิดเผยตัวตนได้
-              </span>
-              <Link href="/teams" className="cta-link">
-                ดูทั้งหมด
-                <span className="arrow" aria-hidden="true">
-                  <IconArrowRight size={18} />
-                </span>
-              </Link>
+          <div className="head-row" style={{ marginBottom: 24 }}>
+            <div className="stack" style={{ gap: 6 }}>
+              <h2 className="section-title">หาทีม &amp; Co-Founder</h2>
+              <p className="home-posts-sub">ทีมแข่งที่เปิดรับสมาชิก ผู้ที่ต้องการเข้าร่วมทีม และผู้ที่หา Co-Founder</p>
             </div>
+            <Link href="/teams" className="cta-link">
+              ดูทั้งหมด
+              <span className="arrow" aria-hidden="true">
+                <IconArrowRight size={18} />
+              </span>
+            </Link>
           </div>
 
           {feed.length > 0 && (

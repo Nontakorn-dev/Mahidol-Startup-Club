@@ -114,7 +114,7 @@ export default async function MePage({ searchParams }: PageProps<'/me'>) {
           <Link href="/teams/new" className="btn btn-outline">
             + ชวนคนเข้าทีม
           </Link>
-          <Link href="/teams/looking/new" className="btn btn-outline">
+          <Link href="/teams/new?as=member" className="btn btn-outline">
             + ประกาศหาทีม
           </Link>
           <Link href="/cofounder/new" className="btn btn-outline">

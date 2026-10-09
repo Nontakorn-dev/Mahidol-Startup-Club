@@ -116,8 +116,8 @@ export function EventCard({ e, reason }: { e: EventRow; reason?: string }) {
 }
 
 /** What kind of post a card is — shown on every team / seeker / co-founder card. */
-export const POST_KIND = { team: '🏆 ทีมแข่งรับคนเพิ่ม', seeker: '🙋 อยากเข้าทีมแข่ง', cofounder: '🚀 หา Co-Founder' } as const
-function PostKind({ kind }: { kind: keyof typeof POST_KIND }) {
+export const POST_KIND = { team: '🏆 ทีมแข่งเปิดรับสมาชิก', seeker: '🙋 ต้องการเข้าร่วมทีมแข่ง', cofounder: '🚀 หา Co-Founder' } as const
+export function PostKind({ kind }: { kind: keyof typeof POST_KIND }) {
   return <span className={`post-kind ${kind}`}>{POST_KIND[kind]}</span>
 }
 
@@ -157,10 +157,10 @@ export function SeekerCardView({ s, loggedIn, reason }: { s: SeekerCard; loggedI
     <article className="person-card">
       <PostKind kind="seeker" />
       <Who author={s.author} href={s.author.id ? `/u/${s.author.id}` : null} />
-      <div className="looking-box">
-        <span className="k">กำลังมองหา</span>
+      <Link href={`/teams/looking/${s.id}`} className="looking-box" style={{ textDecoration: 'none' }}>
+        <span className="k">ต้องการเข้าร่วม</span>
         <span className="v">{s.looking_text}</span>
-      </div>
+      </Link>
       {s.skills.length > 0 && (
         <div className="row wrap" style={{ gap: 6 }}>
           {s.skills.slice(0, 4).map((k) => (
@@ -171,6 +171,9 @@ export function SeekerCardView({ s, loggedIn, reason }: { s: SeekerCard; loggedI
         </div>
       )}
       {reason && <span className="reason-line">แนะนำเพราะ {reason}</span>}
+      <Link href={`/teams/looking/${s.id}`} className="card-more">
+        ดูรายละเอียด →
+      </Link>
       <div className="cta">
         {s.is_mine ? (
           <Link href={`/teams/looking/${s.id}/edit`} className="btn btn-outline btn-pill btn-block">
@@ -205,12 +208,14 @@ export function CofounderCardView({ c, loggedIn, reason }: { c: CofounderCard; l
         <span className="tag tag-blue tag-sm">{STAGES[c.stage]}</span>
       </div>
       <div className="looking-box">
-        <span className="k">มองหา co-founder</span>
+        <span className="k">ต้องการ Co-Founder ด้าน</span>
         <span className="v">{seekLabel}</span>
       </div>
       {c.idea_title && (
         <span style={{ fontSize: 14 }}>
-          <b style={{ fontWeight: 600 }}>{c.idea_title}</b>
+          <Link href={`/cofounder/${c.id}`} style={{ fontWeight: 600, color: 'var(--navy)' }}>
+            {c.idea_title}
+          </Link>
           {c.problem && <span className="muted"> — {c.problem.slice(0, 90)}{c.problem.length > 90 ? '…' : ''}</span>}
         </span>
       )}
@@ -227,6 +232,9 @@ export function CofounderCardView({ c, loggedIn, reason }: { c: CofounderCard; l
         </div>
       )}
       {reason && <span className="reason-line">แนะนำเพราะ {reason}</span>}
+      <Link href={`/cofounder/${c.id}`} className="card-more">
+        ดูรายละเอียด →
+      </Link>
       <div className="cta">
         {c.is_mine ? (
           <Link href="/cofounder/new" className="btn btn-outline btn-pill btn-block">
@@ -256,9 +264,9 @@ export function TeamCardView({ t, loggedIn, reason, showEvent = true }: { t: Tea
       <div className="top">
         <span className="team-logo">{Array.from(t.name)[0]?.toUpperCase()}</span>
         <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.35 }}>
-          <span className="head" style={{ fontWeight: 500, fontSize: 18 }}>
+          <Link href={`/teams/${t.id}`} className="head" style={{ fontWeight: 500, fontSize: 18, color: 'var(--navy)', textDecoration: 'none' }}>
             {t.name}
-          </span>
+          </Link>
           <span className="muted" style={{ fontSize: 13 }}>
             สมาชิก {t.members_count}/{t.target_size} คน{t.author.anonymous ? ' · ไม่ระบุชื่อผู้โพสต์' : ` · โดย ${t.author.name}`}
           </span>
@@ -274,15 +282,18 @@ export function TeamCardView({ t, loggedIn, reason, showEvent = true }: { t: Tea
       <span style={{ fontSize: 14 }}>{t.pitch}</span>
       {showEvent && (t.event || t.event_note) && (
         <span className="muted" style={{ fontSize: 13 }}>
-          ลงงาน:{' '}
+          รายการแข่งขัน:{' '}
           {t.event ? <Link href={`/opportunities/${t.event.slug}`}>{t.event.title}</Link> : t.event_note}
         </span>
       )}
       {reason && <span className="reason-line">แนะนำเพราะ {reason}</span>}
+      <Link href={`/teams/${t.id}`} className="card-more">
+        ดูรายละเอียด →
+      </Link>
       <div className="foot">
         <span className="row wrap" style={{ gap: 6 }}>
           <span className="muted" style={{ fontSize: 12 }}>
-            กำลังมองหา
+            ต้องการ
           </span>
           {t.roles_needed.map((r) => (
             <span key={r} className="tag tag-yellow tag-sm" style={{ fontSize: 13 }}>
@@ -299,7 +310,7 @@ export function TeamCardView({ t, loggedIn, reason, showEvent = true }: { t: Tea
             targetType="team"
             targetId={t.id}
             kind="join"
-            label="สนใจร่วมทีม"
+            label="ขอเข้าร่วมทีม"
             targetName={`ทีม ${t.name}`}
             loggedIn={loggedIn}
             className="btn-sm"

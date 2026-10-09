@@ -92,7 +92,7 @@ export async function listTeams(viewerId: string | null, f: TeamFilter = {}): Pr
   })
 }
 
-type SeekerFilter = { eventId?: string; skills?: string[]; ownerId?: string; limit?: number; includeClosed?: boolean }
+type SeekerFilter = { eventId?: string; skills?: string[]; ownerId?: string; ids?: string[]; limit?: number; includeClosed?: boolean }
 
 export async function listSeekers(viewerId: string | null, f: SeekerFilter = {}): Promise<SeekerCard[]> {
   let q = adminClient()
@@ -103,6 +103,7 @@ export async function listSeekers(viewerId: string | null, f: SeekerFilter = {})
   q = f.includeClosed ? q.neq('status', 'removed') : q.eq('status', 'open')
   if (f.eventId) q = q.eq('event_id', f.eventId)
   if (f.ownerId) q = q.eq('owner_id', f.ownerId)
+  if (f.ids) q = q.in('id', f.ids.length ? f.ids : ['00000000-0000-0000-0000-000000000000'])
   const { data } = await q
   let rows = data || []
   const authors = await authorsById(rows.map((r) => r.owner_id))
@@ -127,7 +128,7 @@ export async function listSeekers(viewerId: string | null, f: SeekerFilter = {})
   }))
 }
 
-type CofounderFilter = { seeking?: string[]; ownerId?: string; limit?: number; includeClosed?: boolean }
+type CofounderFilter = { seeking?: string[]; ownerId?: string; ids?: string[]; limit?: number; includeClosed?: boolean }
 
 export async function listCofounders(viewerId: string | null, f: CofounderFilter = {}): Promise<CofounderCard[]> {
   let q = adminClient()
@@ -138,6 +139,7 @@ export async function listCofounders(viewerId: string | null, f: CofounderFilter
   q = f.includeClosed ? q.neq('status', 'removed') : q.eq('status', 'open')
   if (f.seeking?.length) q = q.overlaps('seeking', f.seeking)
   if (f.ownerId) q = q.eq('owner_id', f.ownerId)
+  if (f.ids) q = q.in('id', f.ids.length ? f.ids : ['00000000-0000-0000-0000-000000000000'])
   const { data } = await q
   const rows = data || []
   const authors = await authorsById(rows.map((r) => r.owner_id))
@@ -160,6 +162,40 @@ export async function listCofounders(viewerId: string | null, f: CofounderFilter
       created_at: r.created_at,
     }
   })
+}
+
+// ------------------------------------------------------------------ one post (its own page)
+
+export type PostType = 'team' | 'seeker' | 'cofounder'
+const POST_TABLE = { team: 'team_posts', seeker: 'seeker_posts', cofounder: 'cofounder_posts' } as const
+/** Long description + contact line: only loaded for the post page, never for lists/cards. */
+export type PostExtra = { details: string | null; contact: string | null; updated_at: string }
+
+async function postExtra(type: PostType, id: string): Promise<PostExtra | null> {
+  const { data } = await adminClient().from(POST_TABLE[type]).select('details, contact, updated_at').eq('id', id).maybeSingle()
+  return data as PostExtra | null
+}
+
+const isUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+
+/** Open post (or the viewer's own, any status but removed) with its full details. */
+export async function getTeamPost(id: string, viewerId: string | null) {
+  if (!isUuid(id)) return null
+  const [card] = await listTeams(viewerId, { ids: [id], includeClosed: true })
+  if (!card || (card.status !== 'open' && !card.is_mine)) return null
+  return { card, extra: await postExtra('team', id) }
+}
+export async function getSeekerPost(id: string, viewerId: string | null) {
+  if (!isUuid(id)) return null
+  const [card] = await listSeekers(viewerId, { ids: [id], includeClosed: true })
+  if (!card || (card.status !== 'open' && !card.is_mine)) return null
+  return { card, extra: await postExtra('seeker', id) }
+}
+export async function getCofounderPost(id: string, viewerId: string | null) {
+  if (!isUuid(id)) return null
+  const [card] = await listCofounders(viewerId, { ids: [id], includeClosed: true })
+  if (!card || (card.status !== 'open' && !card.is_mine)) return null
+  return { card, extra: await postExtra('cofounder', id) }
 }
 
 /** Resolve the owner of any target a request can point at. Server-only — never expose. */

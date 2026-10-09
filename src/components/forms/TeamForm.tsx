@@ -17,6 +17,7 @@ type Team = {
   has_skills?: string[]
   roles_needed?: string[]
   is_anonymous?: boolean
+  contact?: string | null
 }
 
 const roleOptions = ROLE_KEYS.map((k) => ({ value: k, label: ROLES[k] }))
@@ -42,26 +43,26 @@ export default function TeamForm({
         <section>
           <div className="step-title">
             <span className="step-num">1</span>
-            <h2>เกี่ยวกับทีม</h2>
+            <h2>ข้อมูลทีม</h2>
           </div>
           <div className="field">
-            <label htmlFor="tn">ชื่อทีม / โปรเจกต์</label>
+            <label htmlFor="tn">ชื่อทีมหรือชื่อโปรเจกต์</label>
             <input id="tn" name="name" className="input" required maxLength={60} defaultValue={team.name} placeholder="เช่น CareLoop" />
           </div>
           <div className="field">
-            <label htmlFor="tc">ลงงานแข่งไหน</label>
+            <label htmlFor="tc">รายการแข่งขัน</label>
             <select id="tc" name="event" className="select" defaultValue={eventDefault}>
-              <option value="">— ยังไม่ได้เลือก —</option>
+              <option value="">— เลือกรายการแข่งขัน —</option>
               {events.map((e) => (
                 <option key={e.id} value={e.id}>
                   {e.title}
                 </option>
               ))}
-              <option value="other">งานแข่งอื่นๆ / ยังไม่แน่ใจ</option>
+              <option value="other">รายการอื่น / ยังไม่ระบุ</option>
             </select>
           </div>
           <div className="field">
-            <label htmlFor="tp">ไอเดียในหนึ่งประโยค</label>
+            <label htmlFor="tp">สรุปโปรเจกต์ในหนึ่งประโยค</label>
             <input
               id="tp"
               name="pitch"
@@ -70,44 +71,53 @@ export default function TeamForm({
               maxLength={120}
               value={pitch}
               onChange={(e) => setPitch(e.target.value)}
-              placeholder="เช่น แอปติดตามการกินยาผู้สูงอายุ เชื่อมผู้ดูแลผ่าน LINE"
+              placeholder="เช่น แอปติดตามการรับประทานยาของผู้สูงอายุ เชื่อมกับผู้ดูแลผ่าน LINE"
             />
             <p className="count">{pitch.length}/120</p>
           </div>
           <div className="field">
             <label htmlFor="td">
-              รายละเอียดเพิ่มเติม <span className="opt">(ไม่บังคับ)</span>
+              รายละเอียดโปรเจกต์ <span className="opt">(แนะนำให้กรอก)</span>
             </label>
-            <textarea id="td" name="details" className="textarea" rows={4} maxLength={2000} defaultValue={team.details ?? ''} placeholder="ปัญหาที่อยากแก้ ตอนนี้ทำถึงไหนแล้ว ลิงก์ prototype" />
+            <textarea
+              id="td"
+              name="details"
+              className="textarea"
+              rows={8}
+              maxLength={4000}
+              defaultValue={team.details ?? ''}
+              placeholder={'ปัญหาที่ต้องการแก้ไขและแนวทางของทีม\nความคืบหน้าปัจจุบัน (เช่น มีต้นแบบแล้ว)\nหน้าที่ของสมาชิกใหม่ และกำหนดการสำคัญ\nลิงก์เอกสารหรือผลงาน (ถ้ามี)'}
+            />
+            <p className="help">แสดงในหน้ารายละเอียดของประกาศ (ไม่แสดงบนการ์ด) — ยิ่งชัดเจน ยิ่งได้สมาชิกที่ตรงกับทีม</p>
           </div>
         </section>
         <section>
           <div className="step-title">
             <span className="step-num">2</span>
-            <h2>สมาชิกตอนนี้ และคนที่กำลังมองหา</h2>
+            <h2>สมาชิกและตำแหน่งที่ต้องการ</h2>
           </div>
           <div className="grid-2">
             <div className="field">
-              <label htmlFor="cur">ตอนนี้มีกี่คน</label>
+              <label htmlFor="cur">จำนวนสมาชิกปัจจุบัน</label>
               <input id="cur" name="members_count" type="number" min={1} max={20} className="input" defaultValue={team.members_count ?? 1} />
             </div>
             <div className="field">
-              <label htmlFor="tot">อยากให้ทีมมีกี่คน</label>
+              <label htmlFor="tot">จำนวนสมาชิกที่ต้องการทั้งหมด</label>
               <input id="tot" name="target_size" type="number" min={2} max={30} className="input" defaultValue={team.target_size ?? 4} />
             </div>
           </div>
           <div className="field">
-            <span className="label">ทักษะที่ทีมมีแล้ว</span>
+            <span className="label">ทักษะที่ทีมมีอยู่แล้ว</span>
             <ChipSelect name="has_skills" label="ทีมมีสกิล" options={roleOptions} defaultValue={team.has_skills} />
           </div>
           <div className="field">
             <span className="label">
-              ตำแหน่งที่กำลังมองหา <span className="opt">(เลือกได้หลายอัน)</span>
+              ตำแหน่งที่ต้องการ <span className="opt">(เลือกได้มากกว่า 1)</span>
             </span>
-            <ChipSelect name="roles_needed" label="ตำแหน่งที่กำลังมองหา" options={roleOptions} defaultValue={team.roles_needed} />
+            <ChipSelect name="roles_needed" label="ตำแหน่งที่ต้องการ" options={roleOptions} defaultValue={team.roles_needed} />
           </div>
         </section>
-        <PrivacySection defaultAnonymous={Boolean(team.is_anonymous)} lineLinked={lineLinked} />
+        <PrivacySection defaultAnonymous={Boolean(team.is_anonymous)} defaultContact={team.contact} lineLinked={lineLinked} />
       </div>
       {state?.error && <div className="alert alert-error">{state.error}</div>}
       <div className="form-actions sticky-m">
@@ -115,7 +125,7 @@ export default function TeamForm({
           บันทึกร่าง
         </button>
         <button type="submit" name="intent" value="publish" className="btn btn-orange btn-lg" style={{ fontWeight: 700, fontSize: 17, padding: '0 32px' }} disabled={pending}>
-          {pending ? 'กำลังบันทึก…' : team.id ? 'อัปเดตประกาศ' : 'เผยแพร่ประกาศ'}
+          {pending ? 'กำลังบันทึก…' : team.id ? 'บันทึกการแก้ไข' : 'เผยแพร่ประกาศ'}
         </button>
       </div>
     </form>
