@@ -1191,3 +1191,6 @@ html:has(.login-wrap), html:has(.login-wrap) body { background: var(--bg); }
 .btn-danger-outline { background: #fff; color: #B42318; border: 1.5px solid #F0B4B4; }
 .btn-danger-outline:hover { color: #fff; background: #D92D20; border-color: #D92D20; }
 @media (max-width: 640px) { .danger-zone .btn { width: 100%; } }
+
+/* Seeker card: their "แนะนำตัว", first lines only (full text on the post page) */
+.card-intro { font-size: 14px; line-height: 1.6; color: var(--muted); white-space: pre-line; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }

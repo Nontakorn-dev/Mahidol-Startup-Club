@@ -170,6 +170,7 @@ export function SeekerCardView({ s, loggedIn, reason }: { s: SeekerCard; loggedI
           ))}
         </div>
       )}
+      {s.details && <span className="card-intro">{s.details}</span>}
       {reason && <span className="reason-line">แนะนำเพราะ {reason}</span>}
       <Link href={`/teams/looking/${s.id}`} className="card-more">
         ดูรายละเอียด →
