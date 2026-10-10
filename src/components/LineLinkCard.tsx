@@ -1,5 +1,4 @@
 import QRCode from 'qrcode'
-import { headers } from 'next/headers'
 import { IconLine, IconQr } from './icons'
 import { UnlinkLineButton } from './NotificationSettings'
 import LinkStatusPoller from './LinkStatusPoller'
@@ -73,10 +72,8 @@ export default async function LineLinkCard({ p, next = '/me', compact }: { p: Pr
   const message = `เชื่อมบัญชี ${code}`
   const chatUrl = oaMessageUrl(message)
   const qr = chatUrl ? await QRCode.toString(chatUrl, { type: 'svg', margin: 1, color: { dark: '#10233F', light: '#FFFFFF' } }) : null
-  // Inside LINE's own in-app browser, LINE Login can fail ("เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ" on Android).
-  // There the chat-code path is one tap and always works, so it becomes the main button.
-  const inLine = /\bLine\//i.test((await headers()).get('user-agent') || '')
-  const loginReady = lineLoginEnabled() && !inLine
+  // LINE Login first everywhere (links + adds the OA in one step); the chat-code button stays as a fallback.
+  const loginReady = lineLoginEnabled()
   return (
     <div className="stack" style={{ gap: 18 }}>
       <LinkStatusPoller />
@@ -131,17 +128,10 @@ export default async function LineLinkCard({ p, next = '/me', compact }: { p: Pr
             )}
           </span>
           {!loginReady && !chatUrl && <span className="muted" style={{ fontSize: 13 }}>ผู้ดูแลยังไม่ได้ตั้งค่า LINE OA</span>}
-          {inLine && chatUrl ? (
+          {loginReady && chatUrl && (
             <span className="muted" style={{ fontSize: 13 }}>
-              ระบบจะเปิดแชต Mahidol Startup Club พร้อมข้อความ “{message}” — กดส่ง แล้วกลับมาหน้านี้ ระบบจะเชื่อมให้อัตโนมัติ
+              ถ้า LINE แจ้งข้อผิดพลาด ให้กด “เปิดแชตพร้อมรหัส” แล้วกดส่งข้อความในแชต — ระบบจะเชื่อมให้ทันที
             </span>
-          ) : (
-            loginReady &&
-            chatUrl && (
-              <span className="muted" style={{ fontSize: 13 }}>
-                ถ้า LINE แจ้งข้อผิดพลาด ให้กด “เปิดแชตพร้อมรหัส” แล้วกดส่งข้อความในแชต — ระบบจะเชื่อมให้ทันที
-              </span>
-            )
           )}
         </div>
       </div>
