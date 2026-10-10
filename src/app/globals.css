@@ -1194,3 +1194,6 @@ html:has(.login-wrap), html:has(.login-wrap) body { background: var(--bg); }
 
 /* Seeker card: their "แนะนำตัว", first lines only (full text on the post page) */
 .card-intro { font-size: 14px; line-height: 1.6; color: var(--muted); white-space: pre-line; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+.unlink-link { border: 0; padding: 4px 0; background: none; font-family: inherit; font-size: 13px; color: var(--muted); text-decoration: underline; cursor: pointer; }
+.unlink-link:hover { color: #B42318; }

@@ -9,17 +9,17 @@ export function UnlinkLineButton() {
     <>
       <button
         type="button"
-        className="btn btn-outline"
+        className="unlink-link"
         disabled={pending}
         onClick={() => {
-          if (!confirm('ยกเลิกการเชื่อม LINE? คุณจะไม่ได้รับแจ้งเตือนทาง LINE อีก')) return
+          if (!confirm('ยกเลิกการเชื่อม LINE?\n\nคุณจะไม่ได้รับแจ้งเตือนทาง LINE อีก และต้องกดเชื่อมใหม่หากต้องการใช้งาน')) return
           start(async () => {
             const res = await unlinkLine()
             if (res.error) setError(res.error)
           })
         }}
       >
-        ยกเลิกการเชื่อม
+        {pending ? 'กำลังยกเลิก…' : 'ยกเลิกการเชื่อม LINE'}
       </button>
       {error && (
         <span className="alert alert-error" style={{ width: '100%' }}>

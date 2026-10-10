@@ -12,10 +12,11 @@ export function lineAuthorizeUrl(opts: { state: string; nonce: string; redirectU
     state: opts.state,
     nonce: opts.nonce,
     scope: 'profile openid',
-    // One tap does both: the consent screen carries an "Add Mahidol Startup Club as a friend"
-    // checkbox, ticked by default (requires "Linked LINE Official Account" on the Login channel).
-    // prompt=consent makes that screen appear even for people who consented before.
-    bot_prompt: 'normal',
+    // One flow does both: right after the consent screen LINE shows "Add Mahidol Startup Club
+    // as a friend" (skipped if they already are). 'normal' only offered a checkbox that was easy
+    // to miss, leaving people to add the OA in a second step on the website.
+    // Requires "Linked LINE Official Account" on the Login channel.
+    bot_prompt: 'aggressive',
     prompt: 'consent',
   })
   return `https://access.line.me/oauth2/v2.1/authorize?${params}`

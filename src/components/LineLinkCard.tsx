@@ -59,8 +59,9 @@ export default async function LineLinkCard({ p, next = '/me', compact }: { p: Pr
             </span>
           </div>
         )}
-        {!compact && (
-          <span className="row" style={{ gap: 8 }}>
+        {/* Small and only once everything is set up, so it isn't mistaken for the next step. */}
+        {!compact && p.line_is_friend && (
+          <span className="row" style={{ justifyContent: 'flex-end' }}>
             <UnlinkLineButton />
           </span>
         )}
