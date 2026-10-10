@@ -127,6 +127,11 @@ export default async function LineLinkCard({ p, next = '/me', compact }: { p: Pr
             )}
           </span>
           {!loginReady && !chatUrl && <span className="muted" style={{ fontSize: 13 }}>ผู้ดูแลยังไม่ได้ตั้งค่า LINE OA</span>}
+          {loginReady && chatUrl && (
+            <span className="muted" style={{ fontSize: 13 }}>
+              ถ้า LINE แจ้งข้อผิดพลาด ให้กด “เปิดแชตพร้อมรหัส” แล้วกดส่งข้อความในแชต — ระบบจะเชื่อมให้ทันที
+            </span>
+          )}
         </div>
       </div>
     </div>
