@@ -1,7 +1,7 @@
 import type { Level, SourceItem } from './types'
 
-// Which listings are worth an admin's time: startup · นวัตกรรม · workshop · ธุรกิจ, open to
-// university students (or anyone). High-school-only listings are dropped outright.
+// How close a listing is to what the club wants: startup · นวัตกรรม · workshop · ธุรกิจ, open to
+// university students (or anyone). Shown on the admin card; high-school-only listings are skipped.
 
 const STRONG: Record<string, RegExp> = {
   startup: /start-?up|สตาร์[ทต]อัพ|ยุววิสาหกิจ|founder/i,
@@ -19,7 +19,6 @@ const MEDIUM: Record<string, RegExp> = {
   ความยั่งยืน: /sustainab|\besg\b|green|climate|social good|social impact|ความยั่งยืน/i,
 }
 const OFF_TOPIC = /film|ภาพยนตร์|short film|หนังสั้น|chair design|furniture|story contest|video competition|ประกวดร้องเพลง|ดนตรี|วงดนตรี|ถ่ายภาพ|photograph|วาดภาพ|painting|volunteer|อาสา|leadership summit|beauty|นางงาม|ติวสอบ|tcas|open ?house|เปิดบ้าน/i
-export const RELEVANCE_THRESHOLD = 4
 
 const UNI = /นักศึกษา|นิสิต|ปริญญาตรี|ปริญญาโท|อุดมศึกษา|มหาวิทยาลัย|university|undergrad|college|bachelor|ป\.ตรี|ปวส/i
 const PUBLIC = /บุคคลทั่วไป|ประชาชนทั่วไป|ไม่จำกัดอายุ|ทุกเพศทุกวัย|open to all|anyone|ผู้ที่สนใจ/i
@@ -34,17 +33,6 @@ export function levelsOf(it: Pick<SourceItem, 'levels' | 'eligibility' | 'descri
   if (PUBLIC.test(text)) out.push('public')
   if (HIGH.test(text)) out.push('high_school')
   return out
-}
-
-/** Why a listing stays out of the review queue, or null when it should go in. */
-export function skipReason(it: SourceItem, score: number, today: string): string | null {
-  if (it.skip) return it.skip
-  if (it.deadline && it.deadline < today) return 'เลยวันปิดรับแล้ว'
-  if (it.deadline_at && Date.parse(it.deadline_at) <= Date.now()) return 'ปิดรับสมัครแล้ว'
-  if (!it.open) return 'ปิดรับสมัครแล้ว'
-  if (score === -99) return 'รับเฉพาะนักเรียน ม.ปลาย'
-  if (score < RELEVANCE_THRESHOLD) return `ไม่ตรงสาย startup/ธุรกิจ/นวัตกรรม (คะแนน ${score})`
-  return null
 }
 
 export function scoreRelevance(it: SourceItem): { score: number; matched: string[]; levels: Level[] } {

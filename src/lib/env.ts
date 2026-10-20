@@ -16,6 +16,8 @@ export function serverEnv() {
       .map((e) => e.trim().toLowerCase())
       .filter(Boolean),
     cronSecret: process.env.CRON_SECRET || '',
+    /** Bearer token for POST /api/imports (the daily ChatGPT opportunity feed). */
+    importApiKey: process.env.IMPORT_API_KEY || '',
     appSecret: process.env.APP_SECRET || process.env.CRON_SECRET || 'dev-secret',
     openrouterKey: process.env.OPENROUTER_API_KEY || '',
     openrouterModel: process.env.OPENROUTER_MODEL || 'deepseek/deepseek-v4.1-flash',

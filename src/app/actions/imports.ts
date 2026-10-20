@@ -6,32 +6,61 @@ import { z } from 'zod'
 import { actionAdmin } from '@/lib/auth'
 import { adminClient } from '@/lib/supabase/admin'
 import { notifyEventMatches } from '@/lib/event-notify'
+import { env } from '@/lib/env'
 import { slugify } from '@/lib/format'
-import { BOT_UA } from '@/lib/importers/http'
 import type { MappedEvent } from '@/lib/importers/map'
-import { SOURCE_BY_KEY, syncDue } from '@/lib/importers/sync'
 import type { EventRow } from '@/lib/types'
 
 type Mapped = Partial<MappedEvent> & Pick<MappedEvent, 'title' | 'category' | 'source' | 'source_url'>
 
 const POSTER_TYPES: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }
+const POSTER_UA = `Mozilla/5.0 (compatible; MahidolStartupClubBot/1.0; +${env.siteUrl})`
+/** Poster hosts next.config lets next/image load directly (used when a copy isn't possible). */
+const RENDERABLE = /(^|\.)supabase\.co$|^s3\.siwatsystem\.com$|^www\.camphub\.in\.th$|^api\.dekport\.com$|^d112y698adiu2z\.cloudfront\.net$/
 
-/** Keep our own copy of the poster so the event doesn't break when the source removes it. */
-async function copyPoster(url: string | null | undefined, slug: string): Promise<string | null> {
-  if (!url) return null
+/** Public web hosts only: the URL came from outside, so never fetch our own network or an IP. */
+function publicHttpUrl(raw: string): URL | null {
   try {
-    const res = await fetch(url, { headers: { 'User-Agent': BOT_UA }, signal: AbortSignal.timeout(15_000) })
+    const u = new URL(raw)
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') return null
+    const h = u.hostname.toLowerCase()
+    if (h === 'localhost' || h.endsWith('.local') || h.endsWith('.internal') || !h.includes('.') || /^[\d.]+$/.test(h) || h.includes(':')) return null
+    return u
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Keep our own copy of the poster so the event doesn't break when the source removes it.
+ * If it can't be copied, keep the original only when next/image may load it; otherwise none
+ * (the admin can upload one on the event page).
+ */
+async function copyPoster(url: string | null | undefined, slug: string): Promise<string | null> {
+  const u = url ? publicHttpUrl(url) : null
+  if (!u) return null
+  const fallback = RENDERABLE.test(u.hostname) ? u.href : null
+  try {
+    // Follow redirects by hand so every hop is checked too.
+    let target = u
+    let res = await fetch(target, { headers: { 'User-Agent': POSTER_UA }, redirect: 'manual', signal: AbortSignal.timeout(15_000) })
+    for (let hop = 0; hop < 3 && res.status >= 300 && res.status < 400; hop++) {
+      const next = publicHttpUrl(new URL(res.headers.get('location') || '', target).href)
+      if (!next) return fallback
+      target = next
+      res = await fetch(target, { headers: { 'User-Agent': POSTER_UA }, redirect: 'manual', signal: AbortSignal.timeout(15_000) })
+    }
     const type = (res.headers.get('content-type') || '').split(';')[0].trim()
-    if (!res.ok || !POSTER_TYPES[type]) return url
+    if (!res.ok || !POSTER_TYPES[type]) return fallback
     const buf = Buffer.from(await res.arrayBuffer())
-    if (buf.length > 2 * 1024 * 1024) return url // bucket limit; next.config allows the source hosts
+    if (buf.length > 2 * 1024 * 1024) return fallback // bucket limit
     const db = adminClient()
     const path = `imported/${slug.replace(/[^a-z0-9ก-๙-]/gi, '').slice(0, 60) || 'event'}-${Date.now().toString(36)}.${POSTER_TYPES[type]}`
     const { error } = await db.storage.from('posters').upload(path, buf, { contentType: type, upsert: true })
-    if (error) return url
+    if (error) return fallback
     return db.storage.from('posters').getPublicUrl(path).data.publicUrl
   } catch {
-    return url
+    return fallback
   }
 }
 
@@ -144,19 +173,12 @@ export async function setImportStatus(form: FormData) {
   revalidatePath('/admin/imports')
 }
 
-export async function syncNow(form: FormData): Promise<{ ok?: string; error?: string }> {
+/** "รับทราบ" on an approved listing whose closing date changed after it was published. */
+export async function dismissDeadlineChange(form: FormData) {
   await actionAdmin()
-  const only = form.get('source')
-  const keys = typeof only === 'string' && SOURCE_BY_KEY[only] ? [only] : undefined
-  // Be polite to the sources: each one at most once every 10 minutes, even when forced.
-  const { results, waiting } = await syncDue('manual', { force: true, budgetMs: 50_000, only: keys })
+  const id = z.uuid().parse(form.get('id'))
+  const db = adminClient()
+  const { data } = await db.from('event_imports').select('flags').eq('id', id).maybeSingle()
+  if (data) await db.from('event_imports').update({ flags: (data.flags as string[]).filter((f) => !f.startsWith('deadline_changed:')) }).eq('id', id)
   revalidatePath('/admin/imports')
-  if (!results.length) return { error: 'เพิ่งซิงก์ไปเมื่อไม่นานนี้ — รอ 10 นาทีแล้วลองใหม่ (เพื่อไม่ให้รบกวนเว็บต้นทาง)' }
-  const lines = results.map((r) =>
-    r.error
-      ? `${SOURCE_BY_KEY[r.source].name}: ไม่สำเร็จ (${r.error})`
-      : `${SOURCE_BY_KEY[r.source].name}: ใหม่ ${r.inserted} · ซ้ำ ${r.duplicates} · อัปเดต ${r.updated} · ข้าม ${r.skipped}`,
-  )
-  if (waiting.length) lines.push(`ยังไม่ถึงคิว: ${waiting.map((k) => SOURCE_BY_KEY[k].name).join(', ')} (กดอีกครั้งหลังจากนี้)`)
-  return results.every((r) => r.error) ? { error: lines.join('\n') } : { ok: lines.join('\n') }
 }

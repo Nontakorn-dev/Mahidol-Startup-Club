@@ -16,7 +16,7 @@
 | เครือข่าย | `/people` — รายชื่อสมาชิก ค้นหา/กรองตามสกิล (ปิดได้ที่ “แสดงโปรไฟล์ของฉัน” ใน `/me`) |
 | ข้อความ | `/inbox` — ส่งข้อความ, ขอทำความรู้จักแบบไม่ระบุชื่อ (เปิดเผยชื่อเมื่อตอบรับ), ชวนเข้าทีม/ขอเข้าทีม, ไฟล์แนบ, อัปเดตสดผ่าน `conversation_pings` |
 | บัญชี | `/login` (Google · อีเมลรหัส 6 หลัก · รหัสผ่าน), `/onboarding`, `/me` (โปรไฟล์ + 🔗 เชื่อมต่อ/ยกเลิก LINE ที่ `#line`), `/settings/interests` (เลือกเรื่องที่สนใจ หลังเชื่อม LINE), `/u/[id]` · ลิงก์เก่า `/settings/notifications`, `/settings/password` เด้งมาที่ `/me` |
-| แอดมิน | `/admin` ภาพรวม · `/admin/imports` ตรวจงานที่ดึงจาก Hackza · Contester · CAMPHUB · DekPort · Devpost · `/admin/events` เพิ่ม/แก้งาน + พรีวิว + ดาวหน้าแรก · `/admin/community` ตรวจ/ลบโพสต์ · `/admin/users` ตั้งแอดมิน/ระงับ · `/admin/broadcasts` ส่งประกาศ LINE + อีเมล |
+| แอดมิน | `/admin` ภาพรวม · `/admin/imports` ตรวจงานที่ ChatGPT ส่งเข้ามาทุกวัน (API) · `/admin/events` เพิ่ม/แก้งาน + พรีวิว + ดาวหน้าแรก · `/admin/community` ตรวจ/ลบโพสต์ · `/admin/users` ตั้งแอดมิน/ระงับ · `/admin/broadcasts` ส่งประกาศ LINE + อีเมล |
 | LINE OA | webhook: follow/unfollow, account link, ปุ่ม “ยอมรับ/ปฏิเสธ” ในแชต, พิมพ์ประโยคในแชตแล้ว AI ตอบเป็นการ์ดงาน, rich menu |
 
 ### การเชื่อม LINE (Email User ID ↔ LINE User ID)
@@ -67,32 +67,23 @@ LINE ไม่ใช่ช่องทางล็อกอิน — ใช้�
   - เพิ่มหัวข้อใหม่: เพิ่ม 1 บรรทัดใน `TOPICS` ทั้งฝั่งอ่านคำค้นและจับคู่งานจะรู้จักทันที (ไม่ต้องแก้ prompt)
 - หน้าเว็บไม่ระบุชื่อผู้ให้บริการโมเดล
 
-## ดึงงานอัตโนมัติจากหลายแหล่ง (แอดมินตรวจก่อนเผยแพร่เสมอ)
+## รับงานจาก ChatGPT ผ่าน API (แอดมินตรวจก่อนเผยแพร่เสมอ)
 
 ```
-ทุกชั่วโมง (Supabase pg_cron `imports-sync`) → /api/cron/imports → ซิงก์แหล่งที่ถึงรอบ (แต่ละแหล่ง ~ทุก 6 ชม.)
-→ คัดเฉพาะสาย startup · นวัตกรรม · workshop · ธุรกิจ ที่นักศึกษามหาวิทยาลัยสมัครได้
-→ event_imports: pending (รอตรวจ) / duplicate (งานเดียวกันจากเว็บอื่น) / skipped (ตัวกรองข้าม)
+ChatGPT (ค้นหาทุกวัน 09:00 น.) → POST /api/imports (Bearer IMPORT_API_KEY)
+→ event_imports: pending (รอตรวจ) / duplicate (มีในระบบแล้ว) / skipped (ปิดรับแล้ว · ม.ปลายเท่านั้น)
 → /admin/imports → อนุมัติ & เผยแพร่ / แก้ไขก่อนเผยแพร่ / ไม่เอา → นักศึกษาเห็น (+ แจ้งเตือนคนที่สนใจ)
 ```
 
-| แหล่ง | ดึงอย่างไร (ตรวจ robots.txt แล้ว) | ความน่าเชื่อถือ |
-|---|---|---|
-| [Hackza](https://www.hackza.org/hackathons) | ไม่มี Public API, robots ห้าม `/api/` → อ่านหน้า `/hackathons` หน้าเดียว (ข้อมูลฝังใน RSC payload) | สูง · มีเวลาปิดรับแม่นยำ |
-| [Contester.Life](https://contester.life) | robots ห้าม `/api/` → หน้าแรก (10 งานล่าสุด ข้อมูลครบ) + `sitemap.xml` → หน้างานที่ใหม่/แก้ไข (schema.org Event) ไม่เกิน 15 หน้า/รอบ | กลาง · ชมรม/ผู้จัดโพสต์เอง บางงานรับเฉพาะนิสิตมหาลัยผู้จัด (ติดธงให้) |
-| [CAMPHUB](https://www.camphub.in.th) | WordPress REST API สาธารณะ (กรองแท็ก ปริญญาตรี/บุคคลทั่วไป ไม่เอา timeout) → เปิดหน้าโพสต์เฉพาะที่ดูเกี่ยวข้อง ไม่เกิน 12 หน้า/รอบ | สูง · ทีมงานเขียนเอง วันปิดรับ/ผู้จัด/คุณสมบัติครบ |
-| [DekPort](https://dekport.com/competitions) | robots อนุญาต `/competitions/*` → หน้าหมวด business + technology → หน้างานไม่เกิน 10 หน้า/รอบ | กลาง · เคยลงวันผิด → ติดธง “ตรวจกับประกาศทางการ” ทุกงาน |
-| [Devpost](https://devpost.com/hackathons) | JSON สาธารณะ `/api/hackathons` (robots อนุญาตทั้งหมด) · เฉพาะงานออนไลน์ มีเงินรางวัล ผู้ลงทะเบียน ≥ 500 · ถ้าหน้างานไม่อนุญาตบอทจะใช้ข้อมูลจากรายการแทน | สูง · ผู้จัดลงเอง (ระดับโลก) |
-
-- **มารยาทในการดึง** (`src/lib/importers/http.ts`): User-Agent ระบุตัวตน `MahidolStartupClubBot` + ลิงก์ติดต่อ · อ่าน robots.txt ทุกรอบ (รองรับ `*`, `$`, กลุ่ม user-agent) · ทีละ request เว้น 0.8 วินาที · โดน 403/429/503 หรือหน้า challenge → หยุด ไม่ bypass Cloudflare/CAPTCHA ใด ๆ · หน้าที่ไม่เปลี่ยน (ดูจาก lastmod/modified) ไม่ดึงซ้ำ · ปุ่มซิงก์มือ ≤ 1 ครั้ง/10 นาที/แหล่ง
-- **บั๊ก “รายละเอียดเป็น $2c”**: Next.js ย้ายข้อความยาวไปเป็น text row (`2c:T5a3,…`) แล้วเหลือ `"$2c"` ใน JSON — ตัวเก่าใช้ regex หา row จึงอ่าน id ผิดเมื่อข้อความก่อนหน้าลงท้ายด้วยตัวเลข (“…2569” + “29:T…” → `6929`) ตอนนี้ `src/lib/importers/rsc.ts` อ่าน payload ทีละ row ตามความยาว byte จริง และ `cleanValue()` ทิ้งค่าที่ยังเป็น `$xx` เสมอ
-- **คัดกรอง** (`relevance.ts`): ระดับการศึกษาจากแหล่ง (หรือเดาจากข้อความ) — ม.ปลายอย่างเดียวตัดทิ้ง · คะแนนคำสำคัญ startup/ผู้ประกอบการ/ธุรกิจ/นวัตกรรม/pitch/บ่มเพาะ (ชื่อหนัก) + workshop/hackathon/AI/สุขภาพ/ยั่งยืน · ตัดสายภาพยนตร์/ดนตรี/อาสา/ติวสอบ/open house · `RELEVANCE_THRESHOLD = 4`
-- **กันซ้ำข้ามเว็บ** (`sync.ts`): ชื่อเหมือน/ครอบกัน, คำเฉพาะตรงกัน, ตัวย่อ (GSEA ↔ Global Student Entrepreneur Awards), ลิงก์สมัครเดียวกัน, หรือหน้าเดียวกับงานที่ลงไว้แล้ว (วันปิดห่างกันไม่เกิน 45 วัน) → เป็น `duplicate` ของรายการแรก การ์ดรายการหลักจะบอก “พบในแหล่งอื่นด้วย” และเตือนถ้า **วันปิดรับไม่ตรงกัน**
-- **หน้าแอดมิน** แสดงสถานะซิงก์ของแต่ละแหล่ง + เช็กลิสต์ความน่าเชื่อถือต่อการ์ด (ลิงก์สมัครของผู้จัด / เวลาปิดชัดเจน / พบกี่แหล่ง / ธงเตือน) · แท็บ “ข้ามอัตโนมัติ” ให้กู้งานที่ตัวกรองพลาด · อนุมัติแล้วระบบคัดลอกโปสเตอร์มาเก็บใน bucket ของเรา
-- การตัดสินใจอนุมัติ/ไม่เอาจะไม่ถูกเขียนทับ (อัปเดตเฉพาะ snapshot) · งานในคิวที่เลยวันปิด → หมดเวลา · รายการที่ถูกข้ามจะถูกลบเองเมื่อแหล่งไม่แสดงแล้ว 30 วัน
-- ทดลองแบบไม่เขียนฐานข้อมูล: `npx tsx --conditions=react-server --env-file=.env.local scripts/dev/try-sources.mts [hackza contester …]` · ซิงก์จริงจากเครื่อง: `scripts/dev/sync.mts [--refresh] [แหล่ง…]`
-- ตัวตั้งเวลา: Vercel Hobby รัน cron ได้วันละครั้ง จึงใช้ Supabase pg_cron + pg_net (token ใน Vault ชื่อ `hackza_cron_token`) และมี Vercel cron วันละครั้งเป็นสำรอง · job `imports-sync` และ `email-outbox` เรียก `public.cron_base_url()` (`https://mahidolstartup.site`) — ถ้าเปลี่ยนโดเมน แก้ฟังก์ชันนี้ที่เดียว (ต้องเป็นโฮสต์ที่ตอบ `/api` เองโดยไม่ redirect เพราะ pg_net ไม่ตาม redirect เช่น ห้ามใช้ `www.`) ดู `supabase/migrations/0022_cron_canonical_domain.sql`
-- เพิ่มแหล่งใหม่: เขียน adapter ใน `src/lib/importers/sources/` ให้คืน `SourceItem` แล้วใส่ใน `SOURCES` (`sync.ts`)
+- **Endpoint**: `POST https://mahidolstartup.site/api/imports` · header `Authorization: Bearer <IMPORT_API_KEY>` (ค่าอยู่ใน `.env.local` และ Vercel env) · รูปแบบเต็ม (OpenAPI 3.1): `GET /api/imports/openapi.json` — ใช้กับ GPT Actions ได้ (Authentication: API Key → Bearer)
+- **Body**: `{ "run_id"?: "2026-10-21", "items": [ … ไม่เกิน 50 รายการ ] }` · ต่อรายการ ต้องมี `title`, `source_url` นอกนั้นไม่บังคับ: `apply_url`, `organizer`, `category` (competition · grant · incubation · workshop · team_recruit), `summary`, `description`, `deadline` (YYYY-MM-DD เวลาไทย), `deadline_time` (HH:MM), `event_start`, `event_end`, `location`, `format` (online · onsite · hybrid), `prize`, `eligibility`, `levels` (university · public · high_school), `poster_url`, `tags` (developer · ux_ui · business · marketing · data_ai · hardware · domain_expert), `evidence` (ลิงก์ทางการที่ใช้ตรวจ ≤ 5), `confidence` (0–1), `notes`, `source_name`
+- **ตอบกลับ**: `{ ok, run_id, received, summary: {inserted, duplicate, updated, skipped, invalid}, results: [{ index, status, id?, reason?, warnings? }] }` · 401 token ผิด · 400 JSON/`items` ผิด · 413 เกิน 1 MB
+- **ส่งซ้ำ = อัปเดต**: ตัวระบุคือ `source_url` (ตัด utm/ref และ / ท้ายออก) ถ้า URL เปลี่ยนแต่ลิงก์สมัครเดียวกัน หรือชื่อคล้ายกันและวันปิดห่างกันไม่เกิน 45 วัน ก็ถือเป็นรายการเดิม · รายการที่อนุมัติ/ไม่เอาแล้วจะไม่ถูกเปลี่ยนสถานะ (อัปเดตแค่ข้อมูลอ้างอิง) — ถ้างานที่เผยแพร่แล้วมีวันปิดรับใหม่ หน้าแอดมินจะขึ้นแจ้งเตือนให้แก้เอง
+- **ทนข้อมูลไม่ครบ**: ช่องเสริมที่ผิดรูปแบบถูกละไว้พร้อม `warnings` รายการยังเข้าคิว · ข้อความยาวถูกตัดแทนการปฏิเสธ · รายการที่ไม่มี `title`/`source_url` หรือ URL ไม่ใช่ http(s) ได้ `invalid`
+- **กันซ้ำ**: เทียบกับงานในระบบและรายการจากแหล่งเดิม (ชื่อ/ตัวย่อ เช่น GSEA, ลิงก์สมัคร, หน้าเดียวกัน) → `duplicate` การ์ดบอกว่าซ้ำกับอะไรและเตือนถ้าวันปิดรับไม่ตรงกัน
+- **การ์ดแอดมิน**: ลิงก์ที่ ChatGPT ใช้ตรวจ (`evidence`), ความมั่นใจ, หมายเหตุ, ลิงก์สมัครของผู้จัด/วันปิดรับชัดเจนหรือไม่ · อนุมัติแล้วระบบคัดลอกโปสเตอร์มาเก็บใน bucket ของเรา (เฉพาะโฮสต์สาธารณะ, ไม่เกิน 2 MB; คัดลอกไม่ได้ → ไม่มีโปสเตอร์ อัปโหลดเองในหน้างาน)
+- ตัวดึงจากเว็บเดิม (Hackza · Contester · CAMPHUB · DekPort · Devpost) เลิกใช้แล้ว (migration 0025) — รายการเก่ายังอยู่ในคิวและกรองตามแหล่งได้ · ประวัติการส่งอยู่ในตาราง `import_runs` (source `chatgpt`, trigger `api`)
+- ตัวตั้งเวลาที่เหลือ: Supabase pg_cron `email-outbox` (ทุกนาทีเมื่อมีคิว) เรียก `public.cron_base_url()` (`https://mahidolstartup.site`) — ถ้าเปลี่ยนโดเมน แก้ฟังก์ชันนี้ที่เดียว (ต้องเป็นโฮสต์ที่ตอบ `/api` เองโดยไม่ redirect เช่น ห้ามใช้ `www.`) · Vercel cron `/api/cron/daily` วันละครั้ง
 
 ## รองรับผู้ใช้จำนวนมากในต้นทุนต่ำ
 
@@ -173,13 +164,14 @@ Environment variables: ดู `.env.example` — `SUPABASE_SECRET_KEY` (Dashboar
 src/app/(site)/        หน้าเว็บผู้ใช้ (header/footer)
 src/app/admin/         หน้าแอดมิน
 src/app/actions/       Server Actions (ตรวจสิทธิ์ทุกครั้ง)
-src/app/api/           LINE link (Login consent)/webhook, cron, tracking
+src/app/api/           LINE link (Login consent)/webhook, cron, tracking, imports (รับงานจาก ChatGPT + openapi.json)
 src/app/line/link/     ลิงก์เฉพาะจาก OA (linkToken) → ล็อกอินอีเมล → LINE account link
 src/lib/ai/intent.ts   แปลงประโยคค้นหาเป็นตัวกรอง (guard → cache → rules → model) · src/lib/ai/guard.ts กรองข้อความไม่เหมาะสม
 src/lib/search.ts      query builder + จัดอันดับ + เหตุผล
 src/lib/notify.ts      dispatcher LINE → อีเมล → digest
 src/lib/line/          การเชื่อมบัญชี (link.ts), LINE Login consent, Messaging API + Flex builders
 src/lib/data/          อ่านข้อมูล + ซ่อนตัวตนโพสต์ไม่ระบุชื่อ
+src/lib/importers/     ingest.ts รับ/ตรวจ/กันซ้ำรายการจาก POST /api/imports · text.ts จับคู่งานเดียวกัน
 supabase/migrations/   schema, RLS, storage buckets, seed — 1 ไฟล์ = 1 รายการในประวัติ migration ของ Supabase (ลำดับเดียวกัน)
 scripts/               สคริปต์สร้าง LINE rich menu, นำเข้างานแบบคัดเอง, เครื่องมือทดสอบ (scripts/dev)
 ```

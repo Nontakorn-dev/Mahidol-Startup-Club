@@ -1,14 +1,14 @@
 /* eslint-disable @next/next/no-img-element -- posters come from many source hosts */
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import SyncButton from '@/components/admin/SyncButton'
-import { approveImport, approveSelected, setImportStatus } from '@/app/actions/imports'
+import { approveImport, approveSelected, dismissDeadlineChange, setImportStatus } from '@/app/actions/imports'
 import { IconExternal } from '@/components/icons'
 import { requireAdmin } from '@/lib/auth'
 import { adminClient } from '@/lib/supabase/admin'
-import { adminTime, deadlineLine, thaiDeadline, todayBangkok } from '@/lib/format'
+import { env, serverEnv } from '@/lib/env'
+import { adminTime, deadlineLine, thaiDate, thaiDeadline, todayBangkok } from '@/lib/format'
 import { CATEGORIES, type Category } from '@/lib/constants'
-import { SOURCES, SOURCE_BY_KEY, lastRuns } from '@/lib/importers/sync'
+import { INGEST_SOURCE, sourceName, type ChatgptMeta } from '@/lib/importers/ingest'
 import SubmitButton from '@/components/SubmitButton'
 
 export const metadata: Metadata = { title: 'นำเข้างาน' }
@@ -27,7 +27,8 @@ type Tab = (typeof TABS)[number]['key']
 
 const LEVEL_LABEL: Record<string, string> = { university: 'มหาวิทยาลัย', public: 'บุคคลทั่วไป', high_school: 'ม.ปลาย' }
 
-type Mapped = { summary: string | null; benefit: string | null; eligibility: string | null; overview: string | null; apply_url: string | null; location?: string | null; event_start?: string | null; event_end?: string | null; ai?: { f?: string[] } }
+type Mapped = { summary: string | null; benefit: string | null; eligibility: string | null; overview: string | null; apply_url: string | null; location?: string | null; event_start?: string | null; event_end?: string | null; ai?: { f?: string[] }; chatgpt?: ChatgptMeta }
+type Run = { started_at: string; finished_at: string | null; fetched: number; inserted: number; updated: number; duplicates: number; skipped: number; error: string | null }
 const AI_FIELD: Record<string, string> = { organizer: 'ผู้จัด', location: 'สถานที่', event_start: 'วันเริ่มงาน', event_end: 'วันจบงาน', deadline_at: 'เวลาปิดรับ', benefit: 'รางวัล', eligibility: 'ผู้สมัครได้', format: 'รูปแบบ' }
 type ImportRow = {
   id: string
@@ -71,7 +72,7 @@ export default async function ImportsPage({ searchParams }: PageProps<'/admin/im
   await requireAdmin()
   const sp = await searchParams
   const tab = (TABS.find((t) => t.key === sp.tab)?.key ?? 'pending') as Tab
-  const source = typeof sp.source === 'string' && SOURCE_BY_KEY[sp.source] ? sp.source : null
+  const source = typeof sp.source === 'string' && /^[a-z]{2,20}$/.test(sp.source) ? sp.source : null
   const db = adminClient()
 
   const today = todayBangkok()
@@ -85,18 +86,28 @@ export default async function ImportsPage({ searchParams }: PageProps<'/admin/im
       : tab === 'skipped'
         ? q.order('last_seen_at', { ascending: false })
         : q.order('reviewed_at', { ascending: false, nullsFirst: false })
-  const [{ data: rowsData }, { data: all }, runs] = await Promise.all([q.limit(200), db.from('event_imports').select('status, source, deadline'), lastRuns()])
+  const [{ data: rowsData }, { data: all }, { data: runData }] = await Promise.all([
+    q.limit(200),
+    db.from('event_imports').select('status, source, deadline, flags'),
+    db.from('import_runs').select('started_at, finished_at, fetched, inserted, updated, duplicates, skipped, error').eq('source', INGEST_SOURCE).order('started_at', { ascending: false }).limit(1),
+  ])
   const rows = (rowsData || []) as ImportRow[]
+  const lastRun = (runData?.[0] ?? null) as Run | null
+  const apiReady = Boolean(serverEnv().importApiKey)
 
   const counts: Record<string, number> = {}
   const bySource: Record<string, number> = {}
+  const sources = new Set<string>()
+  let deadlineChanged = 0
   for (const r of all || []) {
+    if (r.status === 'approved' && (r.flags as string[] | null)?.some((f) => f.startsWith('deadline_changed:'))) deadlineChanged++
     if (r.status === 'skipped' && r.deadline && r.deadline < today) continue
+    sources.add(r.source)
     if (!source || r.source === source) counts[r.status] = (counts[r.status] || 0) + 1
     if (r.status === tab) bySource[r.source] = (bySource[r.source] || 0) + 1
   }
-  const pendingBySource: Record<string, number> = {}
-  for (const r of all || []) if (r.status === 'pending') pendingBySource[r.source] = (pendingBySource[r.source] || 0) + 1
+  // ChatGPT first, then the retired scrapers whose rows are still around.
+  const sourceKeys = [INGEST_SOURCE, ...[...sources].filter((s) => s !== INGEST_SOURCE).sort()]
 
   // Cross-source evidence: the same event found elsewhere (duplicates pointing at these rows),
   // and for the duplicate tab, what each row duplicates.
@@ -127,42 +138,38 @@ export default async function ImportsPage({ searchParams }: PageProps<'/admin/im
     <>
       <div className="admin-top">
         <div>
-          <h1>นำเข้างานจากหลายแหล่ง</h1>
+          <h1>นำเข้างาน</h1>
           <p className="muted" style={{ margin: '4px 0 0', fontSize: 15, maxWidth: 720 }}>
-            ระบบดึงงานสาย startup · นวัตกรรม · workshop · ธุรกิจ ระดับมหาวิทยาลัย จาก {SOURCES.length} แหล่ง ทุก ~6 ชั่วโมง (เคารพ robots.txt ไม่ข้ามระบบป้องกันใด ๆ)
-            แล้ว<b>รอแอดมินตรวจก่อนเผยแพร่เสมอ</b> · งานเดียวกันที่เจอหลายเว็บจะถูกรวมให้อัตโนมัติ
+            ChatGPT ค้นหางานสาย startup · นวัตกรรม · workshop · ธุรกิจ ระดับมหาวิทยาลัย แล้วส่งเข้ามาทุกวันผ่าน API —{' '}
+            <b>รอแอดมินตรวจก่อนเผยแพร่เสมอ</b> · งานที่มีในระบบแล้วจะถูกแยกไปแท็บ “ซ้ำกับที่มีแล้ว” ให้อัตโนมัติ
           </p>
         </div>
-        <SyncButton label="ซิงก์ทุกแหล่งตอนนี้" />
       </div>
 
-      <section className="import-sources">
-        {SOURCES.map((s) => {
-          const r = runs.get(s.key)
-          const failed = Boolean(r?.error)
-          return (
-            <div key={s.key} className="box" style={{ gap: 6, padding: 14 }}>
-              <div className="row" style={{ justifyContent: 'space-between', gap: 8 }}>
-                <a href={s.homepage} target="_blank" rel="noopener" style={{ fontWeight: 700, fontSize: 15 }}>
-                  {s.name}
-                </a>
-                <span className={`tag tag-sm ${s.trust === 'high' ? 'tag-ok' : 'tag-yellow'}`}>{s.trust === 'high' ? 'น่าเชื่อถือสูง' : 'ควรตรวจซ้ำ'}</span>
-              </div>
-              <span className="muted" style={{ fontSize: 12.5, lineHeight: 1.45 }}>{s.note}</span>
-              <span style={{ fontSize: 12.5, color: failed ? 'var(--danger)' : 'var(--muted)' }}>
-                {r ? `${failed ? 'ล่าสุดมีปัญหา' : 'ล่าสุด'} ${adminTime(r.started_at)}` : 'ยังไม่เคยซิงก์'}
-                {failed && ` — ${r!.error}`}
-              </span>
-              <div className="row" style={{ justifyContent: 'space-between', gap: 8, marginTop: 2 }}>
-                <Link href={href({ source: s.key, tab: 'pending' })} style={{ fontSize: 13 }}>
-                  รอตรวจ {pendingBySource[s.key] || 0} →
-                </Link>
-                <SyncButton source={s.key} label="ซิงก์" small />
-              </div>
-            </div>
-          )
-        })}
+      <section className="box" style={{ gap: 8, padding: 16 }}>
+        <div className="row wrap" style={{ justifyContent: 'space-between', gap: 8 }}>
+          <b style={{ fontSize: 15 }}>รับงานผ่าน API</b>
+          <span className={`tag tag-sm ${apiReady ? 'tag-ok' : 'tag-yellow'}`}>{apiReady ? 'พร้อมรับ' : 'ยังไม่ได้ตั้ง IMPORT_API_KEY'}</span>
+        </div>
+        <span style={{ fontSize: 13.5, overflowWrap: 'anywhere' }}>
+          <code>POST {env.siteUrl}/api/imports</code> · Header <code>Authorization: Bearer IMPORT_API_KEY</code> ·{' '}
+          <a href="/api/imports/openapi.json" target="_blank" rel="noopener">
+            ดูรูปแบบข้อมูล (OpenAPI)
+          </a>
+        </span>
+        <span style={{ fontSize: 13, color: lastRun?.error ? 'var(--danger)' : 'var(--muted)' }}>
+          {lastRun
+            ? `ส่งเข้ามาล่าสุด ${adminTime(lastRun.started_at)} · ${lastRun.fetched} รายการ → ใหม่ ${lastRun.inserted} · อัปเดต ${lastRun.updated} · ซ้ำ ${lastRun.duplicates} · ข้าม/ไม่ผ่าน ${lastRun.skipped}${lastRun.error ? ` — ผิดพลาด: ${lastRun.error}` : ''}`
+            : 'ยังไม่มีการส่งข้อมูลเข้ามา'}
+        </span>
       </section>
+
+      {deadlineChanged > 0 && (
+        <div className="alert alert-info">
+          งานที่เผยแพร่แล้ว {deadlineChanged} งาน มีวันปิดรับใหม่จากข้อมูลล่าสุด —{' '}
+          <Link href={href({ tab: 'approved', source: null })}>ตรวจในแท็บ “อนุมัติแล้ว”</Link>
+        </div>
+      )}
 
       <div className="row wrap" style={{ justifyContent: 'space-between', gap: 12 }}>
         <div role="tablist" className="segmented" style={{ flexWrap: 'wrap' }}>
@@ -185,16 +192,16 @@ export default async function ImportsPage({ searchParams }: PageProps<'/admin/im
         <Link href={href({ source: null })} className={`filter-chip ${!source ? 'active' : ''}`}>
           ทุกแหล่ง
         </Link>
-        {SOURCES.map((s) => (
-          <Link key={s.key} href={href({ source: s.key })} className={`filter-chip ${source === s.key ? 'active' : ''}`}>
-            {s.name} {bySource[s.key] ? `(${bySource[s.key]})` : ''}
+        {sourceKeys.map((s) => (
+          <Link key={s} href={href({ source: s })} className={`filter-chip ${source === s ? 'active' : ''}`}>
+            {sourceName(s)} {bySource[s] ? `(${bySource[s]})` : ''}
           </Link>
         ))}
       </div>
 
       {tab === 'skipped' && (
         <p className="muted" style={{ margin: 0, fontSize: 14 }}>
-          รายการที่ตัวกรองคิดว่าไม่เกี่ยวข้อง (ไม่ตรงสาย / รับเฉพาะ ม.ปลาย / ปิดรับแล้ว) — ถ้าเจอที่ใช่ กด “ย้ายไปรอตรวจ” ได้ ระบบจะลบรายการออกเองเมื่อเว็บต้นทางเอาออกแล้ว 30 วัน
+          รายการที่ระบบข้ามให้ (ปิดรับแล้ว / รับเฉพาะ ม.ปลาย หรือไม่ตรงสายจากตัวดึงเว็บเดิม) — ถ้าเจอที่ใช่ กด “ย้ายไปรอตรวจ” ได้
         </p>
       )}
 
@@ -208,7 +215,7 @@ export default async function ImportsPage({ searchParams }: PageProps<'/admin/im
       <div className="stack" style={{ gap: 14 }}>
         {rows.map((r) => {
           const m = r.mapped
-          const src = SOURCE_BY_KEY[r.source]
+          const srcName = r.source === INGEST_SOURCE ? (m.chatgpt?.source_name || r.source_type || sourceName(r.source)) : sourceName(r.source)
           const others = alsoOn.get(r.id) || []
           const mismatch = others.filter((o) => !sameDay(o.deadline, r.deadline))
           const flags = new Set(r.flags || [])
@@ -226,7 +233,7 @@ export default async function ImportsPage({ searchParams }: PageProps<'/admin/im
                 )}
                 <div className="stack" style={{ flex: 1, minWidth: 0, gap: 6 }}>
                   <div className="row wrap" style={{ gap: 6 }}>
-                    <span className="tag tag-sm tag-blue">{src?.name ?? r.source}</span>
+                    <span className="tag tag-sm tag-blue">{sourceName(r.source)}</span>
                     <span className="tag tag-sm tag-grey">{r.source_type}</span>
                     <span className="tag tag-sm tag-grey">→ {CATEGORIES[r.category as Category] ?? r.category}</span>
                     <span className="tag tag-sm" style={{ background: r.relevance >= 8 ? 'var(--ok-soft)' : 'var(--yellow-soft)', color: r.relevance >= 8 ? 'var(--ok)' : 'var(--yellow-ink)' }}>
@@ -251,7 +258,7 @@ export default async function ImportsPage({ searchParams }: PageProps<'/admin/im
                       ซ้ำกับ:{' '}
                       {primary ? (
                         <>
-                          “{primary.title}” จาก {SOURCE_BY_KEY[primary.source]?.name ?? primary.source} ({primary.status === 'approved' ? 'อนุมัติแล้ว' : primary.status === 'rejected' ? 'เคยกด “ไม่เอา”' : 'รอตรวจ'})
+                          “{primary.title}” จาก {sourceName(primary.source)} ({primary.status === 'approved' ? 'อนุมัติแล้ว' : primary.status === 'rejected' ? 'เคยกด “ไม่เอา”' : 'รอตรวจ'})
                           {!sameDay(primary.deadline, r.deadline) && <b style={{ color: 'var(--danger)' }}> · วันปิดรับไม่ตรงกัน ({thaiDeadline(dl(primary))} vs {thaiDeadline(dl(r))})</b>}
                         </>
                       ) : dupEvent ? (
@@ -281,10 +288,10 @@ export default async function ImportsPage({ searchParams }: PageProps<'/admin/im
                               {i > 0 && ', '}
                               {o.source_url ? (
                                 <a href={o.source_url} target="_blank" rel="noopener">
-                                  {SOURCE_BY_KEY[o.source]?.name ?? o.source}
+                                  {sourceName(o.source)}
                                 </a>
                               ) : (
-                                SOURCE_BY_KEY[o.source]?.name ?? o.source
+                                sourceName(o.source)
                               )}
                               {!sameDay(o.deadline, r.deadline) && <b> (ปิด {thaiDeadline(dl(o))} — ไม่ตรงกัน!)</b>}
                             </span>
@@ -299,6 +306,49 @@ export default async function ImportsPage({ searchParams }: PageProps<'/admin/im
                       {m.ai?.f?.length ? (
                         <Check warn>เติมจากรายละเอียดงานโดย AI (ตรวจแล้วว่ามีในข้อความ): {m.ai.f.map((f) => AI_FIELD[f] ?? f).join(', ')} — ดูให้แน่ใจก่อนเผยแพร่</Check>
                       ) : null}
+                      {m.chatgpt && (
+                        <>
+                          {m.chatgpt.evidence.length > 0 ? (
+                            <Check ok>
+                              ChatGPT ตรวจกับ:{' '}
+                              {m.chatgpt.evidence.map((e, i) => (
+                                <span key={e}>
+                                  {i > 0 && ', '}
+                                  <a href={e} target="_blank" rel="noopener">
+                                    {(() => {
+                                      try {
+                                        return new URL(e).hostname.replace(/^www\./, '')
+                                      } catch {
+                                        return e
+                                      }
+                                    })()}
+                                  </a>
+                                </span>
+                              ))}
+                            </Check>
+                          ) : (
+                            <Check warn>ChatGPT ไม่ได้แนบแหล่งที่ใช้ตรวจ — เปิดลิงก์ประกาศเทียบก่อนเผยแพร่</Check>
+                          )}
+                          {m.chatgpt.confidence !== null && (
+                            <Check ok={m.chatgpt.confidence >= 0.8} warn={m.chatgpt.confidence < 0.8}>
+                              ความมั่นใจของ ChatGPT {Math.round(m.chatgpt.confidence * 100)}%
+                            </Check>
+                          )}
+                          {m.chatgpt.notes && <Check warn>หมายเหตุจาก ChatGPT: {m.chatgpt.notes}</Check>}
+                        </>
+                      )}
+                      {tab === 'approved' &&
+                        [...flags]
+                          .filter((f) => f.startsWith('deadline_changed:'))
+                          .map((f) => (
+                            <span key={f} className="row wrap" style={{ gap: 8, alignItems: 'center' }}>
+                              <Check>วันปิดรับใหม่จากข้อมูลล่าสุด: {thaiDate(f.split(':')[1])} — แก้ในหน้างานถ้าถูกต้อง</Check>
+                              <form action={dismissDeadlineChange}>
+                                <input type="hidden" name="id" value={r.id} />
+                                <SubmitButton className="btn btn-ghost btn-sm">รับทราบ</SubmitButton>
+                              </form>
+                            </span>
+                          ))}
                     </div>
                   )}
 
@@ -339,7 +389,7 @@ export default async function ImportsPage({ searchParams }: PageProps<'/admin/im
               <div className="row wrap" style={{ gap: 8, justifyContent: 'flex-end' }}>
                 {r.source_url && (
                   <a href={r.source_url} target="_blank" rel="noopener" className="btn btn-ghost btn-sm">
-                    ดูบน {src?.name ?? r.source} <IconExternal size={14} />
+                    ดูบน {srcName} <IconExternal size={14} />
                   </a>
                 )}
                 {tab === 'pending' && (
