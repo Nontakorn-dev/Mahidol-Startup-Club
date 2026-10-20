@@ -1,20 +1,32 @@
 import { NextResponse } from 'next/server'
 import { serverEnv } from '@/lib/env'
 import { safeEqual } from '@/lib/crypto'
-import { BatchSchema, ingestBatch } from '@/lib/importers/ingest'
+import { BatchSchema, ingestBatch, listKnown } from '@/lib/importers/ingest'
 
 export const maxDuration = 60
 
 const MAX_BODY_BYTES = 1_000_000
 
+function unauthorized(request: Request) {
+  const { importApiKey } = serverEnv()
+  const auth = request.headers.get('authorization') || ''
+  if (importApiKey && safeEqual(auth, `Bearer ${importApiKey}`)) return null
+  return NextResponse.json({ ok: false, error: 'unauthorized — ส่ง Authorization: Bearer <IMPORT_API_KEY>' }, { status: 401 })
+}
+
+// What the feed should not look for again (open events on the site and listings in the queue).
+export async function GET(request: Request) {
+  const denied = unauthorized(request)
+  if (denied) return denied
+  const items = await listKnown()
+  return NextResponse.json({ ok: true, generated_at: new Date().toISOString(), count: items.length, items })
+}
+
 // Daily opportunity feed (ChatGPT): listings land in /admin/imports for an admin to review —
 // never published automatically. Request/response shape: GET /api/imports/openapi.json.
 export async function POST(request: Request) {
-  const { importApiKey } = serverEnv()
-  const auth = request.headers.get('authorization') || ''
-  if (!importApiKey || !safeEqual(auth, `Bearer ${importApiKey}`)) {
-    return NextResponse.json({ ok: false, error: 'unauthorized — ส่ง Authorization: Bearer <IMPORT_API_KEY>' }, { status: 401 })
-  }
+  const denied = unauthorized(request)
+  if (denied) return denied
 
   const raw = await request.text()
   if (raw.length > MAX_BODY_BYTES) return NextResponse.json({ ok: false, error: `body ใหญ่เกิน ${MAX_BODY_BYTES / 1_000_000} MB — แบ่งส่งหลายครั้ง` }, { status: 413 })

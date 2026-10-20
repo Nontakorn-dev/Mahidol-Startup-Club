@@ -225,6 +225,35 @@ function findKnown(known: Known[], it: SourceItem): Known | null {
   return known.find((k) => (apply && k.apply === apply) || sameOpportunity({ title: it.title, deadline: it.deadline }, k)) ?? null
 }
 
+// ------------------------------------------------------------------ what we already have
+
+export type KnownStatus = 'published' | 'in_review' | 'rejected'
+export type KnownListing = { title: string; status: KnownStatus; deadline: string | null; source_url: string | null; apply_url: string | null }
+
+/**
+ * Everything still open that the feed needn't look for again: events on the site (published, or a
+ * draft an admin is editing) and listings waiting in / turned away from the review queue.
+ * Closed ones are left out (the feed only sends open opportunities), and so are auto-skipped rows:
+ * the retired scrapers' keyword filter skipped some good listings the feed should still find.
+ */
+export async function listKnown(): Promise<KnownListing[]> {
+  const db = adminClient()
+  const today = todayBangkok()
+  const [{ data: events }, { data: imports }] = await Promise.all([
+    db.from('events').select('title, status, deadline, source_url, apply_url').or(`deadline.is.null,deadline.gte.${today}`),
+    db
+      .from('event_imports')
+      .select('title, status, deadline, source_url, apply:mapped->>apply_url')
+      .in('status', ['pending', 'duplicate', 'rejected'])
+      .or(`deadline.is.null,deadline.gte.${today}`),
+  ])
+  const IMPORT_STATUS: Record<string, KnownStatus> = { pending: 'in_review', duplicate: 'in_review', rejected: 'rejected' }
+  return [
+    ...(events || []).map((e) => ({ title: e.title, status: (e.status === 'published' ? 'published' : 'in_review') as KnownStatus, deadline: e.deadline, source_url: e.source_url, apply_url: e.apply_url })),
+    ...(imports || []).map((i) => ({ title: i.title, status: IMPORT_STATUS[i.status], deadline: i.deadline, source_url: i.source_url, apply_url: (i.apply as string | null) ?? null })),
+  ]
+}
+
 // ------------------------------------------------------------------ ingest
 
 export type ItemResult = {

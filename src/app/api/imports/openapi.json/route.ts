@@ -56,6 +56,43 @@ export function GET() {
     servers: [{ url: env.siteUrl }],
     paths: {
       '/api/imports': {
+        get: {
+          operationId: 'listKnownOpportunities',
+          summary: 'What we already have — call before searching',
+          description: 'Open opportunities already on the site or in the review queue. Skip these unless their details changed (then POST them again with the same source_url).',
+          security: [{ bearerAuth: [] }],
+          responses: {
+            '200': {
+              description: 'status: published (on the site) · in_review (waiting for an admin) · rejected (admin said no — do not send again).',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      ok: { type: 'boolean' },
+                      generated_at: { type: 'string' },
+                      count: { type: 'integer' },
+                      items: {
+                        type: 'array',
+                        items: {
+                          type: 'object',
+                          properties: {
+                            title: { type: 'string' },
+                            status: { type: 'string', enum: ['published', 'in_review', 'rejected'] },
+                            deadline: { type: ['string', 'null'] },
+                            source_url: { type: ['string', 'null'] },
+                            apply_url: { type: ['string', 'null'] },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            '401': { description: 'Missing or wrong Bearer token.' },
+          },
+        },
         post: {
           operationId: 'submitOpportunities',
           summary: 'Submit opportunities for admin review',
