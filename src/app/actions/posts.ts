@@ -14,6 +14,8 @@ const trackList = z.array(z.enum(TRACK_KEYS as [string, ...string[]])).max(5)
 const optUuid = z.union([z.uuid(), z.literal('')]).optional().transform((v) => v || null)
 const optText = (max: number) => z.string().trim().max(max).optional().transform((v) => v || null)
 
+/** Posts taken down by an admin stay down: the owner may delete them, not edit or reopen them. */
+const REMOVED_MSG = 'ประกาศนี้ถูกนำออกโดยผู้ดูแล จึงแก้ไขหรือเปิดใหม่ไม่ได้ — ติดต่อชมรมผ่าน LINE OpenChat หากคิดว่าผิดพลาด'
 
 // ------------------------------------------------------------------ team calls
 
@@ -65,8 +67,9 @@ export async function saveTeam(_prev: State, form: FormData): Promise<State> {
     }
     const db = adminClient()
     if (v.id) {
-      const { data: existing } = await db.from('team_posts').select('owner_id').eq('id', v.id).maybeSingle()
+      const { data: existing } = await db.from('team_posts').select('owner_id, status').eq('id', v.id).maybeSingle()
       if (!existing || existing.owner_id !== viewer.userId) throw new Error('แก้ไขได้เฉพาะประกาศของคุณ')
+      if (existing.status === 'removed') throw new Error(REMOVED_MSG)
       await db.from('team_posts').update(row).eq('id', v.id)
       dest = `/teams/${v.id}`
     } else {
@@ -125,8 +128,9 @@ export async function saveSeeker(_prev: State, form: FormData): Promise<State> {
     }
     const db = adminClient()
     if (v.id) {
-      const { data: existing } = await db.from('seeker_posts').select('owner_id').eq('id', v.id).maybeSingle()
+      const { data: existing } = await db.from('seeker_posts').select('owner_id, status').eq('id', v.id).maybeSingle()
       if (!existing || existing.owner_id !== viewer.userId) throw new Error('แก้ไขได้เฉพาะประกาศของคุณ')
+      if (existing.status === 'removed') throw new Error(REMOVED_MSG)
       await db.from('seeker_posts').update(row).eq('id', v.id)
     } else {
       const { data } = await db.from('seeker_posts').insert({ ...row, owner_id: viewer.userId }).select('id').single()
@@ -208,8 +212,9 @@ export async function setPostStatus(form: FormData) {
   const id = z.uuid().parse(form.get('id'))
   const status = z.enum(['open', 'closed', 'delete']).parse(form.get('status'))
   const db = adminClient()
-  const { data } = await db.from(TABLES[type]).select('owner_id').eq('id', id).maybeSingle()
+  const { data } = await db.from(TABLES[type]).select('owner_id, status').eq('id', id).maybeSingle()
   if (!data || data.owner_id !== viewer.userId) throw new Error('ไม่มีสิทธิ์')
+  if (data.status === 'removed' && status !== 'delete') throw new Error(REMOVED_MSG)
   if (status === 'delete') await db.from(TABLES[type]).delete().eq('id', id)
   else await db.from(TABLES[type]).update({ status }).eq('id', id)
   revalidatePath('/me')

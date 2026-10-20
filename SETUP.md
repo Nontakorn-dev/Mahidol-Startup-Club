@@ -216,7 +216,7 @@
 
 - Namecheap: `A @ 216.198.79.1`, `A @ 64.29.17.1`, `CNAME www 8992a15a6890d8fb.vercel-dns-017.com.` (แถวอีเมล Resend ยังอยู่ครบ)
 - Vercel: โดเมนหลัก `mahidolstartup.site`, `www` เด้งมาโดเมนหลัก, `NEXT_PUBLIC_SITE_URL=https://mahidolstartup.site`
-- ลิงก์ `mahidol-startup-club.vercel.app` เด้งมาโดเมนใหม่ (ยกเว้น `/api/*` — Supabase cron ยังเรียกที่อยู่เดิมได้ ไม่ต้องแก้)
+- ลิงก์ `mahidol-startup-club.vercel.app` เด้งมาโดเมนใหม่ (ยกเว้น `/api/*`) · Supabase cron เรียกโดเมนใหม่โดยตรงผ่าน `public.cron_base_url()` (migration 0022)
 - Supabase Auth: Site URL = `https://mahidolstartup.site`, ส่งอีเมลผ่าน Resend (`noreply@mahidolstartup.site`)
 - 👤 ที่ยังต้องใช้โดเมนใหม่ตอนทำขั้นอื่น: Google Authorized JavaScript origin, LINE Webhook URL, LINE Login Callback URL (ใส่ไว้ในขั้นนั้น ๆ แล้ว)
 

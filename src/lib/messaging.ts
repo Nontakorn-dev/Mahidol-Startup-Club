@@ -20,6 +20,18 @@ export type StartInput = {
 
 const preview = (s: string) => (s.length > 80 ? `${s.slice(0, 80)}…` : s)
 
+/**
+ * Tell an open chat to refresh (Realtime on `conversation_pings`). The row holds only the
+ * conversation id and the reader's own id — never who sent what, so anonymity holds.
+ */
+async function ping(conversationId: string, userId: string | undefined) {
+  if (!userId) return
+  const { error } = await adminClient()
+    .from('conversation_pings')
+    .upsert({ conversation_id: conversationId, user_id: userId, pinged_at: new Date().toISOString() })
+  if (error) console.error('conversation ping', error.message)
+}
+
 async function profileLite(id: string) {
   const { data } = await adminClient()
     .from('profiles')
@@ -250,6 +262,7 @@ export async function sendMessage(opts: {
     .update({ last_message_at: now, last_message_preview: preview(body || `📎 ${attachment_name}`), last_sender_id: opts.senderId })
     .eq('id', opts.conversationId)
   await db.from('conversation_participants').update({ last_read_at: now }).eq('conversation_id', opts.conversationId).eq('user_id', opts.senderId)
+  await ping(opts.conversationId, other?.user_id)
 
   if (other && !otherHadUnread) {
     const sender = await profileLite(opts.senderId)
@@ -309,6 +322,7 @@ export async function respondToRequest(conversationId: string, userId: string, a
     .update({ last_message_at: now, last_message_preview: sysText, last_sender_id: userId })
     .eq('id', conversationId)
   await db.from('conversation_participants').update({ last_read_at: now }).eq('conversation_id', conversationId).eq('user_id', userId)
+  await ping(conversationId, other?.user_id)
 
   if (other) {
     const meProfile = await profileLite(userId)

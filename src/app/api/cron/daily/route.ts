@@ -49,6 +49,8 @@ export async function GET(request: NextRequest) {
 
   // 4) Housekeeping.
   await db.from('search_cache').delete().lt('created_at', new Date(Date.now() - 7 * 86_400_000).toISOString())
+  await db.from('rate_limits').delete().lt('window_start', new Date(Date.now() - 86_400_000).toISOString())
+  await db.from('conversation_pings').delete().lt('pinged_at', new Date(Date.now() - 30 * 86_400_000).toISOString())
 
   return NextResponse.json({ ok: true, reminded, digests, weekly })
 }

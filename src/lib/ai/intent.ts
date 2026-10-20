@@ -304,7 +304,8 @@ const compactSchema = z.object({
 })
 type Compact = z.infer<typeof compactSchema>
 
-// Per-instance protections (serverless instances are short-lived; good enough as a first line).
+// Per-instance protections (serverless instances are short-lived; a free first line — the
+// shared Postgres limit in rateLimitedShared() holds across instances).
 const RATE_PER_MIN = 8
 const calls = new Map<string, number[]>()
 let pausedUntil = 0
@@ -319,6 +320,17 @@ function rateLimited(actor: string) {
   calls.set(actor, recent)
   if (calls.size > 5000) calls.clear()
   return false
+}
+
+/** Same limit across every instance (Postgres `hit_rate_limit`). Fails open: the in-memory check
+ *  and the daily budget still apply if the database can't answer. */
+async function rateLimitedShared(actor: string) {
+  const { data, error } = await adminClient().rpc('hit_rate_limit', { p_key: `ai:${actor}`, p_max: RATE_PER_MIN, p_window_seconds: 60 })
+  if (error) {
+    console.error('hit_rate_limit', error.message)
+    return false
+  }
+  return data === false
 }
 
 /** Global daily cap on model calls (AI_DAILY_LIMIT, default 2000) — keeps the bill predictable. */
@@ -500,7 +512,7 @@ export async function parseIntent(query: string, actor = 'anon'): Promise<ParseR
   if (hit) return reject(hit, 'cache') ?? finish(fromCompact(hit, text, events), 'cache')
 
   const { openrouterKey } = serverEnv()
-  if (!openrouterKey || Date.now() < pausedUntil || rateLimited(actor) || (await overDailyBudget())) {
+  if (!openrouterKey || Date.now() < pausedUntil || rateLimited(actor) || (await overDailyBudget()) || (await rateLimitedShared(actor))) {
     return finish(rules.intent, 'fallback', true)
   }
   try {

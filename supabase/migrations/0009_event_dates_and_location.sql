@@ -1,5 +1,6 @@
 -- Real closing time + event period + venue for events (date system / countdown).
--- Run in Supabase → SQL Editor if it hasn't been applied.
+-- First run from the SQL Editor; recorded in the migration history afterwards (version
+-- 20261008060000) so the history matches these files one to one.
 
 -- Leftover unlinked duplicate from an earlier test run (no teams/saves reference it).
 delete from public.events where id = 'c38a4bc1-9e7f-4451-b862-ef3cd4fadb87';

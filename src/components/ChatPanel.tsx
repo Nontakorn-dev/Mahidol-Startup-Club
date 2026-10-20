@@ -41,12 +41,13 @@ export default function ChatPanel({
     bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight })
   }, [messages.length, optimistic])
 
-  // Live updates: any new row in this conversation → re-render from the server (sanitised).
+  // Live updates: the server pings this conversation for me (a row holding only ids we both
+  // already know) → re-render from the server (sanitised). Chat rows never reach the browser.
   useEffect(() => {
     const supabase = createClient()
     const channel = supabase
       .channel(`conv-${conversationId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` }, () =>
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversation_pings', filter: `conversation_id=eq.${conversationId}` }, () =>
         router.refresh(),
       )
       .subscribe()
