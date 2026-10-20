@@ -133,8 +133,10 @@ export function resolveEvent(mention: string | null, query: string, events: Even
     const distinctive = common.filter((w) => !EVENT_GENERIC.has(w) && w.length >= 4 && (df.get(w) || 0) === 1)
     if (common.length >= 2 && distinctive.length >= 1) return 0.6 + 0.3 * (common.length / tt.size)
     if (distinctive.length >= 1) return 0.7
+    // "gsea" → Global Student Entrepreneur Awards. Only the whole acronym (or all but its last
+    // letter) counts: "sea" is a word that merely sits inside it.
     const acr = acronym(e.title)
-    if (acr.length >= 3 && [...qt].some((w) => acr.includes(w) && w.length >= 3 && w.length >= acr.length - 2)) return 0.75
+    if (acr.length >= 3 && [...qt].some((w) => w.length >= 3 && acr.startsWith(w) && w.length >= acr.length - 1)) return 0.75
     return 0
   }
 

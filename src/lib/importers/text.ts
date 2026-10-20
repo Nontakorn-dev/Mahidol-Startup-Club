@@ -43,16 +43,23 @@ export function sameOpportunity(a: { title: string; deadline: string | null }, b
   const common = [...ta].filter((w) => tb.has(w)).length
   if (common >= 2 && common / Math.min(ta.size, tb.size) >= 0.75) return true
   // "GSEA 2026-2027" ↔ "Global Student Entrepreneur Awards 2026-2027"
-  return acronymOf(b.title, ta) || acronymOf(a.title, tb)
+  return acronymOf(b.title, a.title) || acronymOf(a.title, b.title)
 }
 
-function acronymOf(title: string, tokens: Set<string>): boolean {
-  const words = title.toLowerCase().match(/[a-z][a-z0-9]*/g) || []
+/**
+ * Does `shortTitle` contain an acronym of words in `longTitle`? The acronym must be written in
+ * capitals ("Sea x OpenAI" is a word, not S.E.A.), and a 3-letter one must spell the start of the
+ * long title — "sea" inside "Global Student Entrepreneur Awards" is coincidence.
+ */
+function acronymOf(longTitle: string, shortTitle: string): boolean {
+  const caps = new Set((shortTitle.normalize('NFKC').match(/\b[A-Z][A-Z0-9]{2,}\b/g) || []).map((w) => w.toLowerCase()))
+  if (!caps.size) return false
+  const words = longTitle.toLowerCase().match(/[a-z][a-z0-9]*/g) || []
   if (words.length < 3) return false
   for (let i = 0; i + 3 <= words.length; i++) {
     for (let n = 3; n <= 6 && i + n <= words.length; n++) {
       const acr = words.slice(i, i + n).map((w) => w[0]).join('')
-      if (tokens.has(acr)) return true
+      if (caps.has(acr) && (acr.length >= 4 || i === 0)) return true
     }
   }
   return false
