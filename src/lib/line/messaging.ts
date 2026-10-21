@@ -12,6 +12,9 @@ const YELLOW = '#FFC726'
 
 type LineMessage = Record<string, unknown>
 
+// Monthly push quota as last asked from LINE (see lineQuotaRemaining below).
+let quotaCache: { at: number; remaining: number } | null = null
+
 async function call(path: string, body: unknown) {
   const token = serverEnv().lineMessagingToken
   if (!token) throw new Error('LINE Messaging API is not configured')
@@ -22,6 +25,8 @@ async function call(path: string, body: unknown) {
   })
   if (!res.ok) {
     const text = await res.text()
+    // "You have reached your monthly limit." — remember it so the next sends go straight to email.
+    if (res.status === 429 && /monthly limit/i.test(text)) quotaCache = { at: Date.now(), remaining: 0 }
     throw new Error(`LINE ${path} ${res.status}: ${text.slice(0, 300)}`)
   }
   return res
@@ -29,7 +34,6 @@ async function call(path: string, body: unknown) {
 
 // ----------------------------------------------------------------- monthly push quota
 
-let quotaCache: { at: number; remaining: number } | null = null
 
 /**
  * Push messages left this month (Infinity on unlimited plans, null if LINE can't be asked).

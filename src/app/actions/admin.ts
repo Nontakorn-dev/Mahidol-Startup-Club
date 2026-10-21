@@ -12,6 +12,7 @@ import { notifyUsers } from '@/lib/notify'
 import { isClosed, slugify } from '@/lib/format'
 import { CATEGORY_KEYS, HOME_FEATURED_LIMIT, ROLE_KEYS } from '@/lib/constants'
 import type { EventRow } from '@/lib/types'
+import { audit } from '@/lib/audit'
 
 type State = { error?: string; ok?: string } | null
 const optText = (max: number) => z.string().trim().max(max).optional().transform((v) => v || null)
@@ -132,6 +133,7 @@ export async function saveEvent(_prev: State, form: FormData): Promise<State> {
       if (error) throw new Error(error.message)
       saved = data as EventRow
     }
+    await audit(admin.userId, existing ? (publish && existing.status !== 'published' ? 'event.publish' : 'event.update') : publish ? 'event.publish' : 'event.create', { type: 'event', id: saved.id }, { title: saved.title })
     if (saved.status === 'published' && saved.notify_on_publish && !saved.notified_at && !isClosed(saved)) {
       after(() => notifyEventMatches(saved))
     }
@@ -145,17 +147,19 @@ export async function saveEvent(_prev: State, form: FormData): Promise<State> {
 }
 
 export async function unpublishEvent(form: FormData) {
-  await actionAdmin()
+  const admin = await actionAdmin()
   const id = z.uuid().parse(form.get('id'))
   await adminClient().from('events').update({ status: 'draft', featured: false }).eq('id', id)
+  await audit(admin.userId, 'event.unpublish', { type: 'event', id })
   updateTag('events')
   revalidatePath('/', 'layout')
 }
 
 export async function deleteEvent(form: FormData) {
-  await actionAdmin()
+  const admin = await actionAdmin()
   const id = z.uuid().parse(form.get('id'))
-  await adminClient().from('events').delete().eq('id', id)
+  const { data: gone } = await adminClient().from('events').delete().eq('id', id).select('title').maybeSingle()
+  await audit(admin.userId, 'event.delete', { type: 'event', id }, { title: gone?.title ?? null })
   updateTag('events')
   revalidatePath('/', 'layout')
   redirect('/admin/events')
@@ -163,7 +167,7 @@ export async function deleteEvent(form: FormData) {
 
 export async function toggleFeatured(id: string): Promise<{ featured?: boolean; error?: string }> {
   try {
-    await actionAdmin()
+    const admin = await actionAdmin()
     const db = adminClient()
     const { data: e } = await db.from('events').select('id, featured, status').eq('id', z.uuid().parse(id)).single()
     if (!e) throw new Error('ไม่พบงาน')
@@ -174,6 +178,7 @@ export async function toggleFeatured(id: string): Promise<{ featured?: boolean; 
         throw new Error(`หน้าแรกแสดงได้ ${HOME_FEATURED_LIMIT} งาน — เอาดาวงานอื่นออกก่อน`)
     }
     await db.from('events').update({ featured: !e.featured }).eq('id', e.id)
+    await audit(admin.userId, e.featured ? 'event.unfeature' : 'event.feature', { type: 'event', id: e.id })
     updateTag('events')
   revalidatePath('/', 'layout')
     return { featured: !e.featured }
@@ -185,13 +190,14 @@ export async function toggleFeatured(id: string): Promise<{ featured?: boolean; 
 const POST_TABLES = { team: 'team_posts', seeker: 'seeker_posts', cofounder: 'cofounder_posts' } as const
 
 export async function moderatePost(form: FormData) {
-  await actionAdmin()
+  const admin = await actionAdmin()
   const type = z.enum(['team', 'seeker', 'cofounder']).parse(form.get('type'))
   const id = z.uuid().parse(form.get('id'))
   const action = z.enum(['remove', 'restore']).parse(form.get('action'))
   const db = adminClient()
   const { data: post } = await db.from(POST_TABLES[type]).select('owner_id').eq('id', id).single()
   await db.from(POST_TABLES[type]).update({ status: action === 'remove' ? 'removed' : 'open' }).eq('id', id)
+  await audit(admin.userId, `post.${action}`, { type, id }, { owner_id: post?.owner_id ?? null })
   if (action === 'remove' && post) {
     after(() =>
       notifyUsers([post.owner_id], 'system', {
@@ -213,6 +219,7 @@ export async function setUserRole(form: FormData) {
   const role = z.enum(['user', 'admin']).parse(form.get('role'))
   if (id === admin.userId && role !== 'admin') throw new Error('ลดสิทธิ์ตัวเองไม่ได้')
   await adminClient().from('profiles').update({ role }).eq('id', id)
+  await audit(admin.userId, role === 'admin' ? 'user.grant_admin' : 'user.revoke_admin', { type: 'user', id })
   revalidatePath('/admin/users')
 }
 
@@ -223,6 +230,7 @@ export async function setSuspended(form: FormData) {
   const suspended = form.get('suspended') === '1'
   const db = adminClient()
   await db.from('profiles').update({ is_suspended: suspended }).eq('id', id)
+  await audit(admin.userId, suspended ? 'user.suspend' : 'user.unsuspend', { type: 'user', id })
   if (suspended) {
     // Hide their public posts while suspended.
     for (const t of Object.values(POST_TABLES)) await db.from(t).update({ status: 'closed' }).eq('owner_id', id).eq('status', 'open')
@@ -290,6 +298,7 @@ export async function sendBroadcast(_prev: State, form: FormData): Promise<State
       { ignorePrefs: v.audience !== 'subscribers', allowLine: send_line, allowEmail: send_email, broadcastId: b.id },
     )
     await db.from('broadcasts').update({ stats: { ...stats, recipients: ids.length }, sent_at: new Date().toISOString() }).eq('id', b.id)
+    await audit(admin.userId, 'broadcast.send', { type: 'broadcast', id: b.id }, { title: v.title, audience: v.audience, recipients: ids.length, line: stats.line, email: stats.email })
     revalidatePath('/admin/broadcasts')
     return { ok: `ส่งแล้ว · LINE ${stats.line} · อีเมล ${stats.email} (เข้าคิว ทยอยส่งอัตโนมัติ) · สรุปรายวัน ${stats.digest} · ข้าม ${stats.skipped}${stats.failed ? ` · ล้มเหลว ${stats.failed}` : ''}` }
   } catch (err) {
@@ -298,8 +307,9 @@ export async function sendBroadcast(_prev: State, form: FormData): Promise<State
 }
 
 export async function resendEventMatches(form: FormData) {
-  await actionAdmin()
+  const admin = await actionAdmin()
   const id = z.uuid().parse(form.get('id'))
+  await audit(admin.userId, 'event.resend_matches', { type: 'event', id })
   const { data } = await adminClient().from('events').select('*').eq('id', id).single()
   if (data && data.status === 'published') after(() => notifyEventMatches(data as EventRow))
   revalidatePath(`/admin/events/${id}`)

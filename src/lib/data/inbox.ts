@@ -161,7 +161,8 @@ export async function getConversation(convId: string, userId: string): Promise<C
   const paths = (msgs || []).filter((m) => m.attachment_path).map((m) => m.attachment_path as string)
   const signed = new Map<string, string>()
   if (paths.length) {
-    const { data } = await db.storage.from('attachments').createSignedUrls(paths, 60 * 60)
+    // download: Content-Disposition attachment — files are saved, never rendered in the browser.
+    const { data } = await db.storage.from('attachments').createSignedUrls(paths, 60 * 60, { download: true })
     for (const s of data || []) if (s.path && s.signedUrl) signed.set(s.path, s.signedUrl)
   }
 

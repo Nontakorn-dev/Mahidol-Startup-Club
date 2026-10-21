@@ -9,3 +9,6 @@ next-env.d.ts
 .DS_Store
 .env*
 !.env.example
+
+# Video projects (HyperFrames renders, assets, voice) — kept out of the repo
+videos/

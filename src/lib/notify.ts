@@ -115,9 +115,9 @@ export async function notifyUsers(
 
   if (lineTargets.length) {
     // Fall back to email for those who have one.
-    const toEmail = (reason: string) => {
+    const toEmail = (targets: Recipient[], reason: string) => {
       const rowByUser = new Map(rows.map((x) => [x.user_id as string, x]))
-      for (const r of lineTargets) {
+      for (const r of targets) {
         const row = rowByUser.get(r.id)!
         if (allow.email && r.email && !r.email_is_placeholder && r.email_notifications && emailEnabled()) {
           Object.assign(row, { channel: 'email', status: 'queued', payload: content, sent_at: null })
@@ -132,16 +132,23 @@ export async function notifyUsers(
     const remaining = await lineQuotaRemaining()
     const budget = remaining === null ? Infinity : remaining - (URGENT.includes(topic) ? 0 : LINE_RESERVE)
     if (lineTargets.length > budget) {
-      toEmail(`LINE monthly quota: ${remaining} left`)
+      // Monthly LINE quota used up (or only the reserve for invites/reminders is left) → email instead.
+      toEmail(lineTargets, `LINE monthly quota: ${remaining} left`)
     } else {
       const message = noticeFlex(content)
-      try {
-        if (lineTargets.length === 1) await pushMessage(lineTargets[0].line_user_id!, [message])
-        else await multicast(lineTargets.map((r) => r.line_user_id!), [message])
-        stats.line += lineTargets.length
-      } catch (err) {
-        console.error('LINE send failed', err)
-        toEmail(String(err))
+      // 500 per multicast; if LINE refuses part-way (e.g. the quota runs out mid-send), only the
+      // people who did not get it fall back to email — nobody gets both.
+      for (let i = 0; i < lineTargets.length; i += 500) {
+        const chunk = lineTargets.slice(i, i + 500)
+        try {
+          if (chunk.length === 1) await pushMessage(chunk[0].line_user_id!, [message])
+          else await multicast(chunk.map((r) => r.line_user_id!), [message])
+          stats.line += chunk.length
+        } catch (err) {
+          console.error('LINE send failed', err)
+          toEmail(lineTargets.slice(i), String(err))
+          break
+        }
       }
     }
   }
@@ -185,20 +192,24 @@ export async function sendDigests(): Promise<number> {
       subtitle: lines.join('\n') + more,
       actions: [{ type: 'uri', label: 'ดูบนเว็บ', url: '/inbox' }],
     }
-    try {
-      const lineOk = p.line_user_id && p.line_is_friend && lineMessagingEnabled() && ((await lineQuotaRemaining()) ?? Infinity) > LINE_RESERVE
-      if (lineOk) {
-        await pushMessage(p.line_user_id!, [noticeFlex(content)])
-      } else if (p.email && !p.email_is_placeholder) {
-        queued.push({ user_id: p.id, topic: 'system', title: content.title, url: '/inbox', status: 'queued', channel: 'email', payload: content })
-      }
-      count++
-    } catch (err) {
-      console.error('digest failed', p.id, err)
+    const byEmail = () => {
+      if (p.email && !p.email_is_placeholder) queued.push({ user_id: p.id, topic: 'system', title: content.title, url: '/inbox', status: 'queued', channel: 'email', payload: content })
     }
+    const lineOk = p.line_user_id && p.line_is_friend && lineMessagingEnabled() && ((await lineQuotaRemaining()) ?? Infinity) > LINE_RESERVE
+    if (lineOk) {
+      try {
+        await pushMessage(p.line_user_id!, [noticeFlex(content)])
+      } catch (err) {
+        // LINE refused (quota ran out, OA blocked…) → the digest still arrives, by email.
+        console.error('digest LINE failed — email instead', p.id, err)
+        byEmail()
+      }
+    } else byEmail()
+    count++
   }
   if (queued.length) {
     for (let i = 0; i < queued.length; i += 500) await db.from('notifications').insert(queued.slice(i, i + 500))
+    await processOutbox({ budgetMs: 8_000 }).catch((err) => console.error('outbox', err))
   }
   await db
     .from('notifications')

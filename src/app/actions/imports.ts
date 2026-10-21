@@ -10,6 +10,7 @@ import { env } from '@/lib/env'
 import { slugify } from '@/lib/format'
 import type { MappedEvent } from '@/lib/importers/map'
 import type { EventRow } from '@/lib/types'
+import { audit } from '@/lib/audit'
 
 type Mapped = Partial<MappedEvent> & Pick<MappedEvent, 'title' | 'category' | 'source' | 'source_url'>
 
@@ -133,6 +134,7 @@ export async function approveImport(form: FormData) {
   const id = z.uuid().parse(form.get('id'))
   const publish = form.get('mode') !== 'edit'
   const event = await approveOne(id, admin.userId, publish)
+  if (event) await audit(admin.userId, publish ? 'import.approve_publish' : 'import.approve_draft', { type: 'event', id: event.id }, { import_id: id, title: event.title })
   revalidatePath('/admin/imports')
   updateTag('events')
   revalidatePath('/', 'layout')
@@ -148,6 +150,7 @@ export async function approveSelected(form: FormData) {
     const e = await approveOne(id, admin.userId, true)
     if (e) published.push(e)
   }
+  if (published.length) await audit(admin.userId, 'import.approve_bulk', null, { events: published.map((e) => ({ id: e.id, title: e.title })) })
   revalidatePath('/admin/imports')
   updateTag('events')
   revalidatePath('/', 'layout')
@@ -170,6 +173,7 @@ export async function setImportStatus(form: FormData) {
     })
     .eq('id', id)
     .neq('status', 'approved')
+  await audit(admin.userId, `import.${status === 'rejected' ? 'reject' : 'reopen'}`, { type: 'import', id })
   revalidatePath('/admin/imports')
 }
 

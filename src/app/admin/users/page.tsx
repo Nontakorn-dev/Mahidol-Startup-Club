@@ -28,6 +28,11 @@ export default async function AdminUsersPage({ searchParams }: PageProps<'/admin
   if (filter === 'noline') query = query.is('line_user_id', null)
   if (filter === 'suspended') query = query.eq('is_suspended', true)
   const { data: users } = await query
+  const { data: log } = await adminClient().from('admin_audit_log').select('id, actor_id, action, target_type, target_id, details, created_at').order('created_at', { ascending: false }).limit(30)
+  const { data: actors } = log?.length
+    ? await adminClient().from('profiles').select('id, first_name, last_name').in('id', [...new Set(log.map((l) => l.actor_id).filter(Boolean))])
+    : { data: [] as { id: string; first_name: string; last_name: string }[] }
+  const actorName = new Map((actors || []).map((a) => [a.id, shortName(a.first_name, a.last_name)]))
   const filters = [
     ['all', 'ทั้งหมด'],
     ['line', 'เชื่อม LINE'],
@@ -130,6 +135,27 @@ export default async function AdminUsersPage({ searchParams }: PageProps<'/admin
           ))}
         </div>
       </div>
+      <section className="panel stack" style={{ gap: 10 }}>
+        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 500 }}>บันทึกการทำงานของผู้ดูแล</h2>
+        <p className="muted" style={{ margin: 0, fontSize: 13 }}>30 รายการล่าสุด — ตั้ง/ถอดแอดมิน ระงับบัญชี เผยแพร่/ลบงาน นำโพสต์ออก และประกาศ</p>
+        {log?.length ? (
+          log.map((l) => {
+            const d = l.details as { title?: string; recipients?: number }
+            return (
+              <div key={l.id} className="row wrap" style={{ gap: 10, fontSize: 14, borderTop: '1px solid var(--border)', paddingTop: 8 }}>
+                <span className="muted" style={{ minWidth: 120 }}>{adminTime(l.created_at)}</span>
+                <strong>{(l.actor_id && actorName.get(l.actor_id)) || 'ผู้ดูแล'}</strong>
+                <code style={{ fontSize: 13 }}>{l.action}</code>
+                {d?.title && <span>“{d.title}”</span>}
+                {typeof d?.recipients === 'number' && <span className="muted">ผู้รับ {d.recipients}</span>}
+                {l.target_type === 'user' && l.target_id && <span className="muted">ผู้ใช้ {l.target_id.slice(0, 8)}</span>}
+              </div>
+            )
+          })
+        ) : (
+          <p className="muted" style={{ margin: 0, fontSize: 14 }}>ยังไม่มีรายการ</p>
+        )}
+      </section>
     </>
   )
 }

@@ -31,12 +31,25 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
   if (!profile) return null
 
   const email = (user.email || '').toLowerCase()
-  if (profile.role !== 'admin' && email && serverEnv().adminEmails.includes(email) && !profile.email_is_placeholder) {
+  if (profile.role !== 'admin' && email && serverEnv().adminEmails.includes(email) && !profile.email_is_placeholder && (await mayAutoPromote(user.id))) {
     await db.from('profiles').update({ role: 'admin' }).eq('id', user.id)
+    await db.from('admin_audit_log').insert({ actor_id: user.id, action: 'user.auto_admin', target_type: 'user', target_id: user.id, details: { source: 'ADMIN_EMAILS' } })
     profile.role = 'admin'
   }
   return { userId: user.id, email: user.email, profile: profile as Profile }
 })
+
+/**
+ * ADMIN_EMAILS grants admin only to a confirmed address (checked against Auth, not just the JWT),
+ * and never again to someone another admin removed (the revoke is in the audit log).
+ */
+async function mayAutoPromote(userId: string): Promise<boolean> {
+  const db = adminClient()
+  const { data } = await db.auth.admin.getUserById(userId)
+  if (!data?.user?.email_confirmed_at) return false
+  const { data: revoked } = await db.from('admin_audit_log').select('id').eq('action', 'user.revoke_admin').eq('target_id', userId).limit(1)
+  return !revoked?.length
+}
 
 export async function requireViewer(next = '/'): Promise<Viewer> {
   const viewer = await getViewer()

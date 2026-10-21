@@ -4,7 +4,44 @@ const supabaseHost = process.env.NEXT_PUBLIC_SUPABASE_URL
   ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname
   : 'hxbpcnlxyigjfqmkgcku.supabase.co'
 
+const isDev = process.env.NODE_ENV !== 'production'
+
+// Content-Security-Policy without nonces (see node_modules/next/dist/docs/01-app/02-guides/content-security-policy.md
+// "Without Nonces"): nonces would force every page to render dynamically. No third-party scripts are
+// allowed at all, the browser may only talk to us and our Supabase project, and no one may frame the site.
+const csp = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data:",
+  `connect-src 'self' https://${supabaseHost} wss://${supabaseHost}${isDev ? ' ws:' : ''}`,
+  "media-src 'self'",
+  "frame-src 'none'",
+  "worker-src 'self' blob:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  // Server-action forms post to us; the LINE account-link confirm form may redirect to LINE.
+  "form-action 'self' https://access.line.me",
+  "frame-ancestors 'none'",
+  ...(isDev ? [] : ['upgrade-insecure-requests']),
+].join('; ')
+
+const securityHeaders = [
+  { key: 'Content-Security-Policy', value: csp },
+  { key: 'X-Frame-Options', value: 'DENY' },
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()' },
+  { key: 'Cross-Origin-Opener-Policy', value: 'same-origin-allow-popups' },
+  { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains' },
+]
+
 const nextConfig: NextConfig = {
+  poweredByHeader: false,
+  async headers() {
+    return [{ source: '/:path*', headers: securityHeaders }]
+  },
   // Settings moved to /me (LINE linking there; every notification is on). Old links keep working.
   async redirects() {
     return [

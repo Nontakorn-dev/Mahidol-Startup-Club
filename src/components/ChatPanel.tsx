@@ -123,7 +123,7 @@ export default function ChatPanel({
           >
             <label className="sq-btn" style={{ background: 'transparent', cursor: 'pointer' }} aria-label="แนบไฟล์" title="แนบไฟล์ (ไม่เกิน 10 MB)">
               <IconPaperclip size={20} />
-              <input type="file" hidden onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+              <input type="file" hidden accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.docx,.pptx,.xlsx,.doc,.ppt,.xls,.txt,.csv" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
             </label>
             <label htmlFor="msg" className="sr-only">
               พิมพ์ข้อความ

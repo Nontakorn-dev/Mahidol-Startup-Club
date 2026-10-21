@@ -8,13 +8,13 @@ import AuthCompleter from '@/components/AuthCompleter'
 import { enabledProviders } from '@/lib/auth-providers'
 import { IconBack, IconLine } from '@/components/icons'
 import { getViewer } from '@/lib/auth'
+import { safeNext } from '@/lib/safe-next'
 
 export const metadata: Metadata = { title: 'เข้าสู่ระบบ' }
 
 export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
   const sp = await searchParams
-  const raw = typeof sp.next === 'string' ? sp.next : '/'
-  const next = raw.startsWith('/') && !raw.startsWith('//') ? raw : '/'
+  const next = safeNext(sp.next)
   const str = (k: string) => (typeof sp[k] === 'string' ? (sp[k] as string) : undefined)
   // Coming back from Google (?code) or an email button (?token_hash): finish sign-in in the browser.
   const returning = Boolean(str('code') || str('token_hash') || str('error_description'))

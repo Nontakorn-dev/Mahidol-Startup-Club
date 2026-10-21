@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { actionViewer } from '@/lib/auth'
 import * as core from '@/lib/messaging'
+import { DAY, HOUR, MINUTE, enforceLimits } from '@/lib/rate-limit'
 
 const StartSchema = z.object({
   targetType: z.enum(['profile', 'seeker', 'team', 'cofounder']),
@@ -17,6 +18,8 @@ export async function startConversation(_prev: { error?: string } | null, form: 
   let conversationId: string
   try {
     const viewer = await actionViewer()
+    // Requests notify the other person (LINE / email): cap them so one account can't spam members or drain the quotas.
+    await enforceLimits(`req:${viewer.userId}`, [[6, 10 * MINUTE], [25, DAY]], 'ส่งคำขอถี่เกินไป — ลองใหม่ภายหลัง (จำกัดเพื่อกันสแปมถึงสมาชิก)')
     const input = StartSchema.parse({
       targetType: form.get('targetType'),
       targetId: form.get('targetId'),
@@ -41,6 +44,7 @@ export async function sendMessageAction(form: FormData): Promise<{ error?: strin
   try {
     const viewer = await actionViewer()
     const conversationId = z.uuid().parse(form.get('conversationId'))
+    await enforceLimits(`msg:${viewer.userId}`, [[30, MINUTE], [400, DAY]], 'ส่งข้อความถี่เกินไป กรุณารอสักครู่')
     const file = form.get('file')
     await core.sendMessage({
       conversationId,

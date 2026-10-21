@@ -4,16 +4,20 @@ import { env, lineLoginEnabled } from '@/lib/env'
 import { randomToken } from '@/lib/crypto'
 import { adminClient } from '@/lib/supabase/admin'
 import { lineAuthorizeUrl } from '@/lib/line/login'
+import { safeNext } from '@/lib/safe-next'
+import { withinLimit } from '@/lib/rate-limit'
 
 // "🔗 เชื่อมต่อ LINE" — LINE confirms the account, we store its User ID on the signed-in account.
 // LINE is never used to sign in. The flow state lives in the database (not a cookie): on phones
 // LINE often comes back inside its own in-app browser, which has none of this site's cookies.
 export async function GET(request: NextRequest) {
-  const rawNext = request.nextUrl.searchParams.get('next') || '/me'
-  const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/me'
+  const next = safeNext(request.nextUrl.searchParams.get('next'), '/me')
   const viewer = await getViewer()
   if (!viewer) return NextResponse.redirect(new URL(`/login?next=${encodeURIComponent(next)}`, request.url))
   if (!lineLoginEnabled()) return NextResponse.redirect(new URL('/me#line', request.url))
+  if (!(await withinLimit(`line-start:${viewer.userId}`, 10, 3600))) {
+    return NextResponse.redirect(new URL(`${next}${next.includes('?') ? '&' : '?'}line_error=${encodeURIComponent('ลองเชื่อม LINE ถี่เกินไป กรุณารอสักครู่')}`, request.url))
+  }
   const state = randomToken(24)
   const nonce = randomToken(16)
   const db = adminClient()

@@ -1,5 +1,4 @@
 import 'server-only'
-import { cookies } from 'next/headers'
 import { randomInt } from 'node:crypto'
 import { adminClient } from '@/lib/supabase/admin'
 import { env, serverEnv } from '@/lib/env'
@@ -12,11 +11,10 @@ import { setLineMenu } from '@/lib/line/richmenu'
 //   1. Website → "เชื่อมต่อ LINE" → LINE Login consent (link mode only)
 //   2. Website → QR / button → OA chat with a one-time code → webhook
 //   3. OA → personal link with a Messaging API linkToken → sign up/in with email
-//      → LINE account-link dialog → `accountLink` webhook event
+//      → confirmation page naming the LINE account → LINE account-link dialog → `accountLink` webhook event
 
 export const LINK_CODE_TTL_MIN = 15
 const NONCE_TTL_MIN = 15
-const PENDING_COOKIE = 'msc_line_link'
 
 /** Save LINE User ID ↔ email account. A LINE account belongs to one web account; re-linking moves it. */
 export async function linkLineToUser(
@@ -119,52 +117,45 @@ export async function issueLinkToken(lineUserId: string): Promise<string> {
 }
 
 export const isLinkToken = (t: string | null | undefined): t is string => Boolean(t && /^[A-Za-z0-9_-]{10,200}$/.test(t))
+const isLineUserId = (u: unknown): u is string => typeof u === 'string' && /^U[0-9a-f]{32}$/.test(u)
 
-/** Remember the linkToken across sign-up / sign-in (cookie also survives the onboarding hop). */
-export async function rememberPendingLink(linkToken: string) {
-  const jar = await cookies()
-  jar.set(PENDING_COOKIE, signPayload({ t: linkToken }, 10 * 60), {
-    httpOnly: true,
-    secure: env.siteUrl.startsWith('https'),
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 10 * 60,
-  })
+/**
+ * The personal link the OA sends: the linkToken signed together with the LINE user it was issued
+ * for. A linkToken alone links *whoever opens the link* to the LINE account that requested it,
+ * so someone could send their own link to a member and receive that member's notifications —
+ * the page behind this link names the LINE account and asks for a confirmation first.
+ */
+export function linkPageUrl(linkToken: string, lineUserId: string) {
+  return `/line/link?k=${encodeURIComponent(signPayload({ t: linkToken, u: lineUserId }, 10 * 60))}`
+}
+
+/** linkToken + LINE user id from a `/line/link?k=` value (null when forged, malformed or older than 10 min). */
+export function readLinkKey(k: string | null | undefined): { t: string; u: string } | null {
+  const v = verifyPayload<{ t?: unknown; u?: unknown }>(k)
+  return v && typeof v.t === 'string' && isLinkToken(v.t) && isLineUserId(v.u) ? { t: v.t, u: v.u } : null
 }
 
 /**
- * Turn a linkToken + signed-in user into LINE's account-link dialog URL.
- * LINE then sends an `accountLink` webhook event carrying our nonce.
+ * Turn a confirmed linkToken + signed-in user into LINE's account-link dialog URL.
+ * LINE then sends an `accountLink` webhook event carrying our nonce; the nonce remembers which
+ * LINE account the person confirmed, and any other account is refused.
  */
-export async function accountLinkUrl(userId: string, linkToken: string): Promise<string> {
+export async function accountLinkUrl(userId: string, linkToken: string, lineUserId: string): Promise<string> {
   const nonce = randomToken(24)
-  await adminClient().from('line_link_nonces').insert({ nonce, user_id: userId })
+  await adminClient().from('line_link_nonces').insert({ nonce, user_id: userId, line_user_id: lineUserId })
   return `https://access.line.me/dialog/bot/accountLink?linkToken=${encodeURIComponent(linkToken)}&nonce=${encodeURIComponent(nonce)}`
-}
-
-/** If the visitor arrived from an OA link, return the account-link URL to finish linking (and clear it). */
-export async function pendingLinkRedirect(userId: string): Promise<string | null> {
-  const jar = await cookies()
-  const pending = verifyPayload<{ t: string }>(jar.get(PENDING_COOKIE)?.value)
-  if (!pending || !isLinkToken(pending.t)) return null
-  try {
-    jar.delete(PENDING_COOKIE)
-  } catch {
-    // read-only cookie store (Server Component render) — expires on its own
-  }
-  return accountLinkUrl(userId, pending.t)
 }
 
 /** Webhook `accountLink` (result ok): map nonce → user and save the LINE User ID. */
 export async function consumeNonce(nonce: string, lineUserId: string): Promise<string | null> {
   const db = adminClient()
   const since = new Date(Date.now() - NONCE_TTL_MIN * 60_000).toISOString()
-  const { data } = await db.from('line_link_nonces').delete().eq('nonce', nonce).gt('created_at', since).select('user_id').maybeSingle()
+  const { data } = await db.from('line_link_nonces').delete().eq('nonce', nonce).gt('created_at', since).select('user_id, line_user_id').maybeSingle()
   if (!data) return null
+  if (data.line_user_id && data.line_user_id !== lineUserId) {
+    console.error('accountLink: LINE account differs from the one the member confirmed — not linked')
+    return null
+  }
   await linkLineToUser(data.user_id, lineUserId, { friend: true })
   return data.user_id
-}
-
-export function linkPageUrl(linkToken: string) {
-  return `/line/link?linkToken=${encodeURIComponent(linkToken)}`
 }

@@ -75,7 +75,7 @@ export function fitsInterests(e: EventRow, interests: string[]): string | null {
  */
 async function linkUrl(lineUserId: string): Promise<string> {
   try {
-    return linkPageUrl(await issueLinkToken(lineUserId))
+    return linkPageUrl(await issueLinkToken(lineUserId), lineUserId)
   } catch (err) {
     console.error('linkToken failed — using the website link page', err)
     return web('/me#line')

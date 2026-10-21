@@ -7,6 +7,7 @@
 //   GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET   → enables "Continue with Google"
 //   RESEND_SMTP_KEY (falls back to RESEND_API_KEY) → Supabase sends auth emails through Resend
 //   SMTP_SENDER (default noreply@mahidolstartup.site)
+//   AUTH_LEAKED_PASSWORD_CHECK=1 → reject passwords found in data breaches (Supabase Pro plan)
 import { readFileSync } from 'node:fs'
 
 const ref = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname.split('.')[0]
@@ -27,6 +28,10 @@ const config = {
   rate_limit_email_sent: 2000,
   rate_limit_otp: 2000,
   mailer_otp_length: 6,
+  // Same rule as the sign-up form (PasswordInput minLength 8) — enforced by Auth itself, not just the UI.
+  password_min_length: 8,
+  // HaveIBeenPwned check ("Prevent use of leaked passwords") needs a paid Supabase plan.
+  ...(process.env.AUTH_LEAKED_PASSWORD_CHECK === '1' ? { password_hibp_enabled: true } : {}),
   mailer_subjects_magic_link: 'รหัสเข้าสู่ระบบ Mahidol Startup Club: {{ .Token }}',
   mailer_templates_magic_link_content: tpl('magic_link'),
   mailer_subjects_confirmation: 'ยืนยันอีเมล Mahidol Startup Club: {{ .Token }}',
@@ -69,5 +74,5 @@ if (!res.ok) {
   process.exit(1)
 }
 console.log('✓ Auth configured for', ref)
-for (const k of ['site_url', 'security_sb_forwarded_for_enabled', 'rate_limit_email_sent', 'rate_limit_otp', 'smtp_host', 'smtp_admin_email', 'external_google_enabled'])
+for (const k of ['site_url', 'password_min_length', 'password_hibp_enabled', 'security_sb_forwarded_for_enabled', 'rate_limit_email_sent', 'rate_limit_otp', 'smtp_host', 'smtp_admin_email', 'external_google_enabled'])
   console.log(`  ${k}: ${body[k]}`)

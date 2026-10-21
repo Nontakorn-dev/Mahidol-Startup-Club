@@ -6,6 +6,8 @@ import { errMsg, splitTags } from '@/lib/form-errors'
 import { actionViewer } from '@/lib/auth'
 import { adminClient } from '@/lib/supabase/admin'
 import { ROLE_KEYS, TRACK_KEYS } from '@/lib/constants'
+import { isSafePath } from '@/lib/safe-next'
+import { DAY, HOUR, enforceLimits } from '@/lib/rate-limit'
 
 type State = { error?: string } | null
 
@@ -73,6 +75,7 @@ export async function saveTeam(_prev: State, form: FormData): Promise<State> {
       await db.from('team_posts').update(row).eq('id', v.id)
       dest = `/teams/${v.id}`
     } else {
+      await enforceLimits(`post:${viewer.userId}`, [[5, HOUR], [10, DAY]], 'สร้างประกาศถี่เกินไป — ลองใหม่พรุ่งนี้ หรือแก้ไขประกาศเดิมแทน')
       const { data, error } = await db.from('team_posts').insert({ ...row, owner_id: viewer.userId }).select('id').single()
       if (error || !data) throw new Error('บันทึกไม่สำเร็จ')
       await db.from('team_members').insert({ team_id: data.id, user_id: viewer.userId })
@@ -133,6 +136,7 @@ export async function saveSeeker(_prev: State, form: FormData): Promise<State> {
       if (existing.status === 'removed') throw new Error(REMOVED_MSG)
       await db.from('seeker_posts').update(row).eq('id', v.id)
     } else {
+      await enforceLimits(`post:${viewer.userId}`, [[5, HOUR], [10, DAY]], 'สร้างประกาศถี่เกินไป — ลองใหม่พรุ่งนี้ หรือแก้ไขประกาศเดิมแทน')
       const { data } = await db.from('seeker_posts').insert({ ...row, owner_id: viewer.userId }).select('id').single()
       v.id = data?.id ?? null
     }
@@ -221,6 +225,6 @@ export async function setPostStatus(form: FormData) {
   revalidatePath('/teams')
   revalidatePath('/')
   // From an edit page: leave it (the post may be gone).
-  const next = String(form.get('next') || '')
-  if (next.startsWith('/') && !next.startsWith('//')) redirect(next)
+  const next = form.get('next')
+  if (isSafePath(next)) redirect(next)
 }

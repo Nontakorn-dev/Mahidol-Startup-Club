@@ -1,13 +1,14 @@
 import type { Metadata } from 'next'
 import { requireViewer } from '@/lib/auth'
 import OnboardingForm from '@/components/forms/OnboardingForm'
+import { safeNext } from '@/lib/safe-next'
 
 export const metadata: Metadata = { title: 'ตั้งค่าโปรไฟล์' }
 
 export default async function OnboardingPage({ searchParams }: PageProps<'/onboarding'>) {
   const sp = await searchParams
   const viewer = await requireViewer('/onboarding')
-  const next = typeof sp.next === 'string' ? sp.next : '/'
+  const next = safeNext(sp.next)
   const p = viewer.profile
   return (
     <div style={{ background: 'radial-gradient(100% 40% at 100% 0%, rgba(0,53,173,0.10) 0%, rgba(0,53,173,0) 60%), linear-gradient(180deg, #E6ECF8 0px, #F4F7FC 420px)' }}>

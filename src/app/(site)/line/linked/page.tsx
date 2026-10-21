@@ -3,16 +3,11 @@ import type { Metadata } from 'next'
 import { lineAddFriendUrl } from '@/lib/env'
 import { adminClient } from '@/lib/supabase/admin'
 import { IconLine } from '@/components/icons'
+import { maskEmail } from '@/lib/format'
 
 export const metadata: Metadata = { title: 'เชื่อม LINE' }
 
 const CONTINUE_TTL_MS = 15 * 60_000
-
-/** "n***@gmail.com" — enough to recognise your own account, not enough to learn someone else's. */
-function maskEmail(email: string) {
-  const [user, domain] = email.split('@')
-  return domain ? `${user.slice(0, 1)}***@${domain}` : '***'
-}
 
 /** The web account a still-unused "continue" token would sign in to. */
 async function continueAccount(token: string): Promise<string | null> {

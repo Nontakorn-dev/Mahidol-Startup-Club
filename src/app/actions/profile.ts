@@ -8,6 +8,8 @@ import { errMsg, splitTags } from '@/lib/form-errors'
 import { actionViewer } from '@/lib/auth'
 import { adminClient } from '@/lib/supabase/admin'
 import { ROLE_KEYS } from '@/lib/constants'
+import { safeNext } from '@/lib/safe-next'
+import { HOUR, enforceLimits } from '@/lib/rate-limit'
 
 type State = { error?: string; ok?: string } | null
 const optText = (max: number) => z.string().trim().max(max).optional().transform((v) => v || null)
@@ -40,8 +42,7 @@ export async function saveOnboarding(_prev: State, form: FormData): Promise<Stat
     const v = BasicsSchema.parse(Object.fromEntries(['first_name', 'last_name', 'faculty', 'year', 'campus', 'headline'].map((k) => [k, form.get(k) ?? ''])))
     const skills = splitList(form.get('skills'))
     await adminClient().from('profiles').update({ ...v, skills, interests: form.getAll('interests').map(String).slice(0, 7), onboarded: true }).eq('id', viewer.userId)
-    const raw = String(form.get('next') || '/')
-    next = raw.startsWith('/') && !raw.startsWith('//') ? raw : '/'
+    next = safeNext(form.get('next'))
   } catch (err) {
     return { error: errMsg(err) }
   }
@@ -87,7 +88,10 @@ export async function saveProfile(_prev: State, form: FormData): Promise<State> 
       onboarded: true,
     }
     const avatar = form.get('avatar')
-    if (avatar instanceof File && avatar.size > 0) update.avatar_url = await uploadAvatar(viewer.userId, avatar)
+    if (avatar instanceof File && avatar.size > 0) {
+      await enforceLimits(`avatar:${viewer.userId}`, [[10, HOUR]], 'เปลี่ยนรูปถี่เกินไป กรุณารอสักครู่')
+      update.avatar_url = await uploadAvatar(viewer.userId, avatar)
+    }
     if (form.get('remove_avatar') === '1') update.avatar_url = null
     await adminClient().from('profiles').update(update).eq('id', viewer.userId)
     revalidatePath('/', 'layout')
@@ -141,6 +145,6 @@ export async function saveInterests(form: FormData) {
     .eq('id', viewer.userId)
   revalidatePath('/me')
   revalidatePath('/me')
-  const raw = String(form.get('next') || '/opportunities')
-  redirect(`${raw.startsWith('/') && !raw.startsWith('//') ? raw : '/opportunities'}${raw.includes('?') ? '&' : '?'}saved=interests`)
+  const next = safeNext(form.get('next'), '/opportunities')
+  redirect(`${next}${next.includes('?') ? '&' : '?'}saved=interests`)
 }

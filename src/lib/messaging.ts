@@ -21,6 +21,27 @@ export type StartInput = {
 const preview = (s: string) => (s.length > 80 ? `${s.slice(0, 80)}…` : s)
 
 /**
+ * Chat attachments: documents and images only (same list as the storage bucket, migration 0026).
+ * The type comes from the extension, never from the browser, so a renamed .html/.exe is refused.
+ */
+const ATTACHMENT_TYPES: Record<string, string> = {
+  pdf: 'application/pdf',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  gif: 'image/gif',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  doc: 'application/msword',
+  ppt: 'application/vnd.ms-powerpoint',
+  xls: 'application/vnd.ms-excel',
+  txt: 'text/plain',
+  csv: 'text/csv',
+}
+
+/**
  * Tell an open chat to refresh (Realtime on `conversation_pings`). The row holds only the
  * conversation id and the reader's own id — never who sent what, so anonymity holds.
  */
@@ -237,11 +258,12 @@ export async function sendMessage(opts: {
   if (opts.attachment && opts.attachment.size > 0) {
     if (opts.attachment.size > 10 * 1024 * 1024) throw new Error('ไฟล์ใหญ่เกิน 10 MB')
     attachment_name = opts.attachment.name.slice(0, 120)
+    const ext = attachment_name.toLowerCase().match(/\.([a-z0-9]+)$/)?.[1] ?? ''
+    const contentType = ATTACHMENT_TYPES[ext]
+    if (!contentType) throw new Error('แนบได้เฉพาะ PDF, รูปภาพ, Word, PowerPoint, Excel, TXT หรือ CSV')
     const safe = attachment_name.replace(/[^\w.\-]+/g, '_')
     attachment_path = `${opts.conversationId}/${randomUUID()}-${safe}`
-    const { error } = await db.storage
-      .from('attachments')
-      .upload(attachment_path, opts.attachment, { contentType: opts.attachment.type || 'application/octet-stream' })
+    const { error } = await db.storage.from('attachments').upload(attachment_path, opts.attachment, { contentType })
     if (error) throw new Error('อัปโหลดไฟล์ไม่สำเร็จ')
   }
   if (!body && !attachment_path) throw new Error('กรุณาพิมพ์ข้อความ')

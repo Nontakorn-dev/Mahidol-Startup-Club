@@ -4,6 +4,7 @@ import SubmitButton from '@/components/SubmitButton'
 import { saveInterests } from '@/app/actions/profile'
 import { requireViewer } from '@/lib/auth'
 import { ROLE_KEYS, type Role } from '@/lib/constants'
+import { safeNext } from '@/lib/safe-next'
 
 export const metadata: Metadata = { title: 'เลือกเรื่องที่สนใจ' }
 export const dynamic = 'force-dynamic'
@@ -21,8 +22,8 @@ const LABEL: Record<Role, string> = {
 
 export default async function InterestsPage({ searchParams }: PageProps<'/settings/interests'>) {
   const sp = await searchParams
-  const raw = typeof sp.next === 'string' ? sp.next : '/opportunities'
-  const next = raw.startsWith('/') && !raw.startsWith('//') && !raw.startsWith('/settings/interests') ? raw : '/opportunities'
+  const raw = safeNext(sp.next, '/opportunities')
+  const next = raw.startsWith('/settings/interests') ? '/opportunities' : raw
   const viewer = await requireViewer(`/settings/interests?next=${encodeURIComponent(next)}`)
   const p = viewer.profile
   const justLinked = sp.linked === '1'

@@ -213,3 +213,9 @@ export function eventBlurb(e: { summary?: string | null; overview?: string | nul
   if (!first) return null
   return first.length > 180 ? `${first.slice(0, 177).trimEnd()}…` : first
 }
+
+/** "n***@gmail.com" — enough to recognise your own account, not enough to learn someone else's. */
+export function maskEmail(email: string) {
+  const [user, domain] = email.split('@')
+  return domain ? `${user.slice(0, 1)}***@${domain}` : '***'
+}
