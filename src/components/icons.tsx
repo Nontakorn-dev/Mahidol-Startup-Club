@@ -287,6 +287,13 @@ export const IconSparkle = (p: P) => (
     <path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" />
   </Svg>
 )
+export const IconLayers = (p: P) => (
+  <Svg strokeWidth={1.9} {...p}>
+    <path d="M12 3L3 8l9 5 9-5-9-5z" />
+    <path d="M3 12.5l9 5 9-5" />
+    <path d="M3 17l9 5 9-5" />
+  </Svg>
+)
 export const IconLogout = (p: P) => (
   <Svg {...p}>
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />

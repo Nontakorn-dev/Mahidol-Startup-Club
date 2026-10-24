@@ -18,7 +18,11 @@ export type StartInput = {
   teamId?: string | null
 }
 
-const preview = (s: string) => (s.length > 80 ? `${s.slice(0, 80)}…` : s)
+const cleanBodyText = (s: string) => s.replace(/\n?\[\[EVENT_CARD:[\s\S]*?\]\]/g, '').replace(/\s+/g, ' ').trim()
+const preview = (s: string) => {
+  const clean = cleanBodyText(s)
+  return clean.length > 80 ? `${clean.slice(0, 80)}…` : clean
+}
 
 /**
  * Chat attachments: documents and images only (same list as the storage bucket, migration 0026).
@@ -64,7 +68,7 @@ async function profileLite(id: string) {
 
 export async function startConversation(input: StartInput): Promise<{ conversationId: string }> {
   const db = adminClient()
-  const message = input.message.trim().slice(0, 1000)
+  const message = input.message.trim().slice(0, 2000)
   if (!message) throw new Error('กรุณาพิมพ์ข้อความ')
 
   const target = await resolveTargetOwner(input.targetType, input.targetId)
@@ -78,10 +82,13 @@ export async function startConversation(input: StartInput): Promise<{ conversati
     teamId = input.targetId
   }
   if (kind === 'invite') {
-    if (!input.teamId) throw new Error('กรุณาเลือกทีม')
-    const { data: team } = await db.from('team_posts').select('id, owner_id, status').eq('id', input.teamId).maybeSingle()
-    if (!team || team.owner_id !== input.requesterId || team.status !== 'open') throw new Error('เลือกได้เฉพาะทีมที่คุณเป็นเจ้าของและยังเปิดรับอยู่')
-    teamId = team.id
+    if (input.teamId) {
+      const { data: team } = await db.from('team_posts').select('id, owner_id, status').eq('id', input.teamId).maybeSingle()
+      if (!team || team.owner_id !== input.requesterId || team.status !== 'open') throw new Error('เลือกได้เฉพาะทีมที่คุณเป็นเจ้าของและยังเปิดรับอยู่')
+      teamId = team.id
+    } else {
+      kind = 'message'
+    }
   }
   const requesterAnon = kind !== 'invite' && input.anonymous
   const recipientAnon = target.anonymous

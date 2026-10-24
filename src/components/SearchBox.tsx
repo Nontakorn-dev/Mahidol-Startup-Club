@@ -6,7 +6,7 @@ import { IconArrowRight, IconSearch } from './icons'
 /** Natural-language intent box. Submits to /search (parsing: src/lib/ai/intent.ts). */
 export default function SearchBox({
   defaultValue = '',
-  placeholder = 'อยากทำอะไรต่อ? เช่น หาทีมลง TED Youth',
+  placeholder = 'หาคนที่ใช่หรือทีมที่ใช่ เช่น หา Developer สาย HealthTech',
   maxWidth = 600,
   id = 'intent',
   scope,

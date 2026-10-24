@@ -7,46 +7,127 @@ import Crumbs from '@/components/Crumbs'
 import ChatPanel from '@/components/ChatPanel'
 import { IconBack, IconLine, IconLock } from '@/components/icons'
 import { respondAction } from '@/app/actions/messaging'
-import { requireViewer } from '@/lib/auth'
-import { getConversation, listInbox } from '@/lib/data/inbox'
+import { getViewer, requireViewer } from '@/lib/auth'
+import { adminClient } from '@/lib/supabase/admin'
+import { inferRoles, recommendEventsForRoles, toPublicAuthor } from '@/lib/data/community'
+import { listPublishedEvents } from '@/lib/data/events'
+import { findConversationWithProfile, getConversation, listInbox } from '@/lib/data/inbox'
 import { markRead } from '@/lib/messaging'
-import { chatTime, dayLabel, deadlineLine } from '@/lib/format'
+import { chatTime, dayLabel, deadlineLine, isClosed } from '@/lib/format'
 import { ROLES, type Role } from '@/lib/constants'
+import type { Profile, PublicAuthor, RecommendedEvent } from '@/lib/types'
 import SubmitButton from '@/components/SubmitButton'
 
 export const metadata: Metadata = { title: 'ข้อความ' }
 export const dynamic = 'force-dynamic'
 
+const UUID_RX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export default async function InboxPage({ searchParams }: PageProps<'/inbox'>) {
   const sp = await searchParams
-  const viewer = await requireViewer('/inbox')
+  const toId = typeof sp.to === 'string' && UUID_RX.test(sp.to) ? sp.to : null
+  const rawConvId = typeof sp.c === 'string' && UUID_RX.test(sp.c) ? sp.c : null
+
+  // Allow direct navigation from "แชท" (`?to=<id>`) even before login so users can preview & draft invites in the real chat UI
+  const viewer = toId ? await getViewer() : await requireViewer('/inbox')
   const tab = sp.tab === 'requests' ? 'requests' : 'all'
-  const convId = typeof sp.c === 'string' && /^[0-9a-f-]{36}$/i.test(sp.c) ? sp.c : null
-  const [items, view] = await Promise.all([listInbox(viewer.userId), convId ? getConversation(convId, viewer.userId) : Promise.resolve(null)])
+
+  // If `?to=<id>` is passed and viewer is logged in, check if a conversation already exists with that member
+  let convId = rawConvId
+  if (!convId && toId && viewer && viewer.userId !== toId) {
+    convId = await findConversationWithProfile(viewer.userId, toId)
+  }
+
+  const [items, view, allEvents] = await Promise.all([
+    viewer ? listInbox(viewer.userId) : Promise.resolve([]),
+    convId && viewer ? getConversation(convId, viewer.userId) : Promise.resolve(null),
+    listPublishedEvents(),
+  ])
+
+  const openEvents = allEvents.filter((e) => !isClosed(e))
+
+  // Load target profile for `?to=<id>` or for the active conversation's partner so we can recommend competitions
+  type PartnerProfile = Pick<
+    Profile,
+    'id' | 'first_name' | 'last_name' | 'faculty' | 'year' | 'avatar_url' | 'line_picture_url' | 'headline' | 'skills' | 'interests' | 'is_verified'
+  >
+  const partnerProfileId = view?.otherProfileId ?? toId
+  let partnerProfile: PartnerProfile | null = null
+  if (partnerProfileId) {
+    const { data } = await adminClient()
+      .from('profiles')
+      .select('id, first_name, last_name, faculty, year, avatar_url, line_picture_url, headline, skills, interests, is_verified')
+      .eq('id', partnerProfileId)
+      .maybeSingle()
+    if (data) partnerProfile = data as PartnerProfile
+  }
+
+  let recommendedEvents: RecommendedEvent[] = []
+  let partnerRoleLine: string | null = null
+  let draftOther: PublicAuthor | null = null
+
+  if (partnerProfile) {
+    const roles = inferRoles(partnerProfile)
+    const skills = (partnerProfile.skills || []).map((k) => ROLES[k as Role] ?? k)
+    recommendedEvents = recommendEventsForRoles(roles, skills, openEvents, Math.max(openEvents.length, 50))
+    const primaryRole = partnerProfile.headline?.split(/[·|•—]/)[0].trim() || skills[0] || (roles[0] ? ROLES[roles[0]] : '') || 'สมาชิกชมรม'
+    partnerRoleLine = [primaryRole, partnerProfile.faculty, partnerProfile.year].filter(Boolean).join(' · ')
+    draftOther = toPublicAuthor(
+      {
+        ...partnerProfile,
+        avatar_url: partnerProfile.avatar_url || partnerProfile.line_picture_url,
+      },
+      false,
+    )
+  }
+
   const shown = tab === 'requests' ? items.filter((i) => i.isRequest) : items
-  if (view) after(() => markRead(view.conv.id, viewer.userId))
-  const p = viewer.profile
-  const lineOn = Boolean(p.line_user_id && p.line_is_friend)
+  if (view && viewer) after(() => markRead(view.conv.id, viewer.userId))
+  const p = viewer?.profile
+  const lineOn = Boolean(p?.line_user_id && p?.line_is_friend)
+
+  const activeOther = view?.other ?? draftOther
+  const activeProfileId = view?.otherProfileId ?? partnerProfile?.id ?? null
+  const hasActiveChat = Boolean(view || draftOther)
+  const isDraftNotInList = Boolean(!view && draftOther && activeProfileId && !shown.some((i) => i.other.id === activeProfileId))
 
   return (
     <div style={{ background: 'radial-gradient(120% 70% at 100% 0%, rgba(0,53,173,0.10) 0%, rgba(0,53,173,0) 60%), linear-gradient(180deg, #F4F7FC 0%, #E1E9F8 100%)', lineHeight: 1.6 }}>
       <div className="container stack" style={{ paddingTop: 24, paddingBottom: 40, gap: 18 }}>
         <Crumbs back="/" trail={[{ label: 'หน้าแรก', href: '/' }, { label: 'ข้อความ' }]} />
-        <div className={`inbox-shell ${view ? 'has-active' : ''}`}>
+        <div className={`inbox-shell ${hasActiveChat ? 'has-active' : ''}`}>
           <aside className="inbox-list">
             <div className="stack" style={{ padding: '22px 20px 12px', gap: 14 }}>
               <h1 style={{ margin: 0, fontWeight: 600, fontSize: 26 }}>ข้อความ</h1>
               <div role="tablist" className="segmented" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', background: 'var(--bg)' }}>
-                <Link href={`/inbox?tab=all${convId ? `&c=${convId}` : ''}`} role="tab" aria-selected={tab === 'all'} scroll={false}>
+                <Link href={`/inbox?tab=all${convId ? `&c=${convId}` : toId ? `&to=${toId}` : ''}`} role="tab" aria-selected={tab === 'all'} scroll={false}>
                   ทั้งหมด
                 </Link>
-                <Link href={`/inbox?tab=requests${convId ? `&c=${convId}` : ''}`} role="tab" aria-selected={tab === 'requests'} scroll={false}>
+                <Link href={`/inbox?tab=requests${convId ? `&c=${convId}` : toId ? `&to=${toId}` : ''}`} role="tab" aria-selected={tab === 'requests'} scroll={false}>
                   คำชวน &amp; คำขอ
                 </Link>
               </div>
             </div>
             <div className="inbox-items">
-              {shown.length === 0 && (
+              {isDraftNotInList && draftOther && activeProfileId && (
+                <Link
+                  href={`/inbox?tab=${tab}&to=${activeProfileId}`}
+                  className="inbox-item active"
+                  scroll={false}
+                >
+                  <Avatar name={draftOther.name} initial={draftOther.initial} src={draftOther.avatar_url} size={46} fontSize={17} />
+                  <span className="meta">
+                    <span className="l1">
+                      <span className="nm">{draftOther.name}</span>
+                      <span style={{ flex: 'none', fontSize: 12, color: 'var(--brand)', fontWeight: 600 }}>แชทใหม่</span>
+                    </span>
+                    <span className="l2">
+                      <span className="pv">{partnerRoleLine || draftOther.faculty_line || 'เลือกงานแข่งเพื่อเริ่มชวนคุย'}</span>
+                    </span>
+                  </span>
+                </Link>
+              )}
+              {shown.length === 0 && !isDraftNotInList && (
                 <p className="muted" style={{ padding: '24px 18px', fontSize: 14, textAlign: 'center' }}>
                   {tab === 'requests' ? 'ยังไม่มีคำชวนหรือคำขอ' : 'ยังไม่มีข้อความ — ลองทักคนที่กำลังหาทีมดู'}
                 </p>
@@ -55,7 +136,7 @@ export default async function InboxPage({ searchParams }: PageProps<'/inbox'>) {
                 <Link
                   key={i.id}
                   href={`/inbox?tab=${tab}&c=${i.id}`}
-                  className={`inbox-item ${i.id === convId ? 'active' : ''} ${i.unread || i.pendingForMe ? 'unread' : ''}`}
+                  className={`inbox-item ${i.id === view?.conv.id ? 'active' : ''} ${i.unread || i.pendingForMe ? 'unread' : ''}`}
                   scroll={false}
                 >
                   <Avatar name={i.other.name} initial={i.other.initial} src={i.other.avatar_url} anonymous={i.other.anonymous} size={46} fontSize={17} />
@@ -79,42 +160,47 @@ export default async function InboxPage({ searchParams }: PageProps<'/inbox'>) {
                 </Link>
               ))}
             </div>
-            <Link href="/me#line" className="line-status">
+            <Link href={viewer ? '/me#line' : '/login?next=%2Finbox'} className="line-status">
               <span style={{ display: 'inline-flex', color: '#06C755' }}>
                 <IconLine size={18} />
               </span>
               <span style={{ flex: 1 }}>
-                แจ้งเตือนผ่าน LINE: <strong style={{ fontWeight: 600 }}>{lineOn ? 'เปิดอยู่' : p.line_user_id ? 'ยังไม่ได้เพิ่มเพื่อน' : 'ยังไม่เชื่อม'}</strong>
+                แจ้งเตือนผ่าน LINE: <strong style={{ fontWeight: 600 }}>{lineOn ? 'เปิดอยู่' : p?.line_user_id ? 'ยังไม่ได้เพิ่มเพื่อน' : 'ยังไม่เชื่อม'}</strong>
               </span>
-              <span style={{ color: 'var(--brand)', fontWeight: 600 }}>ตั้งค่า</span>
+              <span style={{ color: 'var(--brand)', fontWeight: 600 }}>{viewer ? 'ตั้งค่า' : 'เข้าสู่ระบบ'}</span>
             </Link>
           </aside>
 
-          {view ? (
+          {hasActiveChat && activeOther ? (
             <section className="chat">
               <div className="chat-head">
                 <Link href={`/inbox?tab=${tab}`} className="sq-btn mobile-back" aria-label="กลับไปรายการข้อความ" style={{ background: 'transparent' }}>
                   <IconBack size={20} />
                 </Link>
-                <Avatar name={view.other.name} initial={view.other.initial} src={view.other.avatar_url} anonymous={view.other.anonymous} size={44} fontSize={16} />
+                <Avatar name={activeOther.name} initial={activeOther.initial} src={activeOther.avatar_url} anonymous={activeOther.anonymous} size={44} fontSize={16} />
                 <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.35 }}>
-                  <span style={{ fontWeight: 600, fontSize: 16 }}>{view.other.name}</span>
+                  <span style={{ fontWeight: 600, fontSize: 16 }}>{activeOther.name}</span>
                   <span className="muted" style={{ fontSize: 13 }}>
-                    {view.other.faculty_line}
+                    {partnerRoleLine || activeOther.faculty_line}
                   </span>
                 </span>
-                {view.otherProfileId && (
-                  <Link href={`/u/${view.otherProfileId}`} className="btn btn-outline btn-pill btn-sm">
+                {activeProfileId && (
+                  <Link href={`/u/${activeProfileId}`} className="btn btn-outline btn-pill btn-sm">
                     ดูโปรไฟล์
                   </Link>
                 )}
               </div>
               <ChatPanel
-                conversationId={view.conv.id}
-                canSend={view.canSend}
-                lockedReason={view.lockedReason}
+                conversationId={view?.conv.id ?? null}
+                targetProfileId={activeProfileId}
+                targetName={activeOther.name}
+                targetRole={partnerRoleLine || activeOther.faculty_line}
+                recommendedEvents={recommendedEvents}
+                loggedIn={Boolean(viewer)}
+                canSend={view ? view.canSend : true}
+                lockedReason={view ? view.lockedReason : null}
                 header={
-                  view.conv.request_kind !== 'message' ? (
+                  view && view.conv.request_kind !== 'message' ? (
                     <div className="request-card">
                       {view.team ? (
                         <Link href={view.team.event ? `/opportunities/${view.team.event.slug}` : '/teams?tab=team'} className="row" style={{ gap: 12, textDecoration: 'none', color: 'var(--navy)' }}>
@@ -162,11 +248,15 @@ export default async function InboxPage({ searchParams }: PageProps<'/inbox'>) {
                     </div>
                   ) : null
                 }
-                messages={view.messages.map((m, idx) => ({
-                  ...m,
-                  time: chatTime(m.at),
-                  day: idx === 0 || dayLabel(view.messages[idx - 1].at) !== dayLabel(m.at) ? dayLabel(m.at) : null,
-                }))}
+                messages={
+                  view
+                    ? view.messages.map((m, idx) => ({
+                        ...m,
+                        time: chatTime(m.at),
+                        day: idx === 0 || dayLabel(view.messages[idx - 1].at) !== dayLabel(m.at) ? dayLabel(m.at) : null,
+                      }))
+                    : []
+                }
               />
             </section>
           ) : (

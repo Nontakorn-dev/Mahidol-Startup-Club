@@ -3,9 +3,9 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 export const NAV = [
-  { href: '/opportunities', label: 'งานแข่ง & ทุน' },
-  { href: '/teams', label: 'หาทีม & Co-Founder' },
   { href: '/people', label: 'เครือข่าย' },
+  { href: '/teams', label: 'หาทีม & Co-Founder' },
+  { href: '/opportunities', label: 'งานแข่ง & ทุน' },
 ]
 
 export default function NavLinks() {

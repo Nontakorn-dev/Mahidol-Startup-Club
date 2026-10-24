@@ -10,7 +10,7 @@ const StartSchema = z.object({
   targetType: z.enum(['profile', 'seeker', 'team', 'cofounder']),
   targetId: z.uuid(),
   kind: z.enum(['message', 'intro', 'join', 'invite']),
-  message: z.string().trim().min(1, 'กรุณาพิมพ์ข้อความ').max(1000),
+  message: z.string().trim().min(1, 'กรุณาพิมพ์ข้อความ').max(2000),
   teamId: z.uuid().optional().or(z.literal('')),
 })
 
@@ -40,10 +40,29 @@ export async function startConversation(_prev: { error?: string } | null, form: 
   redirect(`/inbox?c=${conversationId}`)
 }
 
-export async function sendMessageAction(form: FormData): Promise<{ error?: string; ok?: boolean }> {
+export async function sendMessageAction(form: FormData): Promise<{ error?: string; ok?: boolean; conversationId?: string }> {
   try {
     const viewer = await actionViewer()
-    const conversationId = z.uuid().parse(form.get('conversationId'))
+    const rawConvId = String(form.get('conversationId') || '').trim()
+    const targetProfileId = String(form.get('targetProfileId') || '').trim()
+
+    if (!rawConvId && targetProfileId) {
+      await enforceLimits(`req:${viewer.userId}`, [[6, 10 * MINUTE], [25, DAY]], 'ส่งคำขอถี่เกินไป — ลองใหม่ภายหลัง')
+      const body = String(form.get('body') || '').trim()
+      if (!body) return { error: 'กรุณาพิมพ์ข้อความ' }
+      const res = await core.startConversation({
+        requesterId: viewer.userId,
+        targetType: 'profile',
+        targetId: z.uuid().parse(targetProfileId),
+        kind: 'message',
+        message: body.slice(0, 2000),
+        anonymous: false,
+      })
+      revalidatePath('/inbox')
+      return { ok: true, conversationId: res.conversationId }
+    }
+
+    const conversationId = z.uuid().parse(rawConvId)
     await enforceLimits(`msg:${viewer.userId}`, [[30, MINUTE], [400, DAY]], 'ส่งข้อความถี่เกินไป กรุณารอสักครู่')
     const file = form.get('file')
     await core.sendMessage({
@@ -53,7 +72,7 @@ export async function sendMessageAction(form: FormData): Promise<{ error?: strin
       attachment: file instanceof File && file.size > 0 ? file : null,
     })
     revalidatePath('/inbox')
-    return { ok: true }
+    return { ok: true, conversationId }
   } catch (err) {
     return { error: (err as Error).message }
   }

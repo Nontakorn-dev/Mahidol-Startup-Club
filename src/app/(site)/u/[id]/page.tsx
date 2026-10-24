@@ -8,7 +8,9 @@ import ContactButton from '@/components/ContactButton'
 import { IconChatSimple, IconCheck, IconEdit, IconLink, IconLock, IconUserPlus } from '@/components/icons'
 import { getViewer } from '@/lib/auth'
 import { adminClient } from '@/lib/supabase/admin'
-import { initialOf, shortName } from '@/lib/format'
+import { inferRoles, recommendEventsForRoles } from '@/lib/data/community'
+import { listPublishedEvents } from '@/lib/data/events'
+import { initialOf, isClosed, shortName } from '@/lib/format'
 import { ROLES, type Role } from '@/lib/constants'
 import type { Profile } from '@/lib/types'
 
@@ -50,7 +52,7 @@ export default async function PublicProfilePage({ params }: PageProps<'/u/[id]'>
   }
   const db = adminClient()
   // Only non-anonymous posts may be tied to a named profile.
-  const [{ data: teams }, { data: seeker }, { data: myTeams }] = await Promise.all([
+  const [{ data: teams }, { data: seeker }, { data: myTeams }, allEvents] = await Promise.all([
     db
       .from('team_posts')
       .select('id, name, pitch, roles_needed, event:events(slug, title, poster_url)')
@@ -68,8 +70,12 @@ export default async function PublicProfilePage({ params }: PageProps<'/u/[id]'>
       .limit(1)
       .maybeSingle(),
     viewer ? db.from('team_posts').select('id, name').eq('owner_id', viewer.userId).eq('status', 'open') : Promise.resolve({ data: [] }),
+    listPublishedEvents(),
   ])
   const name = shortName(p.first_name, p.last_name)
+  const openEvents = allEvents.filter((e) => !isClosed(e))
+  const recommendedEvents = recommendEventsForRoles(inferRoles(p), p.skills || [], openEvents, 3)
+  const roleLine = [p.headline || p.skills?.[0], p.faculty, p.year].filter(Boolean).join(' · ')
   const looking = seeker as unknown as { looking_text: string; event: { slug: string; title: string } | null } | null
   const teamRows = (teams || []) as unknown as {
     id: string
@@ -122,7 +128,9 @@ export default async function PublicProfilePage({ params }: PageProps<'/u/[id]'>
                 </Link>
               ) : (
                 <>
-                  <ContactButton targetType="profile" targetId={p.id} kind="message" label="ส่งข้อความ" targetName={name} loggedIn={Boolean(viewer)} icon={<IconChatSimple size={18} />} />
+                  <Link href={`/inbox?to=${p.id}`} className="btn btn-primary btn-pill">
+                    <IconChatSimple size={18} /> ส่งข้อความ
+                  </Link>
                   <ContactButton
                     targetType="profile"
                     targetId={p.id}
@@ -130,8 +138,10 @@ export default async function PublicProfilePage({ params }: PageProps<'/u/[id]'>
                     label="ชวนเข้าทีม"
                     variant="outline"
                     targetName={name}
+                    targetRole={roleLine}
                     loggedIn={Boolean(viewer)}
                     myTeams={myTeams || []}
+                    recommendedEvents={recommendedEvents}
                     icon={<IconUserPlus size={18} />}
                   />
                 </>

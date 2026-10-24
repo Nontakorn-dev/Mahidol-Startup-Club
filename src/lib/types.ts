@@ -132,3 +132,39 @@ export type CofounderCard = {
   status: string
   created_at: string
 }
+
+export type BuddyWorkItem = {
+  kind: 'award' | 'project'
+  title: string
+  subtitle: string
+}
+
+export type RecommendedEvent = {
+  id: string
+  slug: string
+  title: string
+  poster_url?: string | null
+  summary?: string | null
+  organizer?: string | null
+  is_club?: boolean
+  categoryLabel: string
+  deadlineLabel: string
+  benefit?: string | null
+  matchReason?: string
+}
+
+export type BuddyCard = {
+  id: string
+  name: string
+  verified: boolean
+  role_line: string
+  avatar_url: string | null
+  initial: string
+  roles: Role[]
+  match_line: string
+  bio: string
+  works: BuddyWorkItem[]
+  skills: string[]
+  is_mine: boolean
+  recommended_events: RecommendedEvent[]
+}

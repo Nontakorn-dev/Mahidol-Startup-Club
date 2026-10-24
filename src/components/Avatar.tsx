@@ -1,4 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
+import { hiResAvatar } from '@/lib/format'
 import { IconUser } from './icons'
 
 type Props = {
@@ -21,11 +22,12 @@ export default function Avatar({ name, initial, src, anonymous, size = 60, brand
       </span>
     )
   }
-  if (src) {
+  const hiSrc = hiResAvatar(src)
+  if (hiSrc) {
     return (
       <span className={`avatar ${className}`} style={style}>
         {/* Google profile photos refuse requests that carry a Referer */}
-        <img src={src} alt="" referrerPolicy="no-referrer" loading="lazy" decoding="async" />
+        <img src={hiSrc} alt="" referrerPolicy="no-referrer" loading="lazy" decoding="async" />
       </span>
     )
   }

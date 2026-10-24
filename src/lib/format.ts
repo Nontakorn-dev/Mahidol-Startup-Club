@@ -219,3 +219,28 @@ export function maskEmail(email: string) {
   const [user, domain] = email.split('@')
   return domain ? `${user.slice(0, 1)}***@${domain}` : '***'
 }
+
+/**
+ * Upgrade OAuth profile picture URLs (Google defaults to =s96-c 96×96px, LINE /small)
+ * so large cards and profile headers receive a crisp high-resolution image.
+ */
+export function hiResAvatar(url?: string | null): string | null {
+  if (!url) return null
+  const trimmed = url.trim()
+  if (!trimmed) return null
+  if (trimmed.includes('googleusercontent.com')) {
+    if (/=s\d+(-c)?($|\?)/.test(trimmed)) {
+      return trimmed.replace(/=s\d+(-c)?($|\?)/, '=s800-c$2')
+    }
+    if (/=w\d+-h\d+(-c)?($|\?)/.test(trimmed)) {
+      return trimmed.replace(/=w\d+-h\d+(-c)?($|\?)/, '=s800-c$2')
+    }
+    if (!trimmed.includes('=')) {
+      return `${trimmed}=s800-c`
+    }
+  }
+  if (trimmed.includes('line-scdn.net') && trimmed.endsWith('/small')) {
+    return `${trimmed.slice(0, -6)}/large`
+  }
+  return trimmed
+}

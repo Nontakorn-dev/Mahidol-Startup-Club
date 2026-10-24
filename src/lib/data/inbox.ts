@@ -128,6 +128,36 @@ export type ConversationView = {
   lockedReason: string | null
 }
 
+export async function findConversationWithProfile(userId: string, otherUserId: string): Promise<string | null> {
+  if (!userId || !otherUserId || userId === otherUserId) return null
+  const db = adminClient()
+  const { data: mine } = await db
+    .from('conversation_participants')
+    .select('conversation_id, is_anonymous')
+    .eq('user_id', userId)
+  const myConvIds = (mine || []).filter((m) => !m.is_anonymous).map((m) => m.conversation_id)
+  if (!myConvIds.length) return null
+
+  const { data: shared } = await db
+    .from('conversation_participants')
+    .select('conversation_id, is_anonymous')
+    .eq('user_id', otherUserId)
+    .in('conversation_id', myConvIds)
+  const candidateIds = (shared || []).filter((s) => !s.is_anonymous).map((s) => s.conversation_id)
+  if (!candidateIds.length) return null
+
+  const { data: conv } = await db
+    .from('conversations')
+    .select('id')
+    .in('id', candidateIds)
+    .neq('request_status', 'declined')
+    .order('last_message_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  return conv?.id ?? null
+}
+
 export async function getConversation(convId: string, userId: string): Promise<ConversationView | null> {
   const db = adminClient()
   const { data: parts } = await db.from('conversation_participants').select('*').eq('conversation_id', convId)
