@@ -7,7 +7,7 @@ import { IconSearch, IconVerified } from '@/components/icons'
 import { getViewer } from '@/lib/auth'
 import { adminClient } from '@/lib/supabase/admin'
 import { facultyLine, initialOf, shortName } from '@/lib/format'
-import { ROLES, ROLE_KEYS, type Role } from '@/lib/constants'
+import { ROLES, ROLE_KEYS, type Role, getDomainExpertField } from '@/lib/constants'
 
 export const metadata: Metadata = { title: 'เครือข่ายสมาชิก' }
 export const dynamic = 'force-dynamic'
@@ -39,7 +39,9 @@ export default async function PeoplePage({ searchParams }: PageProps<'/people'>)
   const people = (data || []).filter((p) =>
     !needle
       ? true
-      : [p.first_name, p.last_name, p.headline, p.faculty, ...(p.skills || [])].filter(Boolean).some((v) => String(v).toLowerCase().includes(needle)),
+      : [p.first_name, p.last_name, p.headline, p.faculty, getDomainExpertField(p.interests), ...(p.skills || [])]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(needle)),
   )
 
   const me = viewer?.profile
@@ -111,15 +113,23 @@ export default async function PeoplePage({ searchParams }: PageProps<'/people'>)
                     </span>
                     <span className="sub">{facultyLine(p.faculty, p.year) || 'สมาชิกชมรม'}</span>
                     {p.headline && <span className="headline">{p.headline}</span>}
-                    {(p.skills || []).length > 0 && (
-                      <span className="tags">
-                        {(p.skills as string[]).slice(0, 3).map((k) => (
-                          <span key={k} className="tag-outline">
-                            {ROLES[k as Role] ?? k}
+                    {(() => {
+                      const domainField = getDomainExpertField(p.interests)
+                      const tags = domainField
+                        ? [`Domain expert · ${domainField}`, ...(p.skills || [])]
+                        : (p.skills as string[]) || []
+                      return (
+                        tags.length > 0 && (
+                          <span className="tags">
+                            {tags.slice(0, 3).map((k) => (
+                              <span key={k} className="tag-outline">
+                                {ROLES[k as Role] ?? k}
+                              </span>
+                            ))}
                           </span>
-                        ))}
-                      </span>
-                    )}
+                        )
+                      )
+                    })()}
                     <span className="go">{mine ? 'โปรไฟล์ของคุณ' : 'ดูโปรไฟล์'}</span>
                   </Link>
                 )

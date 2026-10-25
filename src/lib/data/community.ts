@@ -1,7 +1,7 @@
 import 'server-only'
 import { adminClient } from '@/lib/supabase/admin'
 import { eventBlurb, facultyLine, hiResAvatar, initialOf, shortName, thaiDeadline } from '@/lib/format'
-import { CATEGORIES, ROLES, ROLE_KEYS, type Role, type Stage, type Track } from '@/lib/constants'
+import { CATEGORIES, ROLES, ROLE_KEYS, type Role, type Stage, type Track, getDomainExpertField } from '@/lib/constants'
 import type { BuddyCard, BuddyWorkItem, CofounderCard, EventRow, Profile, PublicAuthor, RecommendedEvent, SeekerCard, TeamCard } from '@/lib/types'
 
 type AuthorRow = Pick<Profile, 'id' | 'first_name' | 'last_name' | 'faculty' | 'year' | 'avatar_url' | 'is_verified' | 'skills'>
@@ -348,7 +348,9 @@ export async function listHomePeople(
   return sorted.map((p) => {
     const name = shortName(p.first_name, p.last_name)
     const roles = inferRoles(p)
-    const skills = (p.skills || []).map((k) => ROLES[k as Role] ?? k)
+    const domainField = getDomainExpertField(p.interests)
+    const baseSkills = (p.skills || []).map((k) => ROLES[k as Role] ?? k)
+    const skills = domainField ? [`Domain expert (${domainField})`, ...baseSkills] : baseSkills
 
     // Primary role label for the subtitle under the name ("Full-stack Developer · ICT · ปี 3")
     const headlineRole = p.headline ? p.headline.split(/[·|•—]/)[0].trim() : ''

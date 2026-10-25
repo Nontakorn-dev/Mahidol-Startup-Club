@@ -49,6 +49,17 @@ export function trackLabel(t: Track, domain: string | null | undefined, seeking 
   return seeking ? TRACK_SEEK_LABEL[t] : TRACKS[t]
 }
 
+/** Extract custom Domain expert specialty stored in `profiles.interests` as `domain:<field>`. */
+export function getDomainExpertField(interests: string[] | null | undefined): string | null {
+  const item = (interests || []).find((i) => i.startsWith('domain:'))
+  return item ? item.slice(7).trim() || null : null
+}
+
+/** Strip internal `domain:<field>` metadata from `profiles.interests`. */
+export function stripDomainMeta(interests: string[] | null | undefined): string[] {
+  return (interests || []).filter((i) => !i.startsWith('domain:'))
+}
+
 export const STAGES = {
   idea: 'Idea',
   prototype: 'Prototype',

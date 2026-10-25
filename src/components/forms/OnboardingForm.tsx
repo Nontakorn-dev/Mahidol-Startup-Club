@@ -1,8 +1,8 @@
 'use client'
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { saveOnboarding } from '@/app/actions/profile'
 import ChipSelect from '../ChipSelect'
-import { CAMPUSES, FACULTIES, ROLES, ROLE_KEYS, YEARS } from '@/lib/constants'
+import { CAMPUSES, FACULTIES, ROLES, ROLE_KEYS, YEARS, getDomainExpertField, stripDomainMeta } from '@/lib/constants'
 
 type P = {
   first_name: string
@@ -17,6 +17,8 @@ type P = {
 
 export default function OnboardingForm({ p, next }: { p: P; next: string }) {
   const [state, action, pending] = useActionState(saveOnboarding, null)
+  const [interests, setInterests] = useState<string[]>(() => stripDomainMeta(p.interests))
+  const defaultDomain = getDomainExpertField(p.interests) ?? ''
   return (
     <form action={action} className="stack" style={{ gap: 20 }}>
       <input type="hidden" name="next" value={next} />
@@ -74,7 +76,24 @@ export default function OnboardingForm({ p, next }: { p: P; next: string }) {
           </div>
           <div className="field">
             <span className="label">อยากได้ยินเรื่องงานสายไหน</span>
-            <ChipSelect name="interests" label="สายที่สนใจ" options={ROLE_KEYS.map((k) => ({ value: k, label: ROLES[k] }))} defaultValue={p.interests} />
+            <ChipSelect
+              name="interests"
+              label="สายที่สนใจ"
+              options={ROLE_KEYS.map((k) => ({ value: k, label: ROLES[k] }))}
+              defaultValue={interests}
+              onChange={setInterests}
+            />
+            {interests.includes('domain_expert') && (
+              <input
+                name="domain_field"
+                className="input"
+                style={{ marginTop: 10 }}
+                maxLength={60}
+                defaultValue={defaultDomain}
+                placeholder="เชี่ยวชาญด้านใด เช่น การแพทย์ เภสัชศาสตร์ กฎหมาย พลังงาน การเงิน"
+                aria-label="ด้านที่เชี่ยวชาญ (Domain expert)"
+              />
+            )}
             <p className="help">ใช้คัด “งานแข่งที่ตรงกับคุณ” ส่งให้ทาง LINE หรืออีเมล</p>
           </div>
         </section>

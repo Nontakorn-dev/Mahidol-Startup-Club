@@ -7,7 +7,7 @@ import { z } from 'zod'
 import { errMsg, splitTags } from '@/lib/form-errors'
 import { actionViewer } from '@/lib/auth'
 import { adminClient } from '@/lib/supabase/admin'
-import { ROLE_KEYS } from '@/lib/constants'
+import { ROLE_KEYS, getDomainExpertField, stripDomainMeta } from '@/lib/constants'
 import { safeNext } from '@/lib/safe-next'
 import { HOUR, enforceLimits } from '@/lib/rate-limit'
 
@@ -41,7 +41,10 @@ export async function saveOnboarding(_prev: State, form: FormData): Promise<Stat
     const viewer = await actionViewer()
     const v = BasicsSchema.parse(Object.fromEntries(['first_name', 'last_name', 'faculty', 'year', 'campus', 'headline'].map((k) => [k, form.get(k) ?? ''])))
     const skills = splitList(form.get('skills'))
-    await adminClient().from('profiles').update({ ...v, skills, interests: form.getAll('interests').map(String).slice(0, 7), onboarded: true }).eq('id', viewer.userId)
+    const rawInterests = stripDomainMeta(form.getAll('interests').map(String)).slice(0, 7)
+    const domainField = optText(60).parse(form.get('domain_field') ?? '')
+    const interests = rawInterests.includes('domain_expert') && domainField ? [...rawInterests, `domain:${domainField}`] : rawInterests
+    await adminClient().from('profiles').update({ ...v, skills, interests, onboarded: true }).eq('id', viewer.userId)
     next = safeNext(form.get('next'))
   } catch (err) {
     return { error: errMsg(err) }
@@ -74,16 +77,16 @@ export async function saveProfile(_prev: State, form: FormData): Promise<State> 
       }))
       .filter((e) => e.title)
       .slice(0, 8)
+    const rawInterests = stripDomainMeta(form.getAll('interests').map(String)).slice(0, 7)
+    const domainField = optText(60).parse(form.get('domain_field') ?? '')
+    const interests = rawInterests.includes('domain_expert') && domainField ? [...rawInterests, `domain:${domainField}`] : rawInterests
     const update: Record<string, unknown> = {
       ...v,
       bio: optText(1200).parse(form.get('bio') ?? ''),
       skills: splitList(form.get('skills')),
-      interests: form.getAll('interests').map(String).slice(0, 7),
+      interests,
       links,
       experiences,
-      availability: optText(60).parse(form.get('availability') ?? ''),
-      work_mode: optText(60).parse(form.get('work_mode') ?? ''),
-      start_when: optText(60).parse(form.get('start_when') ?? ''),
       profile_public: form.get('profile_public') === 'on',
       onboarded: true,
     }
@@ -138,12 +141,13 @@ export async function unlinkLine(): Promise<{ error?: string }> {
 /** "เลือกเรื่องที่สนใจ" page (shown right after linking LINE): interests + match notifications. */
 export async function saveInterests(form: FormData) {
   const viewer = await actionViewer()
-  const interests = form.getAll('interests').map(String).filter((v) => (ROLE_KEYS as string[]).includes(v)).slice(0, 7)
+  const rawInterests = form.getAll('interests').map(String).filter((v) => (ROLE_KEYS as string[]).includes(v)).slice(0, 7)
+  const existingDomain = getDomainExpertField(viewer.profile.interests)
+  const interests = rawInterests.includes('domain_expert') && existingDomain ? [...rawInterests, `domain:${existingDomain}`] : rawInterests
   await adminClient()
     .from('profiles')
     .update({ interests, notify_matches: form.get('notify_matches') === 'on' })
     .eq('id', viewer.userId)
-  revalidatePath('/me')
   revalidatePath('/me')
   const next = safeNext(form.get('next'), '/opportunities')
   redirect(`${next}${next.includes('?') ? '&' : '?'}saved=interests`)

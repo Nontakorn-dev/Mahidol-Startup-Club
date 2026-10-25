@@ -11,7 +11,7 @@ import { adminClient } from '@/lib/supabase/admin'
 import { inferRoles, recommendEventsForRoles } from '@/lib/data/community'
 import { listPublishedEvents } from '@/lib/data/events'
 import { initialOf, isClosed, shortName } from '@/lib/format'
-import { ROLES, type Role } from '@/lib/constants'
+import { ROLES, type Role, getDomainExpertField } from '@/lib/constants'
 import type { Profile } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -75,7 +75,11 @@ export default async function PublicProfilePage({ params }: PageProps<'/u/[id]'>
   const name = shortName(p.first_name, p.last_name)
   const openEvents = allEvents.filter((e) => !isClosed(e))
   const recommendedEvents = recommendEventsForRoles(inferRoles(p), p.skills || [], openEvents, 3)
-  const roleLine = [p.headline || p.skills?.[0], p.faculty, p.year].filter(Boolean).join(' · ')
+  const domainField = getDomainExpertField(p.interests)
+  const displaySkills = domainField
+    ? [`Domain expert · ${domainField}`, ...(p.skills || [])]
+    : p.skills || []
+  const roleLine = [p.headline || displaySkills[0], p.faculty, p.year].filter(Boolean).join(' · ')
   const looking = seeker as unknown as { looking_text: string; event: { slug: string; title: string } | null } | null
   const teamRows = (teams || []) as unknown as {
     id: string
@@ -220,41 +224,16 @@ export default async function PublicProfilePage({ params }: PageProps<'/u/[id]'>
           </div>
 
           <aside className="stack" style={{ gap: 24 }}>
-            {p.skills.length > 0 && (
+            {displaySkills.length > 0 && (
               <section className="panel side">
                 <h2>ทักษะ</h2>
                 <div className="row wrap" style={{ gap: 8 }}>
-                  {p.skills.map((s, i) => (
+                  {displaySkills.map((s, i) => (
                     <span key={s} className={`skill-tag ${i < 3 ? 'primary' : ''}`}>
                       {s}
                     </span>
                   ))}
                 </div>
-              </section>
-            )}
-            {(p.availability || p.work_mode || p.start_when) && (
-              <section className="panel side">
-                <h2>ความพร้อม</h2>
-                <dl className="kv">
-                  {p.availability && (
-                    <>
-                      <dt>เวลาว่าง</dt>
-                      <dd>{p.availability}</dd>
-                    </>
-                  )}
-                  {p.work_mode && (
-                    <>
-                      <dt>รูปแบบ</dt>
-                      <dd>{p.work_mode}</dd>
-                    </>
-                  )}
-                  {p.start_when && (
-                    <>
-                      <dt>เริ่มได้</dt>
-                      <dd>{p.start_when}</dd>
-                    </>
-                  )}
-                </dl>
               </section>
             )}
             <section className="panel side" style={{ gap: 10 }}>

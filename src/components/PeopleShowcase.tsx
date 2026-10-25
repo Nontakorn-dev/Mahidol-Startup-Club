@@ -5,9 +5,9 @@ import Link from 'next/link'
 import type { Role } from '@/lib/constants'
 import { hiResAvatar } from '@/lib/format'
 import type { BuddyCard } from '@/lib/types'
-import ContactButton from './ContactButton'
 import { EmptyState } from './Cards'
 import {
+  IconArrowRight,
   IconBack,
   IconBookmark,
   IconCheck,
@@ -33,6 +33,17 @@ const SAVED_KEY = 'msc_saved_people_v1'
 const FAN_OFFSETS = [-3, -2, -1, 0, 1, 2, 3] as const
 
 const SHOWCASE_CSS = `
+.section-title {
+  margin: 0 !important;
+  font-weight: 700 !important;
+  font-size: clamp(28px, 3.6vw, 40px) !important;
+  line-height: 1.18 !important;
+  letter-spacing: -0.015em !important;
+  color: var(--navy-2) !important;
+}
+.section .head-row {
+  align-items: center !important;
+}
 .buddy-fan-viewport {
   --fan-x1: 240px;
   --fan-x2: 430px;
@@ -44,20 +55,37 @@ const SHOWCASE_CSS = `
   overflow: hidden;
   touch-action: pan-y;
   user-select: none;
+  cursor: grab;
 }
-@media (max-width: 1060px) {
+.buddy-fan-viewport.is-dragging {
+  cursor: grabbing;
+}
+@media (max-width: 1024px) {
   .buddy-fan-viewport {
-    --fan-x1: 175px;
-    --fan-x2: 310px;
-    --fan-x3: 410px;
+    --fan-x1: clamp(120px, 21vw, 200px);
+    --fan-x2: 280px;
+    --fan-x3: 360px;
+  }
+  .buddy-fan-stage {
+    grid-template-columns: min(368px, calc(100vw - 120px)) !important;
+  }
+  /* Show 3 cards (-1, 0, 1) cleanly on iPad portrait / tablet */
+  .buddy-fan-slot[data-offset="-2"],
+  .buddy-fan-slot[data-offset="2"] {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: translate3d(0, 0, 0) scale(0.76) !important;
   }
 }
-@media (max-width: 680px) {
+@media (max-width: 640px) {
   .buddy-fan-viewport {
-    --fan-x1: 34px;
-    --fan-x2: 62px;
-    --fan-x3: 84px;
+    --fan-x1: 54px;
+    --fan-x2: 90px;
+    --fan-x3: 110px;
     padding: 14px 0 34px;
+  }
+  .buddy-fan-stage {
+    grid-template-columns: min(356px, calc(100vw - 68px)) !important;
   }
 }
 .buddy-fan-stage {
@@ -77,9 +105,9 @@ const SHOWCASE_CSS = `
   flex-direction: column;
   will-change: transform, opacity, filter;
   transition:
-    transform 0.56s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.48s cubic-bezier(0.22, 1, 0.36, 1),
-    filter 0.48s cubic-bezier(0.22, 1, 0.36, 1);
+    transform 0.52s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.44s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.44s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .buddy-fan-slot > .buddy-card {
   flex: 1;
@@ -91,7 +119,9 @@ const SHOWCASE_CSS = `
   filter: none;
   transform: translate3d(var(--drag-x, 0px), 0, 0) scale(1);
 }
-.buddy-fan-viewport.is-dragging .buddy-fan-slot[data-offset="0"] {
+.buddy-fan-viewport.is-dragging .buddy-fan-slot[data-offset="0"],
+.buddy-fan-viewport.is-dragging .buddy-fan-slot[data-offset="-1"],
+.buddy-fan-viewport.is-dragging .buddy-fan-slot[data-offset="1"] {
   transition: none;
 }
 .buddy-fan-slot[data-offset="-1"] {
@@ -122,21 +152,20 @@ const SHOWCASE_CSS = `
   transform: translate3d(var(--fan-x2), 0, 0) scale(0.76);
   cursor: pointer;
 }
-@media (max-width: 680px) {
+@media (max-width: 640px) {
   .buddy-fan-slot[data-offset="-1"] {
-    opacity: 0;
-    pointer-events: none;
-    transform: translate3d(-92%, 8px, 0) scale(0.9);
+    opacity: 0.78;
+    transform: translate3d(calc(var(--fan-x1) * -1), 0, 0) scale(0.9);
   }
   .buddy-fan-slot[data-offset="1"] {
-    opacity: 0.88;
-    transform: translate3d(26px, 0, 0) scale(0.92);
+    opacity: 0.78;
+    transform: translate3d(var(--fan-x1), 0, 0) scale(0.9);
   }
   .buddy-fan-slot[data-offset="-2"],
   .buddy-fan-slot[data-offset="2"] {
     opacity: 0;
     pointer-events: none;
-    transform: translate3d(46px, 0, 0) scale(0.84);
+    transform: translate3d(0, 0, 0) scale(0.82);
   }
 }
 .buddy-fan-slot[data-offset="-3"] {
@@ -166,10 +195,109 @@ const SHOWCASE_CSS = `
 .buddy-hero {
   position: relative;
   width: 100%;
-  height: 276px;
+  height: 228px;
   overflow: hidden;
   background: linear-gradient(180deg, #9EC0F2 0%, #5E87CA 55%, #0F295A 100%);
 }
+.buddy-hero-foot {
+  padding: 42px 20px 14px;
+}
+.buddy-name {
+  font-size: 23px;
+}
+.buddy-body {
+  padding: 15px 20px 18px;
+  gap: 10px;
+}
+.buddy-match {
+  font-size: 14px;
+  line-height: 1.38;
+}
+.buddy-bio {
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-line-clamp: 2;
+}
+.buddy-works {
+  gap: 7px;
+  margin-top: 0;
+}
+.buddy-work-ic {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+}
+.buddy-work-txt b {
+  font-size: 13.5px;
+}
+.buddy-work-txt span {
+  font-size: 12px;
+}
+.buddy-actions {
+  padding-top: 4px;
+  gap: 10px;
+}
+.buddy-btn-main,
+.buddy-btn-chat {
+  min-height: 44px;
+  font-size: 15px;
+}
+.buddy-controls {
+  margin-top: 14px;
+}
+
+/* On mobile phones: keep the original full card height and spacing */
+@media (max-width: 680px) {
+  .buddy-hero {
+    height: 276px;
+  }
+  .buddy-hero-foot {
+    padding: 54px 22px 18px;
+  }
+  .buddy-name {
+    font-size: 26px;
+  }
+  .buddy-body {
+    padding: 20px 22px 22px;
+    gap: 14px;
+  }
+  .buddy-match {
+    font-size: 14.5px;
+    line-height: 1.45;
+  }
+  .buddy-bio {
+    font-size: 15px;
+    line-height: 1.62;
+  }
+  .buddy-works {
+    gap: 10px;
+    margin-top: 2px;
+  }
+  .buddy-work-ic {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+  }
+  .buddy-work-txt b {
+    font-size: 14.5px;
+  }
+  .buddy-work-txt span {
+    font-size: 13px;
+  }
+  .buddy-actions {
+    padding-top: 8px;
+    gap: 12px;
+  }
+  .buddy-btn-main,
+  .buddy-btn-chat {
+    min-height: 50px;
+    font-size: 16px;
+  }
+  .buddy-controls {
+    margin-top: 22px;
+  }
+}
+
 .buddy-photo {
   width: 100%;
   height: 100%;
@@ -182,16 +310,72 @@ const SHOWCASE_CSS = `
 .buddy-fan-slot[data-offset="0"] .buddy-card:hover .buddy-photo {
   transform: scale(1.04);
 }
+
+/* Side arrows beside the card fan across all viewports */
+.buddy-side-arrow {
+  display: inline-flex !important;
+  position: absolute;
+  top: 48%;
+  transform: translateY(-50%);
+  z-index: 30;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 3px solid #fff !important;
+  background: var(--brand) !important;
+  color: #fff !important;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow:
+    0 14px 32px -6px rgba(0, 35, 115, 0.55),
+    0 4px 12px rgba(10, 32, 74, 0.25) !important;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, filter 0.18s ease;
+}
+.buddy-side-arrow.left {
+  left: 12px;
+}
+.buddy-side-arrow.right {
+  right: 12px;
+}
+.buddy-side-arrow:hover {
+  filter: brightness(1.1);
+  transform: translateY(-50%) scale(1.08);
+  box-shadow:
+    0 18px 36px -6px rgba(0, 35, 115, 0.68),
+    0 6px 16px rgba(10, 32, 74, 0.32) !important;
+}
+.buddy-side-arrow:active {
+  transform: translateY(-50%) scale(0.93);
+}
+.buddy-controls {
+  justify-content: center !important;
+}
+.buddy-controls .buddy-arrow {
+  display: none !important;
+}
+@media (max-width: 640px) {
+  .buddy-side-arrow {
+    width: 46px;
+    height: 46px;
+    border-width: 2.5px !important;
+  }
+  .buddy-side-arrow.left {
+    left: 6px;
+  }
+  .buddy-side-arrow.right {
+    right: 6px;
+  }
+}
 `
 
 export default function PeopleShowcase({
   people,
   loggedIn,
-  myTeams,
 }: {
   people: BuddyCard[]
   loggedIn: boolean
-  myTeams: { id: string; name: string }[]
+  myTeams?: { id: string; name: string }[]
 }) {
   const [role, setRole] = useState<'all' | Role>('all')
   // Unbounded integer index so each virtual slot key (`${role}-${vIdx}`) stays mounted and glides smoothly
@@ -199,7 +383,11 @@ export default function PeopleShowcase({
   const [savedIds, setSavedIds] = useState<string[]>([])
   const [dragX, setDragX] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
+
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null)
+  const liveDragXRef = useRef(0)
+  const didDragRef = useRef(false)
+  const wheelLockRef = useRef(0)
 
   useEffect(() => {
     try {
@@ -246,8 +434,20 @@ export default function PeopleShowcase({
     if (nextRole === role) return
     setRole(nextRole)
     setIdx(0)
+    liveDragXRef.current = 0
     setDragX(0)
     setIsDragging(false)
+  }
+
+  const finishGesture = () => {
+    if (!pointerStartRef.current) return
+    const dx = liveDragXRef.current
+    pointerStartRef.current = null
+    liveDragXRef.current = 0
+    setIsDragging(false)
+    setDragX(0)
+    if (dx < -28) next()
+    else if (dx > 28) prev()
   }
 
   const activeOffsets =
@@ -273,20 +473,22 @@ export default function PeopleShowcase({
         </defs>
       </svg>
 
-      <div className="buddy-header">
-        <div className="buddy-title-wrap">
-          <div className="buddy-top-row">
-            <h2 className="section-title" style={{ margin: 0 }}>
-              หาเพื่อนร่วมทางที่ใช่
-            </h2>
-            <Link href="/people" className="buddy-net-btn">
-              <span>เครือข่าย</span>
-              <IconChevronRight size={18} />
-            </Link>
-          </div>
-          <p className="buddy-sub">เจอคนที่จะช่วยพาไอเดียของคุณไปให้ถึงฝัน</p>
-        </div>
+      <div className="head-row posts-head" style={{ marginBottom: 22 }}>
+        <h2 className="section-title">หาเพื่อนร่วมทางที่ใช่</h2>
+        <Link href="/people" className="cta-link">
+          เครือข่าย
+          <span className="arrow" aria-hidden="true">
+            <IconArrowRight size={18} />
+          </span>
+        </Link>
       </div>
+
+      <Link href="/people" className="cta-link posts-cta-block">
+        เครือข่ายทั้งหมด
+        <span className="arrow" aria-hidden="true">
+          <IconArrowRight size={18} />
+        </span>
+      </Link>
 
       <div className="buddy-chips" role="tablist" aria-label="กรองตามสายทักษะ">
         {FILTERS.map((f) => {
@@ -331,11 +533,26 @@ export default function PeopleShowcase({
           <div
             className={`buddy-fan-viewport ${isDragging ? 'is-dragging' : ''}`}
             style={{ '--drag-x': `${dragX}px` } as React.CSSProperties}
+            /* MacBook Trackpad two-finger horizontal swipe */
+            onWheel={(e) => {
+              if (count <= 1) return
+              if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && Math.abs(e.deltaX) > 18) {
+                const now = Date.now()
+                if (now - wheelLockRef.current > 420) {
+                  wheelLockRef.current = now
+                  if (e.deltaX > 0) next()
+                  else prev()
+                }
+              }
+            }}
+            /* Touch swipe for Phone & iPad */
             onTouchStart={(e) => {
               if (count <= 1) return
               const t = e.touches[0]
               if (!t) return
               pointerStartRef.current = { x: t.clientX, y: t.clientY }
+              liveDragXRef.current = 0
+              didDragRef.current = false
               setIsDragging(true)
             }}
             onTouchMove={(e) => {
@@ -344,35 +561,77 @@ export default function PeopleShowcase({
               if (!t) return
               const dx = t.clientX - pointerStartRef.current.x
               const dy = t.clientY - pointerStartRef.current.y
-              if (Math.abs(dx) > Math.abs(dy)) {
+              if (Math.abs(dx) > 6 && Math.abs(dx) > Math.abs(dy)) {
+                didDragRef.current = true
+                liveDragXRef.current = dx
                 setDragX(dx)
               }
             }}
-            onTouchEnd={() => {
-              if (!pointerStartRef.current) return
-              const dx = dragX
-              pointerStartRef.current = null
-              setIsDragging(false)
-              setDragX(0)
-              if (dx < -40) next()
-              else if (dx > 40) prev()
-            }}
+            onTouchEnd={finishGesture}
             onTouchCancel={() => {
               pointerStartRef.current = null
+              liveDragXRef.current = 0
               setIsDragging(false)
               setDragX(0)
             }}
+            /* Mouse / Trackpad click-and-drag for MacBook & Desktop */
+            onMouseDown={(e) => {
+              if (count <= 1 || e.button !== 0) return
+              pointerStartRef.current = { x: e.clientX, y: e.clientY }
+              liveDragXRef.current = 0
+              didDragRef.current = false
+            }}
+            onMouseMove={(e) => {
+              if (!pointerStartRef.current) return
+              const dx = e.clientX - pointerStartRef.current.x
+              const dy = e.clientY - pointerStartRef.current.y
+              if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) {
+                didDragRef.current = true
+                liveDragXRef.current = dx
+                setIsDragging(true)
+                setDragX(dx)
+              }
+            }}
+            onMouseUp={finishGesture}
+            onMouseLeave={() => {
+              if (pointerStartRef.current) finishGesture()
+            }}
+            onClickCapture={(e) => {
+              if (didDragRef.current) {
+                e.preventDefault()
+                e.stopPropagation()
+                didDragRef.current = false
+              }
+            }}
           >
-            <div
-              key={role}
-              className="buddy-fan-stage"
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'min(388px, calc(100vw - 48px))',
-                justifyContent: 'center',
-                alignItems: 'stretch',
-              }}
-            >
+            {count > 1 && (
+              <>
+                <button
+                  type="button"
+                  className="buddy-side-arrow left"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    prev()
+                  }}
+                  aria-label="คนก่อนหน้า"
+                >
+                  <IconBack size={22} />
+                </button>
+                <button
+                  type="button"
+                  className="buddy-side-arrow right"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    next()
+                  }}
+                  aria-label="คนถัดไป"
+                >
+                  <IconChevronRight size={22} />
+                </button>
+              </>
+            )}
+
+            <div key={role} className="buddy-fan-stage">
               {activeOffsets.map((offset) => {
                 const vIdx = idx + offset
                 const personIdx = ((vIdx % count) + count) % count
@@ -392,7 +651,6 @@ export default function PeopleShowcase({
                       saved={savedIds.includes(person.id)}
                       onToggleSave={() => toggleSave(person.id)}
                       loggedIn={loggedIn}
-                      myTeams={myTeams}
                     />
                   </div>
                 )
@@ -402,14 +660,6 @@ export default function PeopleShowcase({
 
           {count > 1 && (
             <div className="buddy-controls">
-              <button
-                type="button"
-                className="buddy-arrow prev"
-                onClick={prev}
-                aria-label="คนก่อนหน้า"
-              >
-                <IconBack size={20} />
-              </button>
               <div className="buddy-dots" role="tablist" aria-label="เลื่อนดูสมาชิก">
                 {Array.from({ length: dotCount }).map((_, i) => (
                   <button
@@ -423,14 +673,6 @@ export default function PeopleShowcase({
                   />
                 ))}
               </div>
-              <button
-                type="button"
-                className="buddy-arrow next"
-                onClick={next}
-                aria-label="คนถัดไป"
-              >
-                <IconChevronRight size={22} />
-              </button>
             </div>
           )}
         </>
@@ -444,13 +686,11 @@ function BuddyCardItem({
   saved,
   onToggleSave,
   loggedIn,
-  myTeams,
 }: {
   person: BuddyCard
   saved: boolean
   onToggleSave: () => void
   loggedIn: boolean
-  myTeams: { id: string; name: string }[]
 }) {
   const [imgFailed, setImgFailed] = useState(false)
   const avatarSrc = hiResAvatar(person.avatar_url)

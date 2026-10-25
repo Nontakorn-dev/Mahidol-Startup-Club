@@ -6,7 +6,7 @@ import Avatar from '../Avatar'
 import ChipSelect from '../ChipSelect'
 import Switch from '../Switch'
 import { IconClose, IconPlus } from '../icons'
-import { CAMPUSES, FACULTIES, ROLES, ROLE_KEYS, YEARS } from '@/lib/constants'
+import { CAMPUSES, FACULTIES, ROLES, ROLE_KEYS, YEARS, getDomainExpertField, stripDomainMeta } from '@/lib/constants'
 import type { Profile } from '@/lib/types'
 
 type Exp = { k: number; title: string; subtitle?: string; description?: string }
@@ -22,6 +22,8 @@ export default function ProfileForm({ p }: { p: Profile }) {
   const [removeAvatar, setRemoveAvatar] = useState(false)
   const [isPublic, setIsPublic] = useState(p.profile_public ?? true)
   const [cropSrc, setCropSrc] = useState<string | null>(null)
+  const [interests, setInterests] = useState<string[]>(() => stripDomainMeta(p.interests))
+  const defaultDomain = getDomainExpertField(p.interests) ?? ''
   const fileRef = useRef<HTMLInputElement>(null)
 
   return (
@@ -135,7 +137,7 @@ export default function ProfileForm({ p }: { p: Profile }) {
         <section>
           <div className="step-title">
             <span className="step-num">2</span>
-            <h2>ทักษะ ความสนใจ และความพร้อม</h2>
+            <h2>ทักษะ และความสนใจ</h2>
           </div>
           <div className="field">
             <label htmlFor="sk">ทักษะ</label>
@@ -144,21 +146,24 @@ export default function ProfileForm({ p }: { p: Profile }) {
           </div>
           <div className="field">
             <span className="label">อยากได้ยินเรื่องงานสายไหน</span>
-            <ChipSelect name="interests" label="สายที่สนใจ" options={ROLE_KEYS.map((k) => ({ value: k, label: ROLES[k] }))} defaultValue={p.interests} />
-          </div>
-          <div className="grid-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-            <div className="field">
-              <label htmlFor="av">เวลาว่าง</label>
-              <input id="av" name="availability" className="input" defaultValue={p.availability ?? ''} placeholder="~10 ชม. / สัปดาห์" />
-            </div>
-            <div className="field">
-              <label htmlFor="wm">รูปแบบ</label>
-              <input id="wm" name="work_mode" className="input" defaultValue={p.work_mode ?? ''} placeholder="Online + ศาลายา" />
-            </div>
-            <div className="field">
-              <label htmlFor="sw">เริ่มได้</label>
-              <input id="sw" name="start_when" className="input" defaultValue={p.start_when ?? ''} placeholder="ทันที" />
-            </div>
+            <ChipSelect
+              name="interests"
+              label="สายที่สนใจ"
+              options={ROLE_KEYS.map((k) => ({ value: k, label: ROLES[k] }))}
+              defaultValue={interests}
+              onChange={setInterests}
+            />
+            {interests.includes('domain_expert') && (
+              <input
+                name="domain_field"
+                className="input"
+                style={{ marginTop: 10 }}
+                maxLength={60}
+                defaultValue={defaultDomain}
+                placeholder="เชี่ยวชาญด้านใด เช่น การแพทย์ เภสัชศาสตร์ กฎหมาย พลังงาน การเงิน"
+                aria-label="ด้านที่เชี่ยวชาญ (Domain expert)"
+              />
+            )}
           </div>
         </section>
 

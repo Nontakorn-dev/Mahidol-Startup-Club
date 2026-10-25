@@ -127,10 +127,7 @@ export default async function HomePage() {
       <section style={{ background: 'linear-gradient(180deg, #E1E9F8 0%, #EEF3FB 55%, #F4F7FC 100%)' }}>
         <div className="container section home-seekers">
           <div className="head-row posts-head" style={{ marginBottom: 24 }}>
-            <div className="stack" style={{ gap: 6 }}>
-              <h2 className="section-title">หาทีม &amp; Co-Founder</h2>
-              <p className="home-posts-sub">ทีมแข่งที่เปิดรับสมาชิก ผู้ที่ต้องการเข้าร่วมทีม และผู้ที่หา Co-Founder</p>
-            </div>
+            <h2 className="section-title">หาทีม &amp; Co-Founder</h2>
             <Link href="/teams" className="cta-link">
               ดูทั้งหมด
               <span className="arrow" aria-hidden="true">
@@ -163,10 +160,7 @@ export default async function HomePage() {
       <section style={{ background: 'linear-gradient(180deg, #F4F7FC 0%, #E8EFFB 55%, #FFFFFF 100%)' }}>
         <div className="container section home-open">
           <div className="head-row">
-            <div className="stack" style={{ gap: 6 }}>
-              <h2 className="section-title">งานแข่ง &amp; ทุนที่เปิดรับอยู่</h2>
-              <p className="home-posts-sub">เจอคนที่ใช่และทีมที่ใช่แล้ว เลือกเวทีไปลงมือทำจริงด้วยกันได้เลย</p>
-            </div>
+            <h2 className="section-title">งานแข่ง &amp; ทุนที่เปิดรับอยู่</h2>
             <Link href="/opportunities" className="cta-link hide-phone">
               <span>
                 ดู<span className="only-tablet">งานที่เปิดรับ</span>ทั้งหมด{openCount ? ` ${openCount} งาน` : ''}
