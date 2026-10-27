@@ -1,5 +1,5 @@
 'use client'
-import { useActionState, useRef, useState } from 'react'
+import { startTransition, useActionState, useEffect, useRef, useState } from 'react'
 import AvatarCropper from '../AvatarCropper'
 import { saveProfile } from '@/app/actions/profile'
 import Avatar from '../Avatar'
@@ -14,6 +14,10 @@ type LinkRow = { k: number; label: string; url: string }
 let seq = 0
 const key = () => ++seq
 
+/** Comparable snapshot of the form (files by name + size) so autosave skips no-op saves. */
+const snapshot = (form: HTMLFormElement) =>
+  JSON.stringify([...new FormData(form)].map(([k, v]) => [k, typeof v === 'string' ? v : `${v.name}:${v.size}`]))
+
 export default function ProfileForm({ p }: { p: Profile }) {
   const [state, action, pending] = useActionState(saveProfile, null)
   const [links, setLinks] = useState<LinkRow[]>(() => (p.links.length ? p.links : [{ label: 'GitHub', url: '' }]).map((l) => ({ ...l, k: key() })))
@@ -24,8 +28,64 @@ export default function ProfileForm({ p }: { p: Profile }) {
   const [cropSrc, setCropSrc] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
+  // Autosave: typing saves ~1 s after the last keystroke; chips, switches, selects and add/remove
+  // save almost at once. Dispatching by hand (not <form action>) keeps React from resetting the
+  // fields after each save, so nothing typed during a save is lost.
+  const formRef = useRef<HTMLFormElement>(null)
+  const saved = useRef('')
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const [dirty, setDirty] = useState(false)
+  const save = () => {
+    clearTimeout(timer.current)
+    const form = formRef.current
+    if (!form) return
+    const now = snapshot(form)
+    if (now === saved.current) return setDirty(false)
+    saved.current = now
+    setDirty(false)
+    const data = new FormData(form)
+    startTransition(() => action(data))
+  }
+  const schedule = (delay: number) => {
+    clearTimeout(timer.current)
+    setDirty(true)
+    timer.current = setTimeout(save, delay)
+  }
+  useEffect(() => {
+    if (formRef.current) saved.current = snapshot(formRef.current)
+    return () => clearTimeout(timer.current)
+  }, [])
+  // Once a new photo is uploaded, empty the file input so later saves don't upload it again.
+  useEffect(() => {
+    if (!state?.ok || !fileRef.current?.files?.length || !formRef.current) return
+    fileRef.current.value = ''
+    saved.current = snapshot(formRef.current)
+  }, [state])
+  // Unsaved edits or a save in flight: ask before leaving the page.
+  useEffect(() => {
+    if (!dirty && !pending) return
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault()
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [dirty, pending])
+
   return (
-    <form action={action} className="stack" style={{ gap: 20 }}>
+    <form
+      ref={formRef}
+      className="stack"
+      style={{ gap: 20 }}
+      onSubmit={(e) => {
+        e.preventDefault()
+        save()
+      }}
+      onInput={(e) => {
+        const el = e.target as HTMLInputElement
+        if (el.type === 'file') return // a picked photo saves once it's cropped
+        schedule(el.tagName === 'SELECT' ? 300 : 1000)
+      }}
+      onBlur={() => dirty && schedule(0)}
+      onClick={(e) => (e.target as HTMLElement).closest('button[type="button"]') && schedule(400)}
+    >
       <div className="sheet">
         <section>
           <div className="step-title">
@@ -57,7 +117,7 @@ export default function ProfileForm({ p }: { p: Profile }) {
               )}
               <span className="muted" style={{ fontSize: 12 }}>JPG / PNG / WebP · เลือกแล้วจัดตำแหน่งให้เห็นหน้าได้</span>
               {preview && !removeAvatar && preview.startsWith('blob:') && (
-                <span style={{ fontSize: 12, color: 'var(--ok)' }}>✓ จัดรูปแล้ว — กด “บันทึก” ด้านล่างเพื่อใช้รูปนี้</span>
+                <span style={{ fontSize: 12, color: 'var(--ok)' }}>✓ จัดรูปแล้ว — กำลังบันทึกรูปนี้</span>
               )}
             </div>
             {removeAvatar && <input type="hidden" name="remove_avatar" value="1" />}
@@ -77,6 +137,7 @@ export default function ProfileForm({ p }: { p: Profile }) {
                   setCropSrc(null)
                   setPreview(url)
                   setRemoveAvatar(false)
+                  schedule(0) // file set by script: no input event
                 }}
               />
             )}
@@ -208,12 +269,12 @@ export default function ProfileForm({ p }: { p: Profile }) {
           {!isPublic && <p className="help" style={{ margin: 0 }}>โปรไฟล์จะไม่แสดงในหน้าเครือข่าย และหน้าโปรไฟล์ของคุณจะเปิดดูได้เฉพาะคุณ</p>}
         </section>
       </div>
-      {state?.error && <div className="alert alert-error">{state.error}</div>}
-      {state?.ok && <div className="alert alert-ok">{state.ok}</div>}
-      <div className="form-actions sticky-m">
-        <button type="submit" className="btn btn-orange btn-lg" style={{ padding: '0 32px', fontWeight: 700 }} disabled={pending}>
-          {pending ? 'กำลังบันทึก…' : 'บันทึกโปรไฟล์'}
-        </button>
+      <div className="form-actions sticky-m autosave" aria-live="polite">
+        {state?.error && !pending ? (
+          <span className="alert alert-error">{state.error} — แก้แล้วจะบันทึกให้อีกครั้ง</span>
+        ) : (
+          <span className="autosave-status">{pending || dirty ? 'กำลังบันทึก…' : state?.ok ? '✓ บันทึกแล้ว' : 'บันทึกอัตโนมัติเมื่อแก้ไข'}</span>
+        )}
       </div>
     </form>
   )
