@@ -6,6 +6,8 @@ export const env = {
   supabasePublishableKey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
   siteUrl: (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, ''),
   lineOaId: process.env.NEXT_PUBLIC_LINE_OA_ID || '',
+  /** Web OAuth client of the Google button (same client Supabase's Google provider uses). */
+  googleClientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '',
 }
 
 export function serverEnv() {

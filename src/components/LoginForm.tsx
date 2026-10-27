@@ -1,7 +1,8 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { AuthError } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
+import { env } from '@/lib/env'
 import { IconInfo } from './icons'
 import PasswordInput from './PasswordInput'
 
@@ -35,20 +36,100 @@ function GoogleIcon() {
   )
 }
 
-export function GoogleButton({ next, label = 'Continue with Google' }: { next: string; label?: string }) {
+// Google refuses sign-in inside in-app webviews (disallowed_useragent).
+const IN_APP = /\bLine\/|FBAN|FBAV|Instagram|; wv\)/i
+
+type GoogleIdentity = {
+  accounts: {
+    id: {
+      initialize(options: { client_id: string; nonce: string; callback: (res: { credential: string }) => void; ux_mode: 'popup' }): void
+      renderButton(el: HTMLElement, options: Record<string, string | number>): void
+    }
+  }
+}
+
+let gisScript: Promise<GoogleIdentity> | null = null
+function loadGoogleIdentity() {
+  gisScript ??= new Promise((resolve, reject) => {
+    const s = document.createElement('script')
+    s.src = 'https://accounts.google.com/gsi/client'
+    s.async = true
+    s.onload = () => resolve((window as unknown as { google: GoogleIdentity }).google)
+    s.onerror = () => {
+      gisScript = null
+      s.remove()
+      reject(new Error('Google Identity Services failed to load'))
+    }
+    document.head.appendChild(s)
+  })
+  return gisScript
+}
+
+/** Google gets the SHA-256 of the nonce inside the ID token; Supabase gets the raw one and compares. */
+async function makeNonce(): Promise<[raw: string, hashed: string]> {
+  const raw = Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) => b.toString(16).padStart(2, '0')).join('')
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw))
+  return [raw, Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('')]
+}
+
+/**
+ * Google's own button (Google Identity Services): the account chooser runs on our origin, so it says
+ * "mahidolstartup.site" instead of our Supabase host, and the ID token goes straight to Supabase.
+ * Falls back to the Supabase OAuth redirect when there's no client id, inside in-app browsers,
+ * or when Google's script can't load.
+ */
+export function GoogleButton({ next, signup = false }: { next: string; signup?: boolean }) {
+  const box = useRef<HTMLDivElement>(null)
+  const [mode, setMode] = useState<'loading' | 'gis' | 'redirect'>('loading')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const start = async () => {
+
+  useEffect(() => {
+    if (!env.googleClientId || IN_APP.test(navigator.userAgent)) return setMode('redirect')
+    let cancelled = false
+    Promise.all([loadGoogleIdentity(), makeNonce()])
+      .then(([google, [raw, hashed]]) => {
+        if (cancelled || !box.current) return
+        google.accounts.id.initialize({
+          client_id: env.googleClientId,
+          nonce: hashed,
+          ux_mode: 'popup',
+          callback: async ({ credential }) => {
+            setBusy(true)
+            setError(null)
+            const { error } = await createClient().auth.signInWithIdToken({ provider: 'google', token: credential, nonce: raw })
+            if (error) {
+              setBusy(false)
+              setError(message(error))
+            } else done(next)
+          },
+        })
+        google.accounts.id.renderButton(box.current, {
+          type: 'standard',
+          theme: 'outline',
+          size: 'large',
+          shape: 'rectangular',
+          text: signup ? 'signup_with' : 'signin_with',
+          locale: 'th',
+          width: Math.min(400, box.current.offsetWidth), // Google's max
+        })
+        setMode('gis')
+      })
+      .catch(() => !cancelled && setMode('redirect'))
+    return () => {
+      cancelled = true
+    }
+  }, [next, signup])
+
+  const redirect = async () => {
     setError(null)
-    const ua = navigator.userAgent
-    // Google refuses OAuth inside in-app webviews (disallowed_useragent).
-    if (/\bLine\//i.test(ua)) {
+    if (/\bLine\//i.test(navigator.userAgent)) {
       const u = new URL(window.location.href)
       u.searchParams.set('openExternalBrowser', '1') // LINE opens this in Safari/Chrome
       window.location.assign(u.toString())
       return
     }
-    if (/FBAN|FBAV|Instagram|; wv\)/i.test(ua)) {
+    if (IN_APP.test(navigator.userAgent)) {
       setError('Google ไม่อนุญาตให้เข้าสู่ระบบในเบราว์เซอร์ของแอปนี้ — เปิดหน้านี้ใน Chrome/Safari หรือใช้อีเมลแทน')
       return
     }
@@ -65,12 +146,18 @@ export function GoogleButton({ next, label = 'Continue with Google' }: { next: s
       setError(message(error))
     }
   }
+
   return (
     <div className="stack" style={{ gap: 8 }}>
-      <button type="button" className="btn btn-outline btn-lg btn-block" style={{ color: 'var(--navy)', gap: 12 }} onClick={start} disabled={busy}>
-        <GoogleIcon />
-        {busy ? 'กำลังไปที่ Google…' : label}
-      </button>
+      {mode === 'redirect' ? (
+        <button type="button" className="btn btn-outline btn-lg btn-block" style={{ color: 'var(--navy)', gap: 12 }} onClick={redirect} disabled={busy}>
+          <GoogleIcon />
+          {busy ? 'กำลังไปที่ Google…' : signup ? 'สมัครด้วย Google' : 'เข้าสู่ระบบด้วย Google'}
+        </button>
+      ) : (
+        <div ref={box} aria-busy={mode === 'loading' || busy} style={{ minHeight: 44, display: 'flex', justifyContent: 'center', opacity: busy ? 0.55 : 1, pointerEvents: busy ? 'none' : undefined }} />
+      )}
+      {busy && mode === 'gis' && <p className="auth-hint" style={{ justifyContent: 'center' }}>กำลังเข้าสู่ระบบ…</p>}
       {error && <div className="alert alert-error">{error}</div>}
     </div>
   )
@@ -236,7 +323,7 @@ export default function LoginForm({ next, google, initialMode = 'signin' }: { ne
       </div>
       {google && mode !== 'reset' && (
         <>
-          <GoogleButton next={next} label={mode === 'signup' ? 'สมัครด้วย Google' : 'เข้าสู่ระบบด้วย Google'} />
+          <GoogleButton next={next} signup={mode === 'signup'} />
           <div className="divider">หรือใช้อีเมล</div>
         </>
       )}

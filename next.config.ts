@@ -7,17 +7,19 @@ const supabaseHost = process.env.NEXT_PUBLIC_SUPABASE_URL
 const isDev = process.env.NODE_ENV !== 'production'
 
 // Content-Security-Policy without nonces (see node_modules/next/dist/docs/01-app/02-guides/content-security-policy.md
-// "Without Nonces"): nonces would force every page to render dynamically. No third-party scripts are
-// allowed at all, the browser may only talk to us and our Supabase project, and no one may frame the site.
+// "Without Nonces"): nonces would force every page to render dynamically. The only third-party code is
+// Google's sign-in button (accounts.google.com/gsi), the browser may only talk to us, our Supabase
+// project and that button, and no one may frame the site.
+const gsi = 'https://accounts.google.com/gsi/'
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
-  "style-src 'self' 'unsafe-inline'",
+  `script-src 'self' 'unsafe-inline' ${gsi}client${isDev ? " 'unsafe-eval'" : ''}`,
+  `style-src 'self' 'unsafe-inline' ${gsi}style`,
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  `connect-src 'self' https://${supabaseHost} wss://${supabaseHost}${isDev ? ' ws:' : ''}`,
+  `connect-src 'self' https://${supabaseHost} wss://${supabaseHost} ${gsi}${isDev ? ' ws:' : ''}`,
   "media-src 'self'",
-  "frame-src 'none'",
+  `frame-src ${gsi}`,
   "worker-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",
