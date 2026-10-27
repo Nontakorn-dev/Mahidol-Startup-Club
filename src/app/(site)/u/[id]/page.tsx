@@ -222,29 +222,10 @@ export default async function PublicProfilePage({ params }: PageProps<'/u/[id]'>
                 </div>
               </section>
             )}
-            {(p.availability || p.work_mode || p.start_when) && (
+            {p.domain_expertise && p.interests.includes('domain_expert') && (
               <section className="panel side">
-                <h2>ความพร้อม</h2>
-                <dl className="kv">
-                  {p.availability && (
-                    <>
-                      <dt>เวลาว่าง</dt>
-                      <dd>{p.availability}</dd>
-                    </>
-                  )}
-                  {p.work_mode && (
-                    <>
-                      <dt>รูปแบบ</dt>
-                      <dd>{p.work_mode}</dd>
-                    </>
-                  )}
-                  {p.start_when && (
-                    <>
-                      <dt>เริ่มได้</dt>
-                      <dd>{p.start_when}</dd>
-                    </>
-                  )}
-                </dl>
+                <h2>ความเชี่ยวชาญ</h2>
+                <span style={{ fontSize: 15 }}>ผู้เชี่ยวชาญด้าน{p.domain_expertise}</span>
               </section>
             )}
             <section className="panel side" style={{ gap: 10 }}>

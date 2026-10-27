@@ -385,6 +385,12 @@ h1, h2, h3 { font-family: var(--font-head); }
 .textarea { padding: 12px 14px; line-height: 1.6; resize: vertical; min-height: 100px; }
 .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Interest chips (profile, onboarding): even 2-up grid on phones; Domain expert's field under them. */
+.interests-field .domain-field { margin-top: 4px; padding: 14px; border-radius: 14px; background: var(--bg); }
+@media (max-width: 640px) {
+  .interests-field .chip-group { display: grid; grid-template-columns: 1fr 1fr; }
+  .interests-field .toggle-chip { padding: 0 10px; }
+}
 .toggle-row { display: flex; gap: 14px; align-items: center; padding: 12px 14px; border-radius: 14px; background: var(--bg); }
 .toggle-row.yellow { background: var(--yellow-soft); }
 .toggle-row .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow-wrap: anywhere; }

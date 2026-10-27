@@ -1,8 +1,8 @@
 'use client'
 import { useActionState } from 'react'
 import { saveOnboarding } from '@/app/actions/profile'
-import ChipSelect from '../ChipSelect'
-import { CAMPUSES, FACULTIES, ROLES, ROLE_KEYS, YEARS } from '@/lib/constants'
+import InterestsField from '../InterestsField'
+import { CAMPUSES, FACULTIES, YEARS } from '@/lib/constants'
 
 type P = {
   first_name: string
@@ -13,6 +13,7 @@ type P = {
   headline: string | null
   skills: string[]
   interests: string[]
+  domain_expertise: string | null
 }
 
 export default function OnboardingForm({ p, next }: { p: P; next: string }) {
@@ -72,11 +73,7 @@ export default function OnboardingForm({ p, next }: { p: P; next: string }) {
             <label htmlFor="sk">ทักษะ</label>
             <input id="sk" name="skills" className="input" defaultValue={p.skills.join(', ')} placeholder="เช่น React, Figma, Pitching (คั่นด้วยจุลภาค)" />
           </div>
-          <div className="field">
-            <span className="label">อยากได้ยินเรื่องงานสายไหน</span>
-            <ChipSelect name="interests" label="สายที่สนใจ" options={ROLE_KEYS.map((k) => ({ value: k, label: ROLES[k] }))} defaultValue={p.interests} />
-            <p className="help">ใช้คัด “งานแข่งที่ตรงกับคุณ” ส่งให้ทาง LINE หรืออีเมล</p>
-          </div>
+          <InterestsField interests={p.interests} domain={p.domain_expertise} help="ใช้คัด “งานแข่งที่ตรงกับคุณ” ส่งให้ทาง LINE หรืออีเมล" />
         </section>
       </div>
       {state?.error && <div className="alert alert-error">{state.error}</div>}

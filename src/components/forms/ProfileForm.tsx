@@ -3,10 +3,10 @@ import { useActionState, useRef, useState } from 'react'
 import AvatarCropper from '../AvatarCropper'
 import { saveProfile } from '@/app/actions/profile'
 import Avatar from '../Avatar'
-import ChipSelect from '../ChipSelect'
+import InterestsField from '../InterestsField'
 import Switch from '../Switch'
 import { IconClose, IconPlus } from '../icons'
-import { CAMPUSES, FACULTIES, ROLES, ROLE_KEYS, YEARS } from '@/lib/constants'
+import { CAMPUSES, FACULTIES, YEARS } from '@/lib/constants'
 import type { Profile } from '@/lib/types'
 
 type Exp = { k: number; title: string; subtitle?: string; description?: string }
@@ -135,31 +135,14 @@ export default function ProfileForm({ p }: { p: Profile }) {
         <section>
           <div className="step-title">
             <span className="step-num">2</span>
-            <h2>ทักษะ ความสนใจ และความพร้อม</h2>
+            <h2>ทักษะ และความสนใจ</h2>
           </div>
           <div className="field">
             <label htmlFor="sk">ทักษะ</label>
             <input id="sk" name="skills" className="input" defaultValue={p.skills.join(', ')} placeholder="React, Node.js, Figma, Pitching" />
             <p className="help">คั่นด้วยจุลภาค · 3 อันแรกจะเป็นทักษะเด่นบนโปรไฟล์</p>
           </div>
-          <div className="field">
-            <span className="label">อยากได้ยินเรื่องงานสายไหน</span>
-            <ChipSelect name="interests" label="สายที่สนใจ" options={ROLE_KEYS.map((k) => ({ value: k, label: ROLES[k] }))} defaultValue={p.interests} />
-          </div>
-          <div className="grid-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-            <div className="field">
-              <label htmlFor="av">เวลาว่าง</label>
-              <input id="av" name="availability" className="input" defaultValue={p.availability ?? ''} placeholder="~10 ชม. / สัปดาห์" />
-            </div>
-            <div className="field">
-              <label htmlFor="wm">รูปแบบ</label>
-              <input id="wm" name="work_mode" className="input" defaultValue={p.work_mode ?? ''} placeholder="Online + ศาลายา" />
-            </div>
-            <div className="field">
-              <label htmlFor="sw">เริ่มได้</label>
-              <input id="sw" name="start_when" className="input" defaultValue={p.start_when ?? ''} placeholder="ทันที" />
-            </div>
-          </div>
+          <InterestsField interests={p.interests} domain={p.domain_expertise} />
         </section>
 
         <section>

@@ -30,6 +30,7 @@ export default async function OnboardingPage({ searchParams }: PageProps<'/onboa
             headline: p.headline,
             skills: p.skills,
             interests: p.interests,
+            domain_expertise: p.domain_expertise,
           }}
         />
       </div>

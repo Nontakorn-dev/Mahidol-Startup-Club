@@ -15,6 +15,13 @@ type State = { error?: string; ok?: string } | null
 const optText = (max: number) => z.string().trim().max(max).optional().transform((v) => v || null)
 const splitList = (v: FormDataEntryValue | null, max = 12) => splitTags(v, max)
 
+/** Interest chips + the Domain expert field (kept only while that chip is picked). */
+function interestFields(form: FormData) {
+  const interests = form.getAll('interests').map(String).filter((v) => (ROLE_KEYS as string[]).includes(v)).slice(0, 7)
+  const domain = optText(60).parse(form.get('domain_expertise') ?? '')
+  return { interests, domain_expertise: interests.includes('domain_expert') ? domain : null }
+}
+
 const BasicsSchema = z.object({
   first_name: z.string().trim().min(1, 'กรุณาใส่ชื่อ').max(40),
   last_name: z.string().trim().max(40),
@@ -41,7 +48,7 @@ export async function saveOnboarding(_prev: State, form: FormData): Promise<Stat
     const viewer = await actionViewer()
     const v = BasicsSchema.parse(Object.fromEntries(['first_name', 'last_name', 'faculty', 'year', 'campus', 'headline'].map((k) => [k, form.get(k) ?? ''])))
     const skills = splitList(form.get('skills'))
-    await adminClient().from('profiles').update({ ...v, skills, interests: form.getAll('interests').map(String).slice(0, 7), onboarded: true }).eq('id', viewer.userId)
+    await adminClient().from('profiles').update({ ...v, skills, ...interestFields(form), onboarded: true }).eq('id', viewer.userId)
     next = safeNext(form.get('next'))
   } catch (err) {
     return { error: errMsg(err) }
@@ -78,12 +85,9 @@ export async function saveProfile(_prev: State, form: FormData): Promise<State> 
       ...v,
       bio: optText(1200).parse(form.get('bio') ?? ''),
       skills: splitList(form.get('skills')),
-      interests: form.getAll('interests').map(String).slice(0, 7),
+      ...interestFields(form),
       links,
       experiences,
-      availability: optText(60).parse(form.get('availability') ?? ''),
-      work_mode: optText(60).parse(form.get('work_mode') ?? ''),
-      start_when: optText(60).parse(form.get('start_when') ?? ''),
       profile_public: form.get('profile_public') === 'on',
       onboarded: true,
     }

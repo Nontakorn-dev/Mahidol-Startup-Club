@@ -14,6 +14,8 @@ export type Profile = {
   bio: string | null
   skills: string[]
   interests: string[]
+  /** Field of a "Domain expert" (interests includes domain_expert). */
+  domain_expertise: string | null
   links: { label: string; url: string }[]
   experiences: { title: string; subtitle?: string; description?: string }[]
   availability: string | null
