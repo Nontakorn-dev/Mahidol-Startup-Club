@@ -29,6 +29,14 @@ const FIELD: Record<string, string> = {
   bio: 'เกี่ยวกับฉัน',
   label: 'ชื่อลิงก์',
   url: 'ลิงก์',
+  // Event editor (admin)
+  title: 'ชื่องาน',
+  summary: 'คำอธิบายสั้นบนการ์ด',
+  organizer: 'ผู้จัด',
+  benefit: 'ประโยชน์ที่ได้รับ',
+  eligibility: 'ใครสมัครได้',
+  open_note: 'ข้อความแทนวันปิดรับ',
+  location: 'สถานที่',
 }
 
 export function errMsg(err: unknown): string {

@@ -54,7 +54,8 @@ export function mapToEvent(source: string, it: SourceItem, matched: string[], le
     organizer: cleanValue(it.organizer)?.slice(0, 80) ?? null,
     summary: summary || null,
     benefit: cleanValue(it.prize)?.slice(0, 80) ?? null,
-    eligibility: eligibility ? eligibility.slice(0, 60) : null,
+    // The admin form allows 40 characters (one line on the card); longer text would block approval.
+    eligibility: eligibility ? (eligibility.length > 40 ? `${eligibility.slice(0, 39)}…` : eligibility) : null,
     overview: description.slice(0, 6000) || null,
     apply_url: it.apply_url || it.source_url,
     deadline: it.deadline,

@@ -26,7 +26,7 @@ export function GET() {
       location: { type: 'string', maxLength: 120 },
       format: { type: 'string', enum: FORMATS },
       prize: { type: 'string', maxLength: 200, description: 'Prize money or main benefit.' },
-      eligibility: { type: 'string', maxLength: 200, description: 'Who may apply.' },
+      eligibility: { type: 'string', maxLength: 200, description: 'Who may apply, in one short line (shown cut to 40 characters, e.g. "นศ. ป.ตรี ทุกสาขา ทีม 3–5 คน").' },
       levels: { type: 'array', items: { type: 'string', enum: LEVELS }, maxItems: 3 },
       poster_url: { ...url, description: 'Direct link to the poster image (jpg/png/webp).' },
       tags: { type: 'array', items: { type: 'string', enum: ROLE_KEYS }, maxItems: 7, description: 'Skills the event needs.' },
