@@ -1,13 +1,14 @@
 'use client'
 /* eslint-disable @next/next/no-img-element */
 import Link from 'next/link'
-import { useActionState, useMemo, useState } from 'react'
+import { useActionState, useMemo, useRef, useState } from 'react'
 import { deleteEvent, resendEventMatches, saveEvent, unpublishEvent } from '@/app/actions/admin'
 import Switch from '../Switch'
 import ChipSelect from '../ChipSelect'
 import { IconExternal, IconEye, IconLink, IconPin } from '../icons'
 import { CATEGORIES, CATEGORY_KEYS, ROLES, ROLE_KEYS, HOME_FEATURED_LIMIT } from '@/lib/constants'
 import { hostOf, msLeft, thaiDeadline, timeLeftLabel } from '@/lib/format'
+import { compressImage } from '@/lib/compress-image'
 import type { EventRow } from '@/lib/types'
 
 export default function EventEditor({ e, editor, saved }: { e?: EventRow; editor?: string | null; saved?: string | null }) {
@@ -38,6 +39,26 @@ export default function EventEditor({ e, editor, saved }: { e?: EventRow; editor
     notify_on_publish: e?.notify_on_publish ?? true,
   })
   const [poster, setPoster] = useState<string | null>(e?.poster_url ?? null)
+  // Big photos are shrunk in the browser to fit the 2 MB upload limit before they go in the form.
+  const posterInput = useRef<HTMLInputElement>(null)
+  const [posterNote, setPosterNote] = useState<{ text: string; error?: boolean } | null>(null)
+  const pickPoster = async (file: File) => {
+    const input = posterInput.current!
+    input.value = '' // nothing uploads until the shrunk file is in place
+    setPoster(URL.createObjectURL(file))
+    setPosterNote({ text: 'กำลังย่อรูป…' })
+    try {
+      const small = await compressImage(file, { maxBytes: 1.9 * 1024 * 1024 })
+      const dt = new DataTransfer()
+      dt.items.add(small)
+      input.files = dt.files
+      const mb = (n: number) => `${(n / 1024 / 1024).toFixed(1)} MB`
+      setPosterNote({ text: small === file ? `พร้อมอัปโหลด · ${mb(file.size)}` : `ย่อรูปแล้ว ${mb(file.size)} → ${mb(small.size)}` })
+    } catch (err) {
+      setPoster(e?.poster_url ?? null)
+      setPosterNote({ text: (err as Error).message || 'อ่านไฟล์รูปไม่ได้', error: true })
+    }
+  }
   const [previewTab, setPreviewTab] = useState<'card' | 'detail'>('detail')
   const set = (k: keyof typeof f) => (ev: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setF((cur) => ({ ...cur, [k]: ev.target.value }))
@@ -112,21 +133,23 @@ export default function EventEditor({ e, editor, saved }: { e?: EventRow; editor
                   )}
                   <span className="stack" style={{ flex: 1, gap: 6 }}>
                     <span className="muted" style={{ fontSize: 13 }}>
-                      ภาพแนวตั้ง 4:5 · ไม่เกิน 2 MB
+                      ภาพแนวตั้ง 4:5 · รูปใหญ่จะถูกย่อให้อัตโนมัติ
                     </span>
                     <label className="btn btn-outline btn-sm" style={{ alignSelf: 'flex-start', color: 'var(--brand)' }}>
                       {poster ? 'เปลี่ยนรูป' : 'อัปโหลดรูป'}
                       <input
                         type="file"
                         name="poster"
-                        accept="image/jpeg,image/png,image/webp"
+                        ref={posterInput}
+                        accept="image/*"
                         hidden
                         onChange={(ev) => {
                           const file = ev.target.files?.[0]
-                          if (file) setPoster(URL.createObjectURL(file))
+                          if (file) pickPoster(file)
                         }}
                       />
                     </label>
+                    {posterNote && <span style={{ fontSize: 12, color: posterNote.error ? 'var(--danger)' : 'var(--ok)' }}>{posterNote.text}</span>}
                   </span>
                 </div>
               </div>
