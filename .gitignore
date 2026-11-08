@@ -12,3 +12,7 @@ next-env.d.ts
 
 # Video projects (HyperFrames renders, assets, voice) — kept out of the repo
 videos/
+
+# Hand-curated event publishing (local only)
+scripts/apply-opportunities.mjs
+scripts/data/

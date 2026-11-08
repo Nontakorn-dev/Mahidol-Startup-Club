@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { IBM_Plex_Sans_Thai, Kanit } from 'next/font/google'
 import { Suspense } from 'react'
+import { Analytics } from '@vercel/analytics/next'
 import NavProgress from '@/components/NavProgress'
 import { NavDepth } from '@/components/BackLink'
 import './globals.css'
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <NavDepth />
         </Suspense>
         {children}
+        <Analytics />
       </body>
     </html>
   )
